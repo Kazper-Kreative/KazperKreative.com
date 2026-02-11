@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @echo off
 setlocal
 
@@ -19,4 +20,27 @@ for %%f in (%files%) do (
 
 echo.
 echo Done! Your root is now clean for Next.js.
+=======
+@echo off
+setlocal
+
+:: 1. Create the legacy folder
+mkdir legacy-archive 2>nul
+
+:: 2. List the files you want to move
+set files=Echo.html Index.html styles.css old-script.js your-project.sln
+
+:: 3. Move them
+for %%f in (%files%) do (
+    if exist "%%f" (
+        echo Moving %%f...
+        move "%%f" legacy-archive\
+    ) else (
+        echo Skipping %%f (not found).
+    )
+)
+
+echo.
+echo Done! Your root is now clean for Next.js.
+>>>>>>> origin/main
 pause
