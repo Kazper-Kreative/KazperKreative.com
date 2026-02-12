@@ -11,8 +11,8 @@ const agentsData = [
   {
     name: "Levi",
     pictureUrl: "/images/agents/levi.jpeg",
-    role: "AI/ML & WebGL Engineer",
-    bio: "Specializing in cutting-edge AI/ML integration for interactive web experiences and high-performance WebGL applications.",
+    role: "Environment Design",
+    bio: "I create immersive and interactive gaming experiences that captivate users and foster unique interactions. With over five years in customer-facing sales roles, I excel at understanding diverse audiences and delivering tailored solutions. My background in retail wireless consulting has sharpened my ability to communicate effectively, uncover needs, and drive customer oriented results.\n\nCombining this experience with self-taught technical skills and formal education in Gaming and Development, I bring a unique blend of consumer insight and technical expertise. Whether you need a consultant who understands gameplay dynamics or a collaborator to enhance your project's narrative and mechanics, I am here to help. Let's transform your ideas into engaging experiences that resonate with your audience.",
     upworkUrl: "https://www.upwork.com/freelancers/~012e873648a97f2621",
   },
   {
