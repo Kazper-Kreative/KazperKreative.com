@@ -10,13 +10,13 @@ const HomeTemplate: React.FC = () => {
   return (
     <PageWrapper>
       <HeroSection />
-      <div className="py-24">
+      <div className="py-12 sm:py-16 md:py-24">
         <ServicesGrid />
       </div>
-      <div className="py-24">
+      <div className="py-12 sm:py-16 md:py-24">
         <WorkGrid />
       </div>
-      <div className="py-24">
+      <div className="py-12 sm:py-16 md:py-24">
         <ContactCTA />
       </div>
       <Footer />
