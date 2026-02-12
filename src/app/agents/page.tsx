@@ -23,7 +23,7 @@ const agentsData = [
     upworkUrl: "https://www.upwork.com/freelancers/~012e873648a97f2621",
   },
   {
-    name: "Alex",
+    name: "Hunter Wilkinson",
     pictureUrl: "https://assets-global.website-files.com/652f146430349b18361b17b2/652f146430349b18361b181e_AI_Avatar_Cyberpunk_Portrait_square.png",
     role: "QA Engineer",
     bio: "Ensuring software quality through comprehensive testing, automation, and CI/CD pipeline integration.",
