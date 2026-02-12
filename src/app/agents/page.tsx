@@ -17,9 +17,9 @@ const agentsData = [
   },
   {
     name: "Mason",
-    pictureUrl: "https://assets-global.website-files.com/652f146430349b18361b17b2/652f146430349b18361b181e_AI_Avatar_Cyberpunk_Portrait_square.png",
-    role: "Full-stack Engineer",
-    bio: "Specializing in robust backend systems with Node.js and Python, and dynamic frontends with React and Next.js.",
+    pictureUrl: "/images/agents/mason.webp",
+    role: "Unreal Engine Specialist: Bridging Creative Dev & Technical Stability",
+    bio: "I don't just build gameplay systems; I architect the pipelines, testing protocols, and version control standards that ensure your game is polished, performant, and release-ready.\n\nCurrently, I serve as Lead QA for high-fidelity military simulations, managing 500GB+ repositories and complex hardware integrations. I move beyond simple 'bug hunting' to provide true White-Box QA and Systems Engineering.\n\nMy Core Expertise:\n\n1. Unreal Engine Development (C++ & Blueprints)\n\nUI/UX Specialist: Building immersive, modular UI using UMG and Slate (HUDs, Menus, Terminals).\n\nGameplay Systems: Creating responsive 'Game Feel', inventory economies, and distance-based progression.\n\nClean Architecture: Writing scalable code designed for easy iteration and long-term maintenance.\n\n2. Technical QA & Pipeline Leadership\n\nInfrastructure: Managing Git LFS, verifying build artifacts, and optimizing repo storage for distributed teams.\n\nPerformance: Profiling physics collisions, frame rates (Sub-T/FPV flight models), and memory usage.\n\nAutomation: Designing 'Cold Install' protocols and smoke tests to stabilize chaotic release cycles.\n\nWhat I Deliver:\n\nCore Systems: Full gameplay loops (Movement, Combat, Interaction, Crafting).\n\nPipeline Architecture: Setting up CI/CD workflows and Branching strategies.\n\nValidation: Comprehensive Test Plans and Hardware compatibility checks.\n\nWhether you need a feature built from scratch or a pipeline stabilized for launch, I bring the engineering discipline to get it done right.\n\nLet's discuss your project's development or QA needs. Send me a message to get started.",
     upworkUrl: "https://www.upwork.com/freelancers/~012e873648a97f2621",
   },
   {
