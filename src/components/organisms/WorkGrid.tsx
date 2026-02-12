@@ -26,7 +26,7 @@ const projectsData = [
 const WorkGrid: React.FC = () => {
   return (
     <section className="container mx-auto px-4">
-      <h2 className="text-5xl font-bold text-center text-white mb-16">DEPLOYED EXPERIENCES.</h2>
+      <h2 className="text-4xl sm:text-5xl font-bold text-center text-white mb-8 sm:mb-16">DEPLOYED EXPERIENCES.</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {projectsData.map((project, index) => (
           <div key={index} className={project.isFeatured ? "md:col-span-2" : ""}>

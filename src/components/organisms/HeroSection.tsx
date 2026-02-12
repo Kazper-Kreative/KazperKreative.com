@@ -1,10 +1,9 @@
 import React from 'react';
 import Button from '@/components/atoms/Button';
-import PageWrapper from './PageWrapper'; // Assuming HeroSection is often wrapped by PageWrapper or a similar layout
 
 const HeroSection: React.FC = () => {
   return (
-    <section className="relative min-h-[calc(100vh-5rem)] flex items-center justify-center bg-zinc-950 text-white overflow-hidden p-8">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 p-4 text-white sm:p-8">
       {/* Subtle tech-grid overlay */}
       <div
         className="absolute inset-0 z-0 opacity-10"
@@ -18,13 +17,13 @@ const HeroSection: React.FC = () => {
       ></div>
 
       <div className="relative z-10 flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
-        <h1 className="text-7xl md:text-8xl font-extrabold tracking-tight mb-4 leading-none uppercase">
+        <h1 className="text-5xl font-black tracking-tight leading-none sm:text-6xl md:text-7xl lg:text-8xl mb-4">
           IMMERSION ENGINEERED.
         </h1>
-        <p className="text-xl md:text-2xl text-gray-400 mb-10 max-w-2xl">
+        <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl">
           Kazper Kreative: Full-Cycle Game Development & QA Validation.
         </p>
-        <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+        <div className="flex flex-col sm:flex-row gap-4">
           <Button variant="primary" size="lg">
             View Projects
           </Button>

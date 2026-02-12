@@ -9,7 +9,7 @@ interface ServiceCardProps {
 
 const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, icon, tags }) => {
   return (
-    <div className="group relative p-6 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-purple-500/50 transition-all duration-300 hover:-translate-y-1 transform">
+    <div className="group relative p-4 sm:p-6 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-purple-500/50 transition-all duration-300 hover:-translate-y-1 transform">
       <div className="text-purple-400 mb-4 text-4xl">{icon}</div> {/* Icon placeholder */}
       <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
       <p className="text-zinc-400 text-base mb-4">{description}</p>
