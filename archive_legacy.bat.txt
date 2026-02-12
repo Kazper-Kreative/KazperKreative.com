@@ -19,3 +19,4 @@ for %%f in (%files%) do (
 
 echo.
 echo Done! Your root is now clean for Next.js.
+pause
