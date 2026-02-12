@@ -1,6 +1,6 @@
 import React from 'react';
 import HeroSection from '@/components/organisms/HeroSection';
-import PageWrapper from '@/components/organisms/PageWrapper';
+import PageWrapper from '@/components/layouts/PageWrapper';
 import ServicesGrid from '@/components/organisms/ServicesGrid';
 import WorkGrid from '@/components/organisms/WorkGrid';
 import ContactCTA from '@/components/organisms/ContactCTA';
