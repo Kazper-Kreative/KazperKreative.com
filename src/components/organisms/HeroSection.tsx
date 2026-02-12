@@ -16,11 +16,11 @@ const HeroSection: React.FC = () => {
         }}
       ></div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center text-center max-w-4xl mx-auto">
-        <h1 className="text-5xl font-black tracking-tight leading-none sm:text-6xl md:text-7xl lg:text-8xl mb-4">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center max-w-4xl mx-auto px-4">
+        <h1 className="text-5xl font-black tracking-tight leading-none sm:text-6xl md:text-7xl lg:text-8xl mb-4 break-words">
           IMMERSION ENGINEERED.
         </h1>
-        <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl">
+        <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl break-words">
           Kazper Kreative: Full-Cycle Game Development & QA Validation.
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
