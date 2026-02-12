@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { usePathname } from 'next/navigation'; // Import usePathname from next/navigation
+import { motion, AnimatePresence } from 'framer-motion';
+import { usePathname } from 'next/navigation';
+import { Menu, X } from 'lucide-react'; // Import Menu and X icons
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -15,6 +16,7 @@ const navLinks = [
 
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -30,6 +32,10 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const handleNavLinkClick = () => {
+    setMobileMenuOpen(false); // Close mobile menu on link click
+  };
+
   return (
     <motion.nav
       className={`fixed w-full z-40 top-0 transition-all duration-300 ${
@@ -40,7 +46,9 @@ const Navbar: React.FC = () => {
         <Link href="/" className="text-xl font-bold text-white hover:text-purple-400 transition-colors">
           KAZPER KREATIVE
         </Link>
-        <div className="flex space-x-6">
+        
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex space-x-6">
           {navLinks.map((link) => (
             <Link key={link.name} href={link.href} passHref>
               <motion.a
@@ -64,7 +72,45 @@ const Navbar: React.FC = () => {
             </Link>
           ))}
         </div>
+
+        {/* Mobile Menu Button */}
+        <div className="md:hidden">
+          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white focus:outline-none">
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            transition={{ duration: 0.3 }}
+            className="md:hidden bg-black/90 backdrop-blur-md absolute top-full left-0 w-full pb-4 border-b border-purple-500/30"
+          >
+            <div className="flex flex-col items-center space-y-4 pt-4">
+              {navLinks.map((link) => (
+                <Link key={link.name} href={link.href} passHref>
+                  <motion.a
+                    className={`text-gray-300 text-lg hover:text-white transition-colors ${
+                      pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
+                        ? 'text-purple-400 font-semibold'
+                        : ''
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    onClick={handleNavLinkClick}
+                  >
+                    {link.name}
+                  </motion.a>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.nav>
   );
 };
