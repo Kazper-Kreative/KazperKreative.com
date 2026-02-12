@@ -1,9 +1,22 @@
+"use client";
+
 import React from 'react';
 import Button from '@/components/atoms/Button';
+import { motion } from 'framer-motion';
+import { ArrowDown } from 'lucide-react';
 
 const HeroSection: React.FC = () => {
+  const handleScrollDown = () => {
+    document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 p-4 text-white sm:p-8">
+    <motion.section
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.8 }}
+      className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 text-white sm:p-8"
+    >
       {/* Subtle tech-grid overlay */}
       <div
         className="absolute inset-0 z-0 opacity-10"
@@ -32,7 +45,17 @@ const HeroSection: React.FC = () => {
           </Button>
         </div>
       </div>
-    </section>
+
+      <motion.div
+        className="absolute bottom-8 cursor-pointer"
+        initial={{ y: 0 }}
+        animate={{ y: [0, -10, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        onClick={handleScrollDown}
+      >
+        <ArrowDown className="text-purple-400" size={32} />
+      </motion.div>
+    </motion.section>
   );
 };
 

@@ -24,13 +24,13 @@ const HomeTemplate: React.FC = () => {
           </Button>
         </Link>
       </section>
-      <div className="py-12 sm:py-16 md:py-24">
+      <div id="services" className="py-12 sm:py-16 md:py-24">
         <ServicesGrid />
       </div>
-      <div className="py-12 sm:py-16 md:py-24">
+      <div id="work" className="py-12 sm:py-16 md:py-24">
         <WorkGrid />
       </div>
-      <div className="py-12 sm:py-16 md:py-24">
+      <div id="contact" className="py-12 sm:py-16 md:py-24">
         <ContactCTA />
       </div>
       <Footer />
