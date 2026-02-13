@@ -37,10 +37,8 @@ const ContactSection: React.FC = () => {
             <p className="text-zinc-400 mb-6">
               Are you an Unreal Dev, Audio Engineer, or UI Specialist looking for contract work?
             </p>
-            <Link href="https://lapis-elf-34a.notion.site/306453d752a780e8b9effbbf86df8620?pvs=105" passHref legacyBehavior>
-              <a target="_blank" rel="noopener noreferrer">
-                <Button variant="secondary" size="lg">Apply to Join</Button>
-              </a>
+            <Link href="/agents/join">
+              <Button variant="secondary" size="lg">Apply to Join</Button>
             </Link>
           </div>
         </div>
