@@ -6,7 +6,7 @@ const projectsData = [
     title: "MechaVerse",
     category: "Metaverse Engineering",
     description: "Immersive Roblox Mech Combat. Custom UI & Monetization Systems.",
-    imageUrl: "https://via.placeholder.com/1200x675/1a1a1a/cccccc?text=MechaVerse_Featured", // Placeholder
+    imageUrl: "/images/mechaverse.png", // Updated path
     caseStudyUrl: "https://www.roblox.com/games/80039313638354/MechaVerse",
     isFeatured: true,
   },
@@ -14,7 +14,7 @@ const projectsData = [
     title: "SensorOps Contract",
     category: "QA Engineering",
     description: "Remote Quality Assurance & Automation Pipelines.",
-    imageUrl: "https://via.placeholder.com/600x338/3a3a3a/cccccc?text=SensorOps_Contract", // Placeholder
+    imageUrl: "/images/sensorops.jpeg", // Updated path
     caseStudyUrl: "https://www.linkedin.com/company/sensorops/posts/?feedView=all",
   },
 ];
