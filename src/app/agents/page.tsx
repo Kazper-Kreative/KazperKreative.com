@@ -42,7 +42,7 @@ export default function AgentsPage() {
         <p className="text-zinc-400 mb-6 max-w-2xl mx-auto">
           Explore our full profile and services on Upwork to see how Kazper Kreative LLC can help with your next project.
         </p>
-        <Link href="https://www.upwork.com/agencies/1990979485860235162/" passHref legacyBehavior>
+        <Link href="https://www.upwork.com/agencies/1990979485860235162/">
           <Button>Visit Our Upwork Agency Profile</Button>
         </Link>
       </section>

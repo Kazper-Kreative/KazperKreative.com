@@ -1,12 +1,14 @@
 import React from 'react';
 import Image from 'next/image';
 import Button from '@/components/atoms/Button';
+import Link from 'next/link';
 
 interface ProjectCardProps {
   title: string;
   category: string;
   description: string;
   imageUrl: string;
+  caseStudyUrl: string;
   isFeatured?: boolean;
 }
 
@@ -15,6 +17,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   category,
   description,
   imageUrl,
+  caseStudyUrl,
   isFeatured = false,
 }) => {
   return (
@@ -35,9 +38,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <h3 className="text-2xl font-bold mb-2">{title}</h3>
         <p className="text-zinc-300 text-base mb-4">{description}</p>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <Button variant="primary" size="md">
-            View Case Study
-          </Button>
+          <Link href={caseStudyUrl} passHref>
+            <Button variant="primary" size="md">
+              View Case Study
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

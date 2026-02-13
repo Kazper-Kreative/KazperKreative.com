@@ -7,19 +7,15 @@ const projectsData = [
     category: "Metaverse Engineering",
     description: "Immersive Roblox Mech Combat. Custom UI & Monetization Systems.",
     imageUrl: "https://via.placeholder.com/1200x675/1a1a1a/cccccc?text=MechaVerse_Featured", // Placeholder
+    caseStudyUrl: "https://www.roblox.com/games/80039313638354/MechaVerse",
     isFeatured: true,
-  },
-  {
-    title: "Project Voidborn",
-    category: "UE5 Development",
-    description: "Unreal Engine 5 RPG. AI Behaviors & Combat Replication.",
-    imageUrl: "https://via.placeholder.com/600x338/2a2a2a/cccccc?text=Project_Voidborn", // Placeholder
   },
   {
     title: "SensorOps Contract",
     category: "QA Engineering",
     description: "Remote Quality Assurance & Automation Pipelines.",
     imageUrl: "https://via.placeholder.com/600x338/3a3a3a/cccccc?text=SensorOps_Contract", // Placeholder
+    caseStudyUrl: "https://www.linkedin.com/company/sensorops/posts/?feedView=all",
   },
 ];
 
@@ -35,6 +31,7 @@ const WorkGrid: React.FC = () => {
               category={project.category}
               description={project.description}
               imageUrl={project.imageUrl}
+              caseStudyUrl={project.caseStudyUrl}
               isFeatured={project.isFeatured}
             />
           </div>

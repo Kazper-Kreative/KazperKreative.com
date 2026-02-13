@@ -4,6 +4,7 @@ import React from 'react';
 import Button from '@/components/atoms/Button';
 import { motion } from 'framer-motion';
 import { ArrowDown } from 'lucide-react';
+import Link from 'next/link';
 
 const HeroSection: React.FC = () => {
   const handleScrollDown = () => {
@@ -36,13 +37,20 @@ const HeroSection: React.FC = () => {
         <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl break-words">
           Kazper Kreative: Full-Cycle Game Development & QA Validation.
         </p>
+        import Link from 'next/link';
+
+// ... inside the component, replace the buttons div with this:
         <div className="flex flex-col sm:flex-row gap-4">
-          <Button variant="primary" size="lg">
-            View Projects
-          </Button>
-          <Button variant="secondary" size="lg">
-            Our Process
-          </Button>
+          <Link href="#work">
+            <Button variant="primary" size="lg">
+              View Projects
+            </Button>
+          </Link>
+          <Link href="#services">
+            <Button variant="secondary" size="lg">
+              Our Process
+            </Button>
+          </Link>
         </div>
       </div>
 

@@ -1,0 +1,44 @@
+Hunter Wilkinson
+"C:\Users\mason\source\repos\Kazper\KazperKreativeLLC.com\Agents\Jacoby\Picture.jpeg"
+Graphics & Shader Developer
+I’m a low-level game engine developer who lives close to the metal but ships comfortably inside modern engines.
+
+My background is rooted in custom engine and framework development. I’ve built games using SDL3, and I’m currently developing a Vulkan-based game engine on top of the Windows API, with planned support for Linux and macOS. This means I understand not just how to use engines, but how they actually work under the hood: memory, rendering pipelines, threading, asset flow, and performance tradeoffs.
+
+On top of that foundation, I work effectively inside Unreal Engine and Unity, particularly in areas where engine abstractions meet real hardware:
+
+Shader development and optimization
+
+Rendering and performance profiling
+
+Bridging engine systems with low-level graphics concepts
+
+Translating custom engine techniques into Unreal and Unity workflows
+
+Because I understand graphics from Vulkan upward, I can diagnose performance problems that aren’t obvious from the editor alone and apply fixes that scale.
+
+Alongside development, I offer QA and performance analysis services. I’ve worked with testing teams on:
+
+Public projects such as Broken Aperture (on steam), focusing on performance improvements and in-depth analysis
+
+My QA work is technical rather than surface-level. I specialize in:
+
+Performance bottleneck identification
+
+Frame-time and GPU/CPU analysis
+
+Reproducible bug reports engineers can act on immediately
+
+What You Get Working With Me
+
+An engineer who understands engines from the inside out
+
+Clean, well-reasoned technical decisions instead of guesswork
+
+Performance-focused development and testing
+
+Clear communication with developers, artists, and QA teams alike
+
+If you need someone who can move fluidly between custom engines, Vulkan, Unreal, Unity, and real performance constraints, I’d be happy to talk.
+https://www.upwork.com/freelancers/~010f0165fe0a2764cc/
+
