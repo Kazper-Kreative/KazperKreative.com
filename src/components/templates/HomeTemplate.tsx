@@ -3,6 +3,7 @@ import HeroSection from '@/components/organisms/HeroSection';
 import PageWrapper from '@/components/layouts/PageWrapper';
 import ServicesGrid from '@/components/organisms/ServicesGrid';
 import WorkGrid from '@/components/organisms/WorkGrid';
+import ContactSection from '@/components/organisms/ContactSection';
 import ContactCTA from '@/components/organisms/ContactCTA';
 import Footer from '@/components/molecules/Footer';
 import Button from '@/components/atoms/Button';
@@ -31,6 +32,9 @@ const HomeTemplate: React.FC = () => {
         <WorkGrid />
       </div>
       <div id="contact" className="py-12 sm:py-16 md:py-24">
+        <ContactSection />
+      </div>
+      <div id="legacy-contact" className="py-12 sm:py-16 md:py-24">
         <ContactCTA />
       </div>
       <Footer />
