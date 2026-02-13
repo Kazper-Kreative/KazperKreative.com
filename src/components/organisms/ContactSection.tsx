@@ -15,9 +15,9 @@ const ContactSection: React.FC = () => {
       transition={{ duration: 0.8 }}
       className="container mx-auto px-4 py-16 sm:py-24 text-white"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
-        {/* Left Column: Action Center */}
-        <div className="flex flex-col gap-12">
+      <div className="grid grid-cols-1 gap-12 md:gap-16">
+        {/* Action Center */}
+        <div className="flex flex-col gap-12 max-w-2xl mx-auto">
           {/* Block A: Fast Track Client Discovery */}
           <div className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800">
             <h3 className="text-3xl font-bold text-purple-300 mb-4">Ready to start immediately?</h3>
@@ -41,18 +41,6 @@ const ContactSection: React.FC = () => {
               <Button variant="secondary" size="lg">Apply to Join</Button>
             </Link>
           </div>
-        </div>
-
-        {/* Right Column: Project Inquiry Form */}
-        <div className="relative overflow-hidden rounded-2xl shadow-2xl shadow-purple-900/20">
-          <div className="absolute inset-0 border-2 border-purple-500/30 rounded-2xl pointer-events-none animate-pulse"></div>
-          <iframe
-            src="https://lapis-elf-34a.notion.site/306453d752a78072bfdbe87cd27a1e85?pvs=105"
-            loading="lazy"
-            className="w-full h-full rounded-2xl"
-            style={{ minHeight: '850px' }}
-            frameBorder="0"
-          ></iframe>
         </div>
       </div>
     </motion.section>
