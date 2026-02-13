@@ -9,7 +9,6 @@ interface ProjectCardProps {
   description: string;
   imageUrl: string;
   caseStudyUrl: string;
-  isFeatured?: boolean;
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -18,7 +17,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   description,
   imageUrl,
   caseStudyUrl,
-  isFeatured = false,
 }) => {
   return (
     <div className="group relative overflow-hidden rounded-lg shadow-lg bg-zinc-900/70">

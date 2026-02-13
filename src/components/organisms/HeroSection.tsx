@@ -35,11 +35,8 @@ const HeroSection: React.FC = () => {
           IMMERSION ENGINEERED.
         </h1>
         <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl break-words">
-          Kazper Kreative: Full-Cycle Game Development & QA Validation.
+          Kazper Kreative: Full-Cycle Game Development &amp; QA Validation.
         </p>
-        import Link from 'next/link';
-
-// ... inside the component, replace the buttons div with this:
         <div className="flex flex-col sm:flex-row gap-4">
           <Link href="#work">
             <Button variant="primary" size="lg">
