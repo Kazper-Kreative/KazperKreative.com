@@ -17,12 +17,10 @@ const JoinPage: React.FC = () => {
         <p className="text-zinc-400 mb-8 max-w-xl">
           You will be redirected to our secure Notion portal to complete your application. Please ensure you have your portfolio and resume ready.
         </p>
-        <Link href="https://lapis-elf-34a.notion.site/306453d752a780e8b9effbbf86df8620" passHref legacyBehavior>
-          <a target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-            <Button variant="primary" size="lg">
-              Proceed to Application <ExternalLink size={20} className="ml-2" />
-            </Button>
-          </a>
+        <Link href="https://lapis-elf-34a.notion.site/306453d752a780e8b9effbbf86df8620" target="_blank" rel="noopener noreferrer">
+          <Button variant="primary" size="lg" className="inline-flex items-center">
+            Proceed to Application <ExternalLink size={20} className="ml-2" />
+          </Button>
         </Link>
       </main>
     </div>

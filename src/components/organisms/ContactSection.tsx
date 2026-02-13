@@ -24,10 +24,8 @@ const ContactSection: React.FC = () => {
             <p className="text-zinc-400 mb-6">
               Skip the queue. If you have a defined budget and timeline, book a 15-minute discovery call directly with our engineering lead.
             </p>
-            <Link href="https://calendly.com/kazperkreative" passHref legacyBehavior>
-              <a target="_blank" rel="noopener noreferrer">
-                <Button variant="primary" size="lg">Book Discovery Call</Button>
-              </a>
+            <Link href="https://calendly.com/kazperkreative" target="_blank" rel="noopener noreferrer">
+              <Button variant="primary" size="lg">Book Discovery Call</Button>
             </Link>
           </div>
 
