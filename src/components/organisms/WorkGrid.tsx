@@ -24,15 +24,14 @@ const WorkGrid: React.FC = () => {
       <h2 className="text-4xl sm:text-5xl font-bold text-center text-white mb-8 sm:mb-16">DEPLOYED EXPERIENCES.</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {projectsData.map((project, index) => (
-          <div key={index}>
-            <ProjectCard
-              title={project.title}
-              category={project.category}
-              description={project.description}
-              imageUrl={project.imageUrl}
-              caseStudyUrl={project.caseStudyUrl}
-            />
-          </div>
+          <ProjectCard
+            key={index}
+            title={project.title}
+            category={project.category}
+            description={project.description}
+            imageUrl={project.imageUrl}
+            caseStudyUrl={project.caseStudyUrl}
+          />
         ))}
       </div>
     </section>
