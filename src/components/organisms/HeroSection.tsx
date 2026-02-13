@@ -43,9 +43,9 @@ const HeroSection: React.FC = () => {
               View Projects
             </Button>
           </Link>
-          <Link href="#services">
+          <Link href="#work-with-us">
             <Button variant="secondary" size="lg">
-              Our Process
+              Explore Opportunities
             </Button>
           </Link>
         </div>

@@ -20,7 +20,7 @@ const ContactSection: React.FC = () => {
         <div className="flex flex-col gap-12 max-w-2xl mx-auto">
           {/* Block A: Fast Track Client Discovery */}
           <div className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800">
-            <h3 className="text-3xl font-bold text-purple-300 mb-4">Ready to start immediately?</h3>
+            <h3 className="text-3xl font-bold text-purple-300 mb-4">Require Our Expertise?</h3>
             <p className="text-zinc-400 mb-6">
               Skip the queue. If you have a defined budget and timeline, book a 15-minute discovery call directly with our engineering lead.
             </p>
