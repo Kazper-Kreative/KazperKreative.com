@@ -1,15 +1,46 @@
 import React from 'react';
 import HeroSection from '@/components/organisms/HeroSection';
 import PageWrapper from '@/components/layouts/PageWrapper';
-import ServicesGrid from '@/components/organisms/ServicesGrid';
-import WorkGrid from '@/components/organisms/WorkGrid';
+import ServicesGrid, { Service } from '@/components/organisms/ServicesGrid';
+import WorkGrid, { Project } from '@/components/organisms/WorkGrid';
 import ContactSection from '@/components/organisms/ContactSection';
 import ContactCTA from '@/components/organisms/ContactCTA';
 import Footer from '@/components/molecules/Footer';
 import Button from '@/components/atoms/Button';
 import Link from 'next/link';
+import { client } from '@/sanity/lib/client';
+import { urlFor } from '@/sanity/lib/image';
 
-const HomeTemplate: React.FC = () => {
+async function getProjects(): Promise<Project[]> {
+  const query = `*[_type == "project"]{
+    title,
+    category,
+    description,
+    "imageUrl": image.asset->url,
+    caseStudyUrl
+  }`;
+  const projects = await client.fetch(query);
+  return projects.map((project: any) => ({
+    ...project,
+    imageUrl: project.imageUrl ? urlFor(project.imageUrl).url() : '',
+  }));
+}
+
+async function getServices(): Promise<Service[]> {
+    const query = `*[_type == "service"]{
+    title,
+    description,
+    "icon": icon.asset->url,
+    tags
+  }`;
+  const data = await client.fetch(query);
+  return data;
+}
+
+const HomeTemplate: React.FC = async () => {
+  const projects = await getProjects();
+  const services = await getServices();
+
   return (
     <PageWrapper>
       <HeroSection />
@@ -26,10 +57,10 @@ const HomeTemplate: React.FC = () => {
         </Link>
       </section>
       <div id="services" className="py-12 sm:py-16 md:py-24">
-        <ServicesGrid />
+        <ServicesGrid services={services} />
       </div>
       <div id="work" className="py-12 sm:py-16 md:py-24">
-        <WorkGrid />
+        <WorkGrid projects={projects} />
       </div>
       <div id="contact" className="py-12 sm:py-16 md:py-24">
         <ContactSection />
