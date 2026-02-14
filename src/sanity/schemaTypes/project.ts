@@ -45,6 +45,12 @@ export default defineType({
         title: 'Case Study URL',
         type: 'url',
     }),
+    defineField({
+      name: 'caseStudyContent',
+      title: 'Case Study Content',
+      type: 'array',
+      of: [{ type: 'block' }],
+    }),
   ],
   preview: {
     select: {

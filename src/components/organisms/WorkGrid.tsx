@@ -7,6 +7,7 @@ export interface Project {
   description: string;
   imageUrl: string;
   caseStudyUrl: string;
+  slug: string; // Add slug for internal linking
 }
 
 interface WorkGridProps {
@@ -26,9 +27,10 @@ const WorkGrid: React.FC<WorkGridProps> = ({ projects }) => {
             description={project.description}
             imageUrl={project.imageUrl}
             caseStudyUrl={project.caseStudyUrl}
+            slug={project.slug} // Pass the slug to ProjectCard
           />
         ))}
-      </div>
+      </motion.div>
     </section>
   );
 };

@@ -11,7 +11,8 @@ interface ProjectCardProps {
   category: string;
   description: string;
   imageUrl: string;
-  caseStudyUrl: string;
+  caseStudyUrl: string; // Still passed, but not used for the main link
+  slug: string; // Add slug for internal linking
 }
 
 const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -19,13 +20,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   category,
   description,
   imageUrl,
-  caseStudyUrl,
+  // caseStudyUrl, // We keep this if it's meant to be displayed *within* the case study page
+  slug,
 }) => {
   return (
-    <Link href={caseStudyUrl} passHref>
+    <Link href={`/projects/${slug}`} passHref>
       <motion.a
-        target="_blank"
-        rel="noopener noreferrer"
+        // Removed target="_blank" and rel="noopener noreferrer" as it's an internal link now
         whileHover={{ y: -5, boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.5)" }}
         className="group relative overflow-hidden rounded-lg shadow-lg bg-zinc-900/70 block h-full"
       >

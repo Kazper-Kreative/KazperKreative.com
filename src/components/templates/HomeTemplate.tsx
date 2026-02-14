@@ -17,7 +17,8 @@ async function getProjects(): Promise<Project[]> {
     category,
     description,
     "imageUrl": image.asset->url,
-    caseStudyUrl
+    caseStudyUrl,
+    "slug": slug.current
   }`;
   const projects = await client.fetch(query);
   return projects.map((project: any) => ({
