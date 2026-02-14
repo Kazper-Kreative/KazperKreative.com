@@ -42,13 +42,19 @@ const itemVariants = {
 };
 
 const AgentsGrid: React.FC<AgentsGridProps> = ({ agents }) => {
-  return (
-    <section className="container mx-auto px-4 py-24 relative overflow-hidden">
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" />
+  const [mounted, setMounted] = React.useState(false);
 
-      <div className="relative z-10 mb-20 text-left max-w-4xl">
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <section className="container mx-auto px-4 py-24 relative overflow-hidden" suppressHydrationWarning>
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" suppressHydrationWarning />
+      <div className="absolute bottom-0 left-0 translate-y-1/2 -x-1/2 w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" suppressHydrationWarning />
+
+      <div className="relative z-10 mb-20 text-left max-w-4xl" suppressHydrationWarning>
         <motion.p 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
@@ -91,9 +97,10 @@ const AgentsGrid: React.FC<AgentsGridProps> = ({ agents }) => {
         whileInView="show"
         viewport={{ once: true, amount: 0.1 }}
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12"
+        suppressHydrationWarning
       >
         {agents.map((agent, index) => (
-          <motion.div key={index} variants={itemVariants}>
+          <motion.div key={index} variants={itemVariants} suppressHydrationWarning>
             <AgentCard {...agent} />
           </motion.div>
         ))}

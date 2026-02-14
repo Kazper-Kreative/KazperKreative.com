@@ -16,29 +16,38 @@ interface AgentCardProps {
 }
 
 const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upworkUrl, specialties = [] }) => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <Link
       href={upworkUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="relative group bg-zinc-900/40 border border-zinc-800 hover:border-purple-500/50 rounded-xl shadow-2xl overflow-hidden p-8 text-left block h-full transition-all duration-500 backdrop-blur-sm"
+      suppressHydrationWarning
     >
       <motion.div
         whileHover={{ y: -10 }}
         className="h-full flex flex-col"
       >
-        <div className="relative w-full aspect-square mb-6 rounded-lg overflow-hidden border border-zinc-700 group-hover:border-purple-500/50 transition-colors duration-500">
-          <Image
-            src={pictureUrl}
-            alt={name}
-            fill
-            style={{ objectFit: 'cover' }}
-            className="transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0"
-          />
+        <div className="relative w-full aspect-square mb-6 rounded-lg overflow-hidden border border-zinc-700 group-hover:border-purple-500/50 transition-colors duration-500" suppressHydrationWarning>
+          {mounted && (
+            <Image
+              src={pictureUrl}
+              alt={name}
+              fill
+              style={{ objectFit: 'cover' }}
+              className="transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0"
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
         </div>
 
-        <div className="flex-grow">
+        <div className="flex-grow" suppressHydrationWarning>
           <p className="text-purple-500 font-mono text-[10px] mb-2 tracking-[0.2em] uppercase">
             // ACTIVE_AGENT
           </p>
@@ -51,7 +60,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6" suppressHydrationWarning>
           {specialties.map((specialty, index) => (
             <span
               key={index}
@@ -62,8 +71,8 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
           ))}
         </div>
         
-        <div className="flex items-center text-zinc-500 group-hover:text-purple-400 transition-colors duration-300 text-xs font-bold uppercase tracking-widest">
-          View Profile <ArrowRight className="ml-2 transform group-hover:translate-x-1 transition-transform" size={14} />
+        <div className="flex items-center text-zinc-500 group-hover:text-purple-400 transition-colors duration-300 text-xs font-bold uppercase tracking-widest" suppressHydrationWarning>
+          View Profile {mounted ? <ArrowRight className="ml-2 transform group-hover:translate-x-1 transition-transform" size={14} /> : <div className="w-4 h-4 ml-2" />}
         </div>
       </motion.div>
     </Link>
