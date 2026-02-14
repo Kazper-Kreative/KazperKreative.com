@@ -10,9 +10,9 @@
 - [x] **Task: Conductor - User Manual Verification 'Phase 1: Scroll Engine & Scene Foundation' (Protocol in workflow.md)** 2cddab0
 
 ## Phase 2: Camera Rig & Scripted Motion
-- [ ] **Task: Implement Scripted Camera Rig**
-    - [ ] Write tests for camera path interpolation logic.
-    - [ ] Implement a camera controller that follows a predefined spline or path based on scroll progress.
+- [x] **Task: Implement Scripted Camera Rig** 61012df
+    - [x] Write tests for camera path interpolation logic.
+    - [x] Implement a camera controller that follows a predefined spline or path based on scroll progress.
 - [ ] **Task: Integrate Content Overlay System**
     - [ ] Write tests for visibility triggers based on scroll percentage.
     - [ ] Create a `ContentOverlay` component using Framer Motion that synchronizes with the 3D scene stages.
