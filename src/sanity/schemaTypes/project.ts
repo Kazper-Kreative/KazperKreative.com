@@ -51,6 +51,36 @@ export default defineType({
       type: 'array',
       of: [{ type: 'block' }],
     }),
+    defineField({
+      name: 'technicalChallenge',
+      title: 'Technical Challenge',
+      type: 'array',
+      of: [{ type: 'block' }],
+    }),
+    defineField({
+      name: 'solutionArchitecture',
+      title: 'Solution Architecture',
+      type: 'array',
+      of: [{ type: 'block' }],
+    }),
+    defineField({
+      name: 'impactMetrics',
+      title: 'Impact Metrics',
+      type: 'array',
+      of: [{ type: 'block' }],
+    }),
+    defineField({
+      name: 'gallery',
+      title: 'Project Gallery',
+      type: 'array',
+      of: [{ type: 'image', options: { hotspot: true } }],
+    }),
+    defineField({
+      name: 'interactiveMetadata',
+      title: 'Interactive 3D Metadata',
+      type: 'text',
+      description: 'JSON metadata for interactive scene overlays or 3D behavior.',
+    }),
   ],
   preview: {
     select: {
