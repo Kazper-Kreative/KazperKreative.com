@@ -1,0 +1,29 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import AgentCard from './AgentCard';
+
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, className, whileHover, whileTap, ...props }: any) => <div className={className} {...props}>{children}</div>,
+  },
+}));
+
+describe('AgentCard', () => {
+  const props = {
+    name: 'Test Agent',
+    pictureUrl: 'http://example.com/agent.png',
+    role: 'Test Role',
+    bio: 'Test Bio',
+    upworkUrl: 'http://upwork.com/agent',
+  };
+
+  it('renders correctly', () => {
+    render(<AgentCard {...props} />);
+    
+    expect(screen.getByText('Test Agent')).toBeInTheDocument();
+    expect(screen.getByText('Test Role')).toBeInTheDocument();
+    expect(screen.getByText('Test Bio')).toBeInTheDocument();
+    expect(screen.getByAltText('Test Agent')).toBeInTheDocument();
+  });
+});

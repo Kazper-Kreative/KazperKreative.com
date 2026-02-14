@@ -50,25 +50,29 @@ const Navbar: React.FC = () => {
         {/* Desktop Navigation */}
         <div className="hidden md:flex space-x-6">
           {navLinks.map((link) => (
-            <Link key={link.name} href={link.href} passHref>
-              <motion.a
-                className={`text-gray-300 hover:text-white transition-colors relative group ${
-                  pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
-                    ? 'text-purple-400 font-semibold'
-                    : ''
-                }`}
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`text-gray-300 hover:text-white transition-colors relative group ${
+                pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
+                  ? 'text-purple-400 font-semibold'
+                  : ''
+              }`}
+            >
+              <motion.span
+                className="inline-block"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 {link.name}
-                <span
-                  className={`absolute left-0 bottom-0 h-[2px] bg-purple-500 transition-all duration-300 ${
-                    pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
-                      ? 'w-full'
-                      : 'w-0 group-hover:w-full'
-                  }`}
-                ></span>
-              </motion.a>
+              </motion.span>
+              <span
+                className={`absolute left-0 bottom-0 h-[2px] bg-purple-500 transition-all duration-300 ${
+                  pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
+                    ? 'w-full'
+                    : 'w-0 group-hover:w-full'
+                }`}
+              ></span>
             </Link>
           ))}
         </div>
@@ -93,18 +97,22 @@ const Navbar: React.FC = () => {
           >
             <div className="flex flex-col items-center space-y-4 pt-4">
               {navLinks.map((link) => (
-                <Link key={link.name} href={link.href} passHref>
-                  <motion.a
-                    className={`text-gray-300 text-lg hover:text-white transition-colors ${
-                      pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
-                        ? 'text-purple-400 font-semibold'
-                        : ''
-                    }`}
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className={`text-gray-300 text-lg hover:text-white transition-colors ${
+                    pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
+                      ? 'text-purple-400 font-semibold'
+                      : ''
+                  }`}
+                  onClick={handleNavLinkClick}
+                >
+                  <motion.span
+                    className="inline-block"
                     whileHover={{ scale: 1.05 }}
-                    onClick={handleNavLinkClick}
                   >
                     {link.name}
-                  </motion.a>
+                  </motion.span>
                 </Link>
               ))}
             </div>

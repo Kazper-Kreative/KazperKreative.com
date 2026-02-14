@@ -50,7 +50,7 @@ const HomeTemplate: React.FC = async () => {
         <p className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-2xl px-4">
           Explore the profiles of our highly skilled AI/ML, WebGL, Full-stack, and QA engineers.
         </p>
-        <Link href="/agents" passHref>
+        <Link href="/agents">
           <Button variant="primary" size="lg" className="relative group overflow-hidden">
             <span className="relative z-10">View Agent Profiles</span>
             <span className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>

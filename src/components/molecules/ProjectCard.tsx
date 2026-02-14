@@ -24,18 +24,20 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   slug,
 }) => {
   return (
-    <Link href={`/projects/${slug}`} passHref>
-      <motion.a
-        // Removed target="_blank" and rel="noopener noreferrer" as it's an internal link now
+    <Link
+      href={`/projects/${slug}`}
+      className="group relative overflow-hidden rounded-lg shadow-lg bg-zinc-900/70 block h-full"
+    >
+      <motion.div
         whileHover={{ y: -5, boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.5)" }}
-        className="group relative overflow-hidden rounded-lg shadow-lg bg-zinc-900/70 block h-full"
+        className="h-full"
       >
         <div className="relative w-full overflow-hidden" style={{ paddingTop: '56.25%' }}> {/* 16:9 Aspect Ratio */}
           <Image
             src={imageUrl}
             alt={title}
-            layout="fill"
-            objectFit="cover"
+            fill
+            style={{ objectFit: 'cover' }}
             className="transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-black/30 group-hover:bg-black/50 transition-colors duration-300"></div> {/* Dark overlay */}
@@ -51,7 +53,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             </Button>
           </div>
         </div>
-      </motion.a>
+      </motion.div>
     </Link>
   );
 };

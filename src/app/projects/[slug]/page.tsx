@@ -48,7 +48,7 @@ export default async function ProjectCaseStudyPage({ params }: { params: { slug:
         <p className="text-purple-300 text-xl mb-4">{project.category}</p>
         {imageUrl && (
           <div className="relative w-full h-96 mb-8 rounded-lg overflow-hidden">
-            <Image src={imageUrl} alt={project.title} layout="fill" objectFit="cover" />
+            <Image src={imageUrl} alt={project.title} fill style={{ objectFit: 'cover' }} />
           </div>
         )}
         <p className="text-zinc-400 text-lg mb-8">{project.description}</p>

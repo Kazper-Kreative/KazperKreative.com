@@ -16,22 +16,22 @@ interface AgentCardProps {
 
 const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upworkUrl }) => {
   return (
-    <Link href={upworkUrl} passHref>
-      <motion.a
-        target="_blank"
-        rel="noopener noreferrer"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+    <Link
+      href={upworkUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="relative group bg-zinc-900/70 border border-purple-500/30 rounded-lg shadow-xl overflow-hidden p-6 text-center block h-full"
+    >
+      <motion.div
         whileHover={{ y: -5, boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.5)" }}
-        className="relative group bg-zinc-900/70 border border-purple-500/30 rounded-lg shadow-xl overflow-hidden p-6 text-center block h-full"
+        className="h-full"
       >
         <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-2 border-purple-400 group-hover:border-purple-600 transition-colors duration-300">
           <Image
             src={pictureUrl}
             alt={name}
-            layout="fill"
-            objectFit="cover"
+            fill
+            style={{ objectFit: 'cover' }}
             className="transition-transform duration-300 group-hover:scale-110"
           />
         </div>
@@ -42,7 +42,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
         <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <ArrowRight className="text-white" size={24} />
         </div>
-      </motion.a>
+      </motion.div>
     </Link>
   );
 };

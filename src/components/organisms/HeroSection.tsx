@@ -5,6 +5,7 @@ import Button from '@/components/atoms/Button';
 import { motion } from 'framer-motion';
 import { ArrowDown } from 'lucide-react';
 import Link from 'next/link';
+import TechnicalBackground from '@/components/atoms/TechnicalBackground';
 
 const HeroSection: React.FC = () => {
   const handleScrollDown = () => {
@@ -16,19 +17,9 @@ const HeroSection: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
-      className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 text-white sm:p-8"
+      className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 text-white sm:p-8 overflow-hidden"
     >
-      {/* Subtle tech-grid overlay */}
-      <div
-        className="absolute inset-0 z-0 opacity-10"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: '40px 40px',
-        }}
-      ></div>
+      <TechnicalBackground />
 
       <div className="relative z-10 flex flex-col items-center justify-center text-center max-w-4xl mx-auto px-4">
         <h1 className="text-5xl font-black tracking-tight leading-none sm:text-6xl md:text-7xl lg:text-8xl mb-4 break-words">
