@@ -32,7 +32,7 @@ const CinematicLanding: React.FC = () => {
     <div ref={containerRef} className="relative h-[400vh]">
       <motion.div 
         style={{ opacity, scale, pointerEvents: pointerEvents as any }} 
-        className="fixed inset-0 z-50 overflow-hidden"
+        className="fixed inset-0 z-50 overflow-hidden will-change-transform"
       >
         <CinematicScene progress={progress} reducedMotion={reducedMotion} />
         <ContentOverlay progress={progress} reducedMotion={reducedMotion} />

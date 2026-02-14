@@ -41,15 +41,13 @@ const AgentsGrid: React.FC<AgentsGridProps> = ({ agents }) => {
   const itemVariants = {
     hidden: { 
       opacity: 0, 
-      y: reducedMotion ? 0 : 30, 
-      filter: reducedMotion ? "none" : "blur(10px)" 
+      y: reducedMotion ? 0 : 30
     },
     show: { 
       opacity: 1, 
       y: 0, 
-      filter: "none",
       transition: {
-        duration: reducedMotion ? 0.3 : 0.8,
+        duration: reducedMotion ? 0.3 : 0.6,
         ease: [0.16, 1, 0.3, 1]
       }
     },
@@ -57,9 +55,9 @@ const AgentsGrid: React.FC<AgentsGridProps> = ({ agents }) => {
 
   return (
     <section className="container mx-auto px-4 py-24 relative overflow-hidden" suppressHydrationWarning>
-      {/* Background Decor */}
-      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none" suppressHydrationWarning />
-      <div className="absolute bottom-0 left-0 translate-y-1/2 -x-1/2 w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" suppressHydrationWarning />
+      {/* Background Decor - Optimized with will-change */}
+      <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[500px] h-[500px] bg-purple-900/10 rounded-full blur-[120px] pointer-events-none will-change-transform" suppressHydrationWarning />
+      <div className="absolute bottom-0 left-0 translate-y-1/2 -x-1/2 w-[500px] h-[500px] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none will-change-transform" suppressHydrationWarning />
 
       <div className="relative z-10 mb-20 text-left max-w-4xl" suppressHydrationWarning>
         <motion.p 

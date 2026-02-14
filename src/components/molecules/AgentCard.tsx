@@ -30,12 +30,12 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
       href={upworkUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative group bg-zinc-900/40 border border-zinc-800 hover:border-purple-500/50 rounded-xl shadow-2xl overflow-hidden p-8 text-left block h-full transition-all duration-500 backdrop-blur-sm"
+      className="relative group bg-zinc-900/60 border border-zinc-800 hover:border-purple-500/50 rounded-xl shadow-2xl overflow-hidden p-8 text-left block h-full transition-all duration-500"
       suppressHydrationWarning
     >
       <motion.div
         whileHover={reducedMotion ? {} : { y: -10 }}
-        className="h-full flex flex-col"
+        className="h-full flex flex-col will-change-transform"
       >
         <div className="relative w-full aspect-square mb-6 rounded-lg overflow-hidden border border-zinc-700 group-hover:border-purple-500/50 transition-colors duration-500" suppressHydrationWarning>
           {mounted && (
@@ -44,7 +44,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
               alt={name}
               fill
               style={{ objectFit: 'cover' }}
-              className={`transition-transform duration-700 ${reducedMotion ? '' : 'group-hover:scale-110 grayscale group-hover:grayscale-0'}`}
+              className={`transition-transform duration-700 will-change-transform ${reducedMotion ? '' : 'group-hover:scale-110 grayscale group-hover:grayscale-0'}`}
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
