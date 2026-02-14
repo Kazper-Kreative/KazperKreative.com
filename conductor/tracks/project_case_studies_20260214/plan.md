@@ -19,10 +19,10 @@
 - [x] **Task: Conductor - User Manual Verification 'Phase 2: Case Study Template & Layout' (Protocol in workflow.md)** f45a1a1
 
 ## Phase 3: Immersive Interactivity & Polish
-- [~] **Task: Integrate Interactive 3D Components**
-    - [ ] Develop R3F components for localized case study interactivity (e.g., technical diagrams).
-    - [ ] Ensure integration with `usePerformanceConfig` for graceful degradation.
-- [ ] **Task: Performance Tuning & Final Audit**
-    - [ ] Verify 60fps performance across the page.
-    - [ ] Finalize SEO metadata and responsive accessibility audit.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 3: Immersive Interactivity & Polish' (Protocol in workflow.md)**
+- [x] **Task: Integrate Interactive 3D Components** b6d50d2
+    - [x] Develop R3F components for localized case study interactivity (e.g., technical diagrams).
+    - [x] Ensure integration with `usePerformanceConfig` for graceful degradation.
+- [x] **Task: Performance Tuning & Final Audit** af1c087
+    - [x] Verify 60fps performance across the page.
+    - [x] Finalize SEO metadata and responsive accessibility audit.
+- [x] **Task: Conductor - User Manual Verification 'Phase 3: Immersive Interactivity & Polish' (Protocol in workflow.md)** af1c087
