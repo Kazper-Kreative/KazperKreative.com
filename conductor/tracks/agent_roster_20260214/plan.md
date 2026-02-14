@@ -19,9 +19,9 @@
 - [x] **Task: Conductor - User Manual Verification 'Phase 2: High-Fidelity Roster UI' (Protocol in workflow.md)** d5bb1a9
 
 ## Phase 3: Polish & Performance
-- [ ] **Task: Integrate Performance Fallbacks**
-    - [ ] Use `usePerformanceConfig` to simplify roster animations for low-end devices or reduced motion users.
-    - [ ] Optimize image loading using `next/image` priorities and sizes.
+- [x] **Task: Integrate Performance Fallbacks** d6a5019
+    - [x] Use `usePerformanceConfig` to simplify roster animations for low-end devices or reduced motion users.
+    - [x] Optimize image loading using `next/image` priorities and sizes.
 - [ ] **Task: Final Integration & Cleanup**
     - [ ] Ensure the `/agents` page is fully integrated with the global layout and navigation.
     - [ ] Perform a final audit of the roster's accessibility and mobile responsiveness.
