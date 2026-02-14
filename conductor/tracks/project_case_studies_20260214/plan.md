@@ -4,9 +4,9 @@
 - [x] **Task: Verify and Enhance Project Schema** 2a404c4
     - [x] Review `src/sanity/schemaTypes/project.ts` against spec requirements.
     - [x] Add fields for technical challenges, solutions, and rich media gallery.
-- [ ] **Task: Implement Project Fetching Layer**
-    - [ ] Write unit tests for fetching individual projects by slug.
-    - [ ] Implement a clean utility to retrieve full project details with all new schema fields.
+- [x] **Task: Implement Project Fetching Layer** 2eca42c
+    - [x] Write unit tests for fetching individual projects by slug.
+    - [x] Implement a clean utility to retrieve full project details with all new schema fields.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1: Data Schema & Retrieval' (Protocol in workflow.md)**
 
 ## Phase 2: Case Study Template & Layout
