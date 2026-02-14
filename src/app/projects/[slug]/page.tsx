@@ -7,7 +7,20 @@ import Footer from '@/components/molecules/Footer';
 import Link from 'next/link';
 import Button from '@/components/atoms/Button';
 import { urlFor } from '@/sanity/lib/image';
-import Image from 'next/image';
+import ClientSafeImage from '@/components/atoms/ClientSafeImage';
+import DynamicSceneWrapper from '@/components/organisms/DynamicSceneWrapper';
+import { ExternalLink } from 'lucide-react';
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: any }): Promise<Metadata> {
+  const { slug } = await params;
+  const project = await getProjectBySlug(slug);
+  
+  return {
+    title: `${project?.title || 'Project'} | Case Study | Kazper Kreative LLC`,
+    description: project?.description || 'Detailed technical review of a Kazper Kreative project.',
+  };
+}
 
 export default async function ProjectCaseStudyPage({ params }: { params: any }) {
   const resolvedParams = await params;
@@ -33,7 +46,7 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
 
   return (
     <PageWrapper>
-      <div className="bg-[#020205] min-h-screen">
+      <div className="bg-[#020205] min-h-screen" suppressHydrationWarning>
         <CaseStudyHeader 
           title={project.title} 
           category={project.category} 
@@ -41,21 +54,40 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
         />
 
         {mainImageUrl && (
-          <div className="container mx-auto max-w-5xl px-4 mb-24">
-            <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl shadow-purple-900/20">
-              <Image 
+          <div className="container mx-auto max-w-5xl px-4 mb-24" suppressHydrationWarning>
+            <Link 
+              href={project.caseStudyUrl || '#'} 
+              target={project.caseStudyUrl ? "_blank" : undefined}
+              rel={project.caseStudyUrl ? "noopener noreferrer" : undefined}
+              className={`block relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl shadow-purple-900/20 group ${!project.caseStudyUrl ? 'pointer-events-none' : ''}`}
+              suppressHydrationWarning
+            >
+              <ClientSafeImage 
                 src={mainImageUrl} 
                 alt={project.title} 
                 fill 
                 style={{ objectFit: 'cover' }} 
                 priority
+                className="transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-            </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" suppressHydrationWarning />
+              
+              {project.caseStudyUrl && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0" suppressHydrationWarning>
+                  <Button variant="primary" size="lg" className="pointer-events-none">
+                    Visit Live Project <ExternalLink size={18} className="ml-2" />
+                  </Button>
+                </div>
+              )}
+            </Link>
           </div>
         )}
 
-        <div className="container mx-auto max-w-5xl px-4 py-12">
+        <div className="container mx-auto max-w-5xl px-4 mb-24" suppressHydrationWarning>
+          <DynamicSceneWrapper metadata={project.interactiveMetadata} />
+        </div>
+
+        <div className="container mx-auto max-w-5xl px-4 py-12" suppressHydrationWarning>
           {project.technicalChallenge && project.technicalChallenge.length > 0 && (
             <TechnicalBlock 
               title="The Challenge" 
@@ -85,10 +117,10 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
           <ProjectGallery images={project.gallery as any} title={project.title} />
         )}
 
-        <div className="container mx-auto max-w-5xl px-4 py-24 text-center">
-          <div className="h-px w-full bg-zinc-900 mb-12" />
-          <h3 className="text-2xl font-bold text-white mb-8">Ready to deploy your vision?</h3>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="container mx-auto max-w-5xl px-4 py-24 text-center" suppressHydrationWarning>
+          <div className="h-px w-full bg-zinc-900 mb-12" suppressHydrationWarning />
+          <h3 className="text-2xl font-bold text-white mb-8" suppressHydrationWarning>Ready to deploy your vision?</h3>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center" suppressHydrationWarning>
             <Link href="/#contact">
               <Button size="lg" variant="primary">Initialize Partnership</Button>
             </Link>
