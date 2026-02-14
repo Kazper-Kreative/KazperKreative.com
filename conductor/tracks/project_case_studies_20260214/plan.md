@@ -1,9 +1,9 @@
 # Implementation Plan: Interactive Project Case Studies
 
 ## Phase 1: Data Schema & Retrieval
-- [ ] **Task: Verify and Enhance Project Schema**
-    - [ ] Review `src/sanity/schemaTypes/project.ts` against spec requirements.
-    - [ ] Add fields for technical challenges, solutions, and rich media gallery.
+- [x] **Task: Verify and Enhance Project Schema** 2a404c4
+    - [x] Review `src/sanity/schemaTypes/project.ts` against spec requirements.
+    - [x] Add fields for technical challenges, solutions, and rich media gallery.
 - [ ] **Task: Implement Project Fetching Layer**
     - [ ] Write unit tests for fetching individual projects by slug.
     - [ ] Implement a clean utility to retrieve full project details with all new schema fields.
