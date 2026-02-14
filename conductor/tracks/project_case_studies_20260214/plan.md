@@ -9,17 +9,17 @@
     - [x] Implement a clean utility to retrieve full project details with all new schema fields.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1: Data Schema & Retrieval' (Protocol in workflow.md)**
 
-## Phase 2: Case Study Template & Layout
+## Phase 2: Case Study Template & Layout [checkpoint: f45a1a1]
 - [x] **Task: Develop Case Study Layout Components** e995601
     - [x] Create atomic components for technical headers, solution blocks, and media galleries.
     - [x] Write tests for responsive layout behavior.
 - [x] **Task: Implement Dynamic Case Study Page** b6d50d2
     - [x] Refactor `src/app/projects/[slug]/page.tsx` to use the high-fidelity template.
     - [x] Integrate kinetic animations for content entry using Framer Motion.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 2: Case Study Template & Layout' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 2: Case Study Template & Layout' (Protocol in workflow.md)** f45a1a1
 
 ## Phase 3: Immersive Interactivity & Polish
-- [ ] **Task: Integrate Interactive 3D Components**
+- [~] **Task: Integrate Interactive 3D Components**
     - [ ] Develop R3F components for localized case study interactivity (e.g., technical diagrams).
     - [ ] Ensure integration with `usePerformanceConfig` for graceful degradation.
 - [ ] **Task: Performance Tuning & Final Audit**
