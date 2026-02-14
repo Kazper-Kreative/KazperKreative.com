@@ -28,9 +28,7 @@ const Particles = ({ count = 5000 }) => {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={count}
-          array={dummy}
-          itemSize={3}
+          args={[dummy, 3]}
         />
       </bufferGeometry>
       <pointsMaterial
