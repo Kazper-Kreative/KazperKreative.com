@@ -22,7 +22,7 @@
 - [x] **Task: Integrate Performance Fallbacks** d6a5019
     - [x] Use `usePerformanceConfig` to simplify roster animations for low-end devices or reduced motion users.
     - [x] Optimize image loading using `next/image` priorities and sizes.
-- [ ] **Task: Final Integration & Cleanup**
-    - [ ] Ensure the `/agents` page is fully integrated with the global layout and navigation.
-    - [ ] Perform a final audit of the roster's accessibility and mobile responsiveness.
+- [x] **Task: Final Integration & Cleanup** b7f5cce
+    - [x] Ensure the `/agents` page is fully integrated with the global layout and navigation.
+    - [x] Perform a final audit of the roster's accessibility and mobile responsiveness.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 3: Polish & Performance' (Protocol in workflow.md)**
