@@ -13,6 +13,8 @@ jest.mock('@react-three/fiber', () => ({
 jest.mock('@react-three/drei', () => ({
   PerspectiveCamera: ({ children }: { children: React.ReactNode }) => <div data-testid="perspective-camera">{children}</div>,
   Environment: () => <div data-testid="environment" />,
+  Float: ({ children }: { children: React.ReactNode }) => <div data-testid="float">{children}</div>,
+  MeshDistortMaterial: () => <div data-testid="mesh-distort-material" />,
 }));
 
 describe('CinematicScene', () => {

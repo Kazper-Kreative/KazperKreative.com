@@ -1,14 +1,5 @@
 "use client";
 
-import React, { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { PerspectiveCamera, Environment } from '@react-three/drei';
-import CinematicCamera from './CinematicCamera';
-
-interface CinematicSceneProps {
-  progress: number;
-}
-
 import React, { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera, Environment, Float, MeshDistortMaterial } from '@react-three/drei';

@@ -43,14 +43,15 @@ const Navbar: React.FC = () => {
       className={`fixed w-full z-40 top-0 transition-all duration-300 ${
         scrolled ? 'bg-black/80 backdrop-blur-md py-3 border-b border-purple-500/30' : 'bg-transparent py-5'
       }`}
+      suppressHydrationWarning
     >
-      <div className="container mx-auto px-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 flex justify-between items-center" suppressHydrationWarning>
         <Link href="/" className="text-xl font-bold text-white hover:text-purple-400 transition-colors">
           KAZPER KREATIVE
         </Link>
         
         {/* Desktop Navigation */}
-        <div className="hidden md:flex space-x-6">
+        <div className="hidden md:flex space-x-6" suppressHydrationWarning>
           {navLinks.map((link) => (
             <Link
               key={link.name}

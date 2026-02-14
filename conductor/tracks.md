@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Implement Dynamic Agent Roster**
+- [~] **Track: Implement Dynamic Agent Roster**
   *Link: [./tracks/agent_roster_20260214/](./tracks/agent_roster_20260214/)*

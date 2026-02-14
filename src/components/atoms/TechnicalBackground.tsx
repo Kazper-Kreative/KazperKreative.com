@@ -43,8 +43,18 @@ const Particles = ({ count = 5000 }) => {
 };
 
 const TechnicalBackground: React.FC = () => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="absolute inset-0 z-0 bg-[#09090b]" suppressHydrationWarning />;
+  }
+
   return (
-    <div className="absolute inset-0 z-0">
+    <div className="absolute inset-0 z-0" suppressHydrationWarning>
       <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
         <color attach="background" args={["#09090b"]} />
         <ambientLight intensity={0.5} />

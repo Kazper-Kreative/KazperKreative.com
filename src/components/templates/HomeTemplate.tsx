@@ -45,6 +45,7 @@ const HomeTemplate: React.FC = async () => {
 
   return (
     <PageWrapper>
+      <CinematicLanding />
       <HeroSection />
       <section className="bg-zinc-900/50 py-12 sm:py-16 md:py-24 flex flex-col items-center justify-center text-center px-4">
         <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 break-words">MEET OUR ENGINEERS.</h2>
