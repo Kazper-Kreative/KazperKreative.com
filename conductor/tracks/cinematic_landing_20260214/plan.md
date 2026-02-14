@@ -4,7 +4,7 @@
 - [x] **Task: Setup Scroll Progress Provider** 54e97a8
     - [ ] Write unit tests for scroll progress calculation and normalization.
     - [ ] Implement a custom hook or provider to track scroll position and map it to a 0-1 range.
-- [ ] **Task: Create Cinematic Scene Container**
+- [x] **Task: Create Cinematic Scene Container** 04f3aca
     - [ ] Write tests for the R3F scene initialization and fallback logic.
     - [ ] Implement a `CinematicScene` component with optimized lighting and environment settings.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1: Scroll Engine & Scene Foundation' (Protocol in workflow.md)**
