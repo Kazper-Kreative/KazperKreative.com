@@ -6,9 +6,12 @@ import ProjectGallery from '@/components/molecules/ProjectGallery';
 import Footer from '@/components/molecules/Footer';
 import Link from 'next/link';
 import Button from '@/components/atoms/Button';
+import { urlFor } from '@/sanity/lib/image';
+import Image from 'next/image';
 
-export default async function ProjectCaseStudyPage({ params }: { params: { slug: string } }) {
-  const { slug } = await params;
+export default async function ProjectCaseStudyPage({ params }: { params: any }) {
+  const resolvedParams = await params;
+  const { slug } = resolvedParams;
   const project = await getProjectBySlug(slug);
 
   if (!project) {
@@ -26,6 +29,8 @@ export default async function ProjectCaseStudyPage({ params }: { params: { slug:
     );
   }
 
+  const mainImageUrl = project.image ? urlFor(project.image).url() : null;
+
   return (
     <PageWrapper>
       <div className="bg-[#020205] min-h-screen">
@@ -34,6 +39,21 @@ export default async function ProjectCaseStudyPage({ params }: { params: { slug:
           category={project.category} 
           description={project.description} 
         />
+
+        {mainImageUrl && (
+          <div className="container mx-auto max-w-5xl px-4 mb-24">
+            <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl shadow-purple-900/20">
+              <Image 
+                src={mainImageUrl} 
+                alt={project.title} 
+                fill 
+                style={{ objectFit: 'cover' }} 
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            </div>
+          </div>
+        )}
 
         <div className="container mx-auto max-w-5xl px-4 py-12">
           {project.technicalChallenge && project.technicalChallenge.length > 0 && (

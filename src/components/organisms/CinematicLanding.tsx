@@ -29,10 +29,11 @@ const CinematicLanding: React.FC = () => {
   // For now, we'll just allow it but maybe simplify animations elsewhere
   
   return (
-    <div ref={containerRef} className="relative h-[400vh]">
+    <div ref={containerRef} className="relative h-[400vh]" suppressHydrationWarning>
       <motion.div 
         style={{ opacity, scale, pointerEvents: pointerEvents as any }} 
         className="fixed inset-0 z-50 overflow-hidden will-change-transform"
+        suppressHydrationWarning
       >
         <CinematicScene progress={progress} reducedMotion={reducedMotion} />
         <ContentOverlay progress={progress} reducedMotion={reducedMotion} />

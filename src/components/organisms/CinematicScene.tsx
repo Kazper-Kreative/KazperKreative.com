@@ -56,9 +56,9 @@ const Particles = ({ count = 1000, progress, reducedMotion = false }: { count?: 
 
 const CinematicScene: React.FC<CinematicSceneProps> = ({ progress, reducedMotion = false }) => {
   return (
-    <div className="fixed inset-0 z-0 bg-[#020205]">
-      <Suspense fallback={<div className="bg-[#020205] w-full h-full" />}>
-        <Canvas shadows camera={{ fov: 75 }}>
+    <div className="fixed inset-0 z-0 bg-[#020205]" suppressHydrationWarning>
+      <Suspense fallback={<div className="bg-[#020205] w-full h-full" suppressHydrationWarning />}>
+        <Canvas shadows camera={{ fov: 75 }} suppressHydrationWarning>
           <PerspectiveCamera makeDefault />
           <CinematicCamera progress={progress} reducedMotion={reducedMotion} />
           

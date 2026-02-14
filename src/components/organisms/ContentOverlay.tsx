@@ -36,7 +36,7 @@ const ContentOverlay: React.FC<ContentOverlayProps> = ({ progress, reducedMotion
   const currentAct = acts.find(act => progress >= act.range[0] && progress < act.range[1]);
 
   return (
-    <div className="fixed inset-0 z-10 pointer-events-none flex items-center justify-start p-8 md:p-24">
+    <div className="fixed inset-0 z-10 pointer-events-none flex items-center justify-start p-8 md:p-24" suppressHydrationWarning>
       <AnimatePresence mode="wait">
         {currentAct && (
           <motion.div

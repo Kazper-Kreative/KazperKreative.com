@@ -19,14 +19,15 @@ interface WorkGridProps {
 
 const WorkGrid: React.FC<WorkGridProps> = ({ projects }) => {
   return (
-    <section className="container mx-auto px-4">
-      <h2 className="text-4xl sm:text-5xl font-bold text-center text-white mb-8 sm:mb-16">DEPLOYED EXPERIENCES.</h2>
+    <section className="container mx-auto px-4" suppressHydrationWarning>
+      <h2 className="text-4xl sm:text-5xl font-bold text-center text-white mb-8 sm:mb-16" suppressHydrationWarning>DEPLOYED EXPERIENCES.</h2>
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
         className="grid grid-cols-1 md:grid-cols-2 gap-8 will-change-transform"
+        suppressHydrationWarning
       >
         {projects.map((project, index) => (
           <ProjectCard

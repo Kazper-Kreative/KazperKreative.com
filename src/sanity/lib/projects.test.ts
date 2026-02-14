@@ -28,7 +28,8 @@ describe('projects utility', () => {
 
     expect(client.fetch).toHaveBeenCalledWith(
       expect.stringContaining('*[_type == "project" && slug.current == $slug][0]'),
-      { slug: 'test-project' }
+      { slug: 'test-project' },
+      { useCdn: false }
     );
     expect(project).toEqual(mockProject);
   });

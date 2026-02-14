@@ -2,10 +2,10 @@ import React from 'react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="border-t border-zinc-800 py-8 text-zinc-500 text-sm text-center">
-      <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-        <p className="mb-4 md:mb-0">© 2026 Kazper Kreative LLC</p>
-        <div className="flex items-center space-x-4">
+    <footer className="border-t border-zinc-800 py-8 text-zinc-500 text-sm text-center" suppressHydrationWarning>
+      <div className="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center" suppressHydrationWarning>
+        <p className="mb-4 md:mb-0" suppressHydrationWarning>© 2026 Kazper Kreative LLC</p>
+        <div className="flex items-center space-x-4" suppressHydrationWarning>
           <a
             href="https://github.com/kazperkreative" // Placeholder GitHub URL
             target="_blank"

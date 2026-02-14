@@ -81,7 +81,7 @@ const Navbar: React.FC = () => {
         </div>
 
         {/* Mobile Menu Button */}
-        <div className="md:hidden">
+        <div className="md:hidden" suppressHydrationWarning>
           <button 
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
             className="text-white focus:outline-none"

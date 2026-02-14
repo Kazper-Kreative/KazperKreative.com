@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Interactive Project Case Studies**
+- [~] **Track: Interactive Project Case Studies**
   *Link: [./tracks/project_case_studies_20260214/](./tracks/project_case_studies_20260214/)*

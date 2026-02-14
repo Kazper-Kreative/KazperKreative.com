@@ -5,11 +5,20 @@ import AgentsGrid from './AgentsGrid';
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, ...props }: any) => <div className={className} {...props}>{children}</div>,
-    section: ({ children, className, ...props }: any) => <section className={className} {...props}>{children}</section>,
-    p: ({ children, className, ...props }: any) => <p className={className} {...props}>{children}</p>,
-    h2: ({ children, className, ...props }: any) => <h2 className={className} {...props}>{children}</h2>,
+    div: ({ children, className, whileHover, whileTap, whileInView, ...props }: any) => <div className={className} {...props}>{children}</div>,
+    section: ({ children, className, whileHover, whileTap, whileInView, ...props }: any) => <section className={className} {...props}>{children}</section>,
+    p: ({ children, className, whileHover, whileTap, whileInView, ...props }: any) => <p className={className} {...props}>{children}</p>,
+    h2: ({ children, className, whileHover, whileTap, whileInView, ...props }: any) => <h2 className={className} {...props}>{children}</h2>,
   },
+}));
+
+// Mock usePerformanceConfig
+jest.mock('@/components/utilities/usePerformanceConfig', () => ({
+  usePerformanceConfig: () => ({
+    reducedMotion: false,
+    particleCount: 1000,
+    show3D: true,
+  }),
 }));
 
 describe('AgentsGrid', () => {

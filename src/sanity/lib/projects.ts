@@ -33,5 +33,5 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
     "gallery": gallery[].asset->url,
     interactiveMetadata
   }`;
-  return await client.fetch(query, { slug });
+  return await client.fetch(query, { slug }, { useCdn: false });
 }

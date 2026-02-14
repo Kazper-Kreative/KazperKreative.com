@@ -9,6 +9,15 @@ jest.mock('framer-motion', () => ({
   },
 }));
 
+// Mock usePerformanceConfig
+jest.mock('@/components/utilities/usePerformanceConfig', () => ({
+  usePerformanceConfig: () => ({
+    reducedMotion: false,
+    particleCount: 1000,
+    show3D: true,
+  }),
+}));
+
 describe('AgentCard', () => {
   const props = {
     name: 'Test Agent',
