@@ -18,11 +18,11 @@
     - [x] Create a `ContentOverlay` component using Framer Motion that synchronizes with the 3D scene stages.
 - [x] **Task: Conductor - User Manual Verification 'Phase 2: Camera Rig & Scripted Motion' (Protocol in workflow.md)** 93eb016
 
-## Phase 3: Visual Narrative & Polish
-- [ ] **Task: Implement Act-Specific Visuals**
-    - [ ] Implement 3D assets and particle effects for the three core narrative "acts".
-    - [ ] Add post-processing effects (Bloom, Chromatic Aberration) to enhance the technical noir look.
-- [ ] **Task: Performance Optimization & Mobile Fallbacks**
-    - [ ] Write tests for `prefers-reduced-motion` and low-power mode detection.
-    - [ ] Implement simplified scene state and static fallbacks for performance.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 3: Visual Narrative & Polish' (Protocol in workflow.md)**
+## Phase 3: Visual Narrative & Polish [checkpoint: e77f5c0]
+- [x] **Task: Implement Act-Specific Visuals** 409d71b
+    - [x] Implement 3D assets and particle effects for the three core narrative "acts".
+    - [x] Add post-processing effects (Bloom, Chromatic Aberration) to enhance the technical noir look.
+- [x] **Task: Performance Optimization & Mobile Fallbacks** 040035f
+    - [x] Write tests for `prefers-reduced-motion` and low-power mode detection.
+    - [x] Implement simplified scene state and static fallbacks for performance.
+- [x] **Task: Conductor - User Manual Verification 'Phase 3: Visual Narrative & Polish' (Protocol in workflow.md)** e77f5c0
