@@ -12,35 +12,58 @@ interface AgentCardProps {
   role: string;
   bio: string;
   upworkUrl: string;
+  specialties?: string[];
 }
 
-const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upworkUrl }) => {
+const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upworkUrl, specialties = [] }) => {
   return (
     <Link
       href={upworkUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative group bg-zinc-900/70 border border-purple-500/30 rounded-lg shadow-xl overflow-hidden p-6 text-center block h-full"
+      className="relative group bg-zinc-900/40 border border-zinc-800 hover:border-purple-500/50 rounded-xl shadow-2xl overflow-hidden p-8 text-left block h-full transition-all duration-500 backdrop-blur-sm"
     >
       <motion.div
-        whileHover={{ y: -5, boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.5)" }}
-        className="h-full"
+        whileHover={{ y: -10 }}
+        className="h-full flex flex-col"
       >
-        <div className="relative w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-2 border-purple-400 group-hover:border-purple-600 transition-colors duration-300">
+        <div className="relative w-full aspect-square mb-6 rounded-lg overflow-hidden border border-zinc-700 group-hover:border-purple-500/50 transition-colors duration-500">
           <Image
             src={pictureUrl}
             alt={name}
             fill
             style={{ objectFit: 'cover' }}
-            className="transition-transform duration-300 group-hover:scale-110"
+            className="transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
         </div>
-        <h3 className="text-xl font-bold text-white mb-1">{name}</h3>
-        <p className="text-purple-300 text-sm mb-3">{role}</p>
-        <p className="text-zinc-400 text-base">{bio}</p>
+
+        <div className="flex-grow">
+          <p className="text-purple-500 font-mono text-[10px] mb-2 tracking-[0.2em] uppercase">
+            // ACTIVE_AGENT
+          </p>
+          <h3 className="text-2xl font-black text-white mb-1 uppercase tracking-tight group-hover:text-purple-400 transition-colors duration-300">
+            {name}
+          </h3>
+          <p className="text-zinc-400 text-sm mb-4 font-medium italic">{role}</p>
+          <p className="text-zinc-500 text-sm leading-relaxed mb-6 line-clamp-3 group-hover:text-zinc-300 transition-colors duration-300">
+            {bio}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          {specialties.map((specialty, index) => (
+            <span
+              key={index}
+              className="px-2 py-1 text-[10px] bg-zinc-800/50 text-zinc-400 rounded border border-zinc-700 font-mono uppercase tracking-wider group-hover:border-purple-500/30 group-hover:text-purple-300 transition-all duration-300"
+            >
+              {specialty}
+            </span>
+          ))}
+        </div>
         
-        <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <ArrowRight className="text-white" size={24} />
+        <div className="flex items-center text-zinc-500 group-hover:text-purple-400 transition-colors duration-300 text-xs font-bold uppercase tracking-widest">
+          View Profile <ArrowRight className="ml-2 transform group-hover:translate-x-1 transition-transform" size={14} />
         </div>
       </motion.div>
     </Link>

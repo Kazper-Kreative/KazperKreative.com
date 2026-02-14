@@ -16,6 +16,7 @@ describe('AgentCard', () => {
     role: 'Test Role',
     bio: 'Test Bio',
     upworkUrl: 'http://upwork.com/agent',
+    specialties: ['AI', 'WebGL'],
   };
 
   it('renders correctly', () => {
@@ -25,5 +26,7 @@ describe('AgentCard', () => {
     expect(screen.getByText('Test Role')).toBeInTheDocument();
     expect(screen.getByText('Test Bio')).toBeInTheDocument();
     expect(screen.getByAltText('Test Agent')).toBeInTheDocument();
+    expect(screen.getByText('AI')).toBeInTheDocument();
+    expect(screen.getByText('WebGL')).toBeInTheDocument();
   });
 });
