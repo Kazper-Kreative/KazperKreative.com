@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface ContentOverlayProps {
   progress: number;
+  reducedMotion?: boolean;
 }
 
 const acts = [
@@ -31,7 +32,7 @@ const acts = [
   },
 ];
 
-const ContentOverlay: React.FC<ContentOverlayProps> = ({ progress }) => {
+const ContentOverlay: React.FC<ContentOverlayProps> = ({ progress, reducedMotion = false }) => {
   const currentAct = acts.find(act => progress >= act.range[0] && progress < act.range[1]);
 
   return (
@@ -40,9 +41,9 @@ const ContentOverlay: React.FC<ContentOverlayProps> = ({ progress }) => {
         {currentAct && (
           <motion.div
             key={currentAct.id}
-            initial={{ opacity: 0, x: -50, filter: "blur(10px)" }}
-            animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, x: 20, filter: "blur(10px)" }}
+            initial={{ opacity: 0, x: reducedMotion ? 0 : -50, filter: reducedMotion ? "none" : "blur(10px)" }}
+            animate={{ opacity: 1, x: 0, filter: "none" }}
+            exit={{ opacity: 0, x: reducedMotion ? 0 : 20, filter: reducedMotion ? "none" : "blur(10px)" }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="max-w-3xl"
           >

@@ -4,9 +4,11 @@ import React, { useState, useRef } from 'react';
 import CinematicScene from './CinematicScene';
 import ContentOverlay from './ContentOverlay';
 import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
+import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
 
 const CinematicLanding: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { reducedMotion } = usePerformanceConfig();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
@@ -23,14 +25,17 @@ const CinematicLanding: React.FC = () => {
   const scale = useTransform(scrollYProgress, [0.8, 1], [1, 1.1]);
   const pointerEvents = useTransform(scrollYProgress, (latest) => latest > 0.9 ? "none" : "auto");
 
+  // If reduced motion is preferred, we could show a static version or skip intro
+  // For now, we'll just allow it but maybe simplify animations elsewhere
+  
   return (
     <div ref={containerRef} className="relative h-[400vh]">
       <motion.div 
         style={{ opacity, scale, pointerEvents: pointerEvents as any }} 
         className="fixed inset-0 z-50 overflow-hidden"
       >
-        <CinematicScene progress={progress} />
-        <ContentOverlay progress={progress} />
+        <CinematicScene progress={progress} reducedMotion={reducedMotion} />
+        <ContentOverlay progress={progress} reducedMotion={reducedMotion} />
       </motion.div>
     </div>
   );

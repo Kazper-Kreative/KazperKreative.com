@@ -7,9 +7,10 @@ import { getCameraTransform } from '@/components/utilities/cameraPath';
 
 interface CinematicCameraProps {
   progress: number;
+  reducedMotion?: boolean;
 }
 
-const CinematicCamera: React.FC<CinematicCameraProps> = ({ progress }) => {
+const CinematicCamera: React.FC<CinematicCameraProps> = ({ progress, reducedMotion = false }) => {
   const { camera } = useThree();
 
   const curve = useMemo(() => {
@@ -26,12 +27,14 @@ const CinematicCamera: React.FC<CinematicCameraProps> = ({ progress }) => {
     const { position, lookAt } = getCameraTransform(curve, progress);
     
     // Smooth follow
-    camera.position.lerp(position, 0.05);
+    camera.position.lerp(position, reducedMotion ? 0.02 : 0.05);
     camera.lookAt(lookAt);
 
-    // Dynamic tilt based on horizontal movement
-    const targetZ = (position.x - camera.position.x) * 0.5;
-    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, targetZ, 0.05);
+    if (!reducedMotion) {
+      // Dynamic tilt based on horizontal movement
+      const targetZ = (position.x - camera.position.x) * 0.5;
+      camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, targetZ, 0.05);
+    }
   });
 
   return null;
