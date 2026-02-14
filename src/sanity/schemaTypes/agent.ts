@@ -33,7 +33,16 @@ export default defineType({
         name: 'upworkUrl',
         title: 'Upwork URL',
         type: 'url',
-    })
+    }),
+    defineField({
+      name: 'specialties',
+      title: 'Specialties',
+      type: 'array',
+      of: [{ type: 'string' }],
+      options: {
+        layout: 'tags',
+      },
+    }),
   ],
   preview: {
     select: {
