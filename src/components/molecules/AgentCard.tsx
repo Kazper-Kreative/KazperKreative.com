@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 
 import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
 
@@ -75,7 +75,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
         </div>
         
         <div className="flex items-center text-zinc-500 group-hover:text-purple-400 transition-colors duration-300 text-xs font-bold uppercase tracking-widest" suppressHydrationWarning>
-          View Profile {mounted ? <ArrowRight className="ml-2 transform group-hover:translate-x-1 transition-transform" size={14} /> : <div className="w-4 h-4 ml-2" />}
+          View Profile <ClientSafeIcon name="ArrowRight" className="ml-2 transform group-hover:translate-x-1 transition-transform" size={14} />
         </div>
       </motion.div>
     </Link>

@@ -9,7 +9,7 @@ import Button from '@/components/atoms/Button';
 import { urlFor } from '@/sanity/lib/image';
 import ClientSafeImage from '@/components/atoms/ClientSafeImage';
 import DynamicSceneWrapper from '@/components/organisms/DynamicSceneWrapper';
-import { ExternalLink } from 'lucide-react';
+import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 import { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: any }): Promise<Metadata> {
@@ -75,7 +75,7 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
               {project.caseStudyUrl && (
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0" suppressHydrationWarning>
                   <Button variant="primary" size="lg" className="pointer-events-none">
-                    Visit Live Project <ExternalLink size={18} className="ml-2" />
+                    Visit Live Project <ClientSafeIcon name="ExternalLink" size={18} className="ml-2" />
                   </Button>
                 </div>
               )}

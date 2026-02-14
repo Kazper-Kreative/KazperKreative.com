@@ -18,6 +18,13 @@ jest.mock('@/components/utilities/usePerformanceConfig', () => ({
   }),
 }));
 
+// Mock ClientSafeIcon
+jest.mock('@/components/atoms/ClientSafeIcon', () => {
+  return function MockIcon({ name, className }: any) {
+    return <div data-testid="mock-icon" data-icon-name={name} className={className} />;
+  };
+});
+
 describe('AgentCard', () => {
   const props = {
     name: 'Test Agent',

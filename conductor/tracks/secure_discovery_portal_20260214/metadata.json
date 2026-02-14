@@ -1,0 +1,8 @@
+{
+  "track_id": "secure_discovery_portal_20260214",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-02-14T09:46:00Z",
+  "updated_at": "2026-02-14T09:46:00Z",
+  "description": "Implement the secure discovery portal for client booking and lead capture, featuring high-fidelity forms and automated notification logic."
+}

@@ -16,6 +16,7 @@ export default async function AgentsPage() {
   const agents = agentsData.map(agent => ({
       ...agent,
       pictureUrl: urlFor(agent.image).url(),
+      upworkUrl: agent.upworkUrl || '#',
   }))
 
   return (

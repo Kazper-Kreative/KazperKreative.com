@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react'; // Import Menu and X icons
+import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -46,7 +46,7 @@ const Navbar: React.FC = () => {
       suppressHydrationWarning
     >
       <div className="container mx-auto px-4 flex justify-between items-center" suppressHydrationWarning>
-        <Link href="/" className="text-xl font-bold text-white hover:text-purple-400 transition-colors">
+        <Link href="/" className="text-xl font-bold text-white hover:text-purple-400 transition-colors" suppressHydrationWarning>
           KAZPER KREATIVE
         </Link>
         
@@ -61,11 +61,13 @@ const Navbar: React.FC = () => {
                   ? 'text-purple-400 font-semibold'
                   : ''
               }`}
+              suppressHydrationWarning
             >
               <motion.span
                 className="inline-block"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                suppressHydrationWarning
               >
                 {link.name}
               </motion.span>
@@ -75,6 +77,7 @@ const Navbar: React.FC = () => {
                     ? 'w-full'
                     : 'w-0 group-hover:w-full'
                 }`}
+                suppressHydrationWarning
               ></span>
             </Link>
           ))}
@@ -87,7 +90,7 @@ const Navbar: React.FC = () => {
             className="text-white focus:outline-none"
             suppressHydrationWarning
           >
-            {mounted ? (mobileMenuOpen ? <X size={24} /> : <Menu size={24} />) : <div className="w-6 h-6" />}
+            <ClientSafeIcon name={mobileMenuOpen ? "X" : "Menu"} size={24} />
           </button>
         </div>
       </div>
@@ -101,8 +104,9 @@ const Navbar: React.FC = () => {
             exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.3 }}
             className="md:hidden bg-black/90 backdrop-blur-md absolute top-full left-0 w-full pb-4 border-b border-purple-500/30"
+            suppressHydrationWarning
           >
-            <div className="flex flex-col items-center space-y-4 pt-4">
+            <div className="flex flex-col items-center space-y-4 pt-4" suppressHydrationWarning>
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
@@ -113,10 +117,12 @@ const Navbar: React.FC = () => {
                       : ''
                   }`}
                   onClick={handleNavLinkClick}
+                  suppressHydrationWarning
                 >
                   <motion.span
                     className="inline-block"
                     whileHover={{ scale: 1.05 }}
+                    suppressHydrationWarning
                   >
                     {link.name}
                   </motion.span>

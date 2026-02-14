@@ -3,9 +3,9 @@
 import React from 'react';
 import Button from '@/components/atoms/Button';
 import { motion } from 'framer-motion';
-import { ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import TechnicalBackground from '@/components/atoms/TechnicalBackground';
+import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 
 const HeroSection: React.FC = () => {
   const [mounted, setMounted] = React.useState(false);
@@ -57,7 +57,7 @@ const HeroSection: React.FC = () => {
         onClick={handleScrollDown}
         suppressHydrationWarning
       >
-        {mounted ? <ArrowDown className="text-purple-400" size={32} /> : <div className="w-8 h-8" />}
+        <ClientSafeIcon name="ArrowDown" className="text-purple-400" size={32} />
       </motion.div>
     </motion.section>
   );

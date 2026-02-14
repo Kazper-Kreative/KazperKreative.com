@@ -7,7 +7,13 @@ import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-mot
 import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
 
 const CinematicLanding: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { reducedMotion } = usePerformanceConfig();
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -35,8 +41,12 @@ const CinematicLanding: React.FC = () => {
         className="fixed inset-0 z-50 overflow-hidden will-change-transform"
         suppressHydrationWarning
       >
-        <CinematicScene progress={progress} reducedMotion={reducedMotion} />
-        <ContentOverlay progress={progress} reducedMotion={reducedMotion} />
+        {mounted && (
+          <>
+            <CinematicScene progress={progress} reducedMotion={reducedMotion} />
+            <ContentOverlay progress={progress} reducedMotion={reducedMotion} />
+          </>
+        )}
       </motion.div>
     </div>
   );
