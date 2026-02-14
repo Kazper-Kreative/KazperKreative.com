@@ -4,6 +4,8 @@ import React from 'react';
 import AgentCard from '@/components/molecules/AgentCard';
 import { motion } from 'framer-motion';
 
+import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
+
 interface Agent {
   name: string;
   pictureUrl: string;
@@ -17,36 +19,41 @@ interface AgentsGridProps {
   agents: Agent[];
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.3,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30, filter: "blur(10px)" },
-  show: { 
-    opacity: 1, 
-    y: 0, 
-    filter: "blur(0px)",
-    transition: {
-      duration: 0.8,
-      ease: [0.16, 1, 0.3, 1] // Custom ease-out
-    }
-  },
-};
-
 const AgentsGrid: React.FC<AgentsGridProps> = ({ agents }) => {
   const [mounted, setMounted] = React.useState(false);
+  const { reducedMotion } = usePerformanceConfig();
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: reducedMotion ? 0 : 0.15,
+        delayChildren: reducedMotion ? 0 : 0.3,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: reducedMotion ? 0 : 30, 
+      filter: reducedMotion ? "none" : "blur(10px)" 
+    },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      filter: "none",
+      transition: {
+        duration: reducedMotion ? 0.3 : 0.8,
+        ease: [0.16, 1, 0.3, 1]
+      }
+    },
+  };
 
   return (
     <section className="container mx-auto px-4 py-24 relative overflow-hidden" suppressHydrationWarning>

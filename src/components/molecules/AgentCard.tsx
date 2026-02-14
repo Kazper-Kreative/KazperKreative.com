@@ -6,6 +6,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 
+import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
+
 interface AgentCardProps {
   name: string;
   pictureUrl: string;
@@ -17,6 +19,7 @@ interface AgentCardProps {
 
 const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upworkUrl, specialties = [] }) => {
   const [mounted, setMounted] = React.useState(false);
+  const { reducedMotion } = usePerformanceConfig();
 
   React.useEffect(() => {
     setMounted(true);
@@ -31,7 +34,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
       suppressHydrationWarning
     >
       <motion.div
-        whileHover={{ y: -10 }}
+        whileHover={reducedMotion ? {} : { y: -10 }}
         className="h-full flex flex-col"
       >
         <div className="relative w-full aspect-square mb-6 rounded-lg overflow-hidden border border-zinc-700 group-hover:border-purple-500/50 transition-colors duration-500" suppressHydrationWarning>
@@ -41,7 +44,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
               alt={name}
               fill
               style={{ objectFit: 'cover' }}
-              className="transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0"
+              className={`transition-transform duration-700 ${reducedMotion ? '' : 'group-hover:scale-110 grayscale group-hover:grayscale-0'}`}
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-500" />
