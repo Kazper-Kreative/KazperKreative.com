@@ -9,14 +9,14 @@
     - [x] Implement a `CinematicScene` component with optimized lighting and environment settings.
 - [x] **Task: Conductor - User Manual Verification 'Phase 1: Scroll Engine & Scene Foundation' (Protocol in workflow.md)** 2cddab0
 
-## Phase 2: Camera Rig & Scripted Motion
+## Phase 2: Camera Rig & Scripted Motion [checkpoint: 93eb016]
 - [x] **Task: Implement Scripted Camera Rig** 61012df
     - [x] Write tests for camera path interpolation logic.
     - [x] Implement a camera controller that follows a predefined spline or path based on scroll progress.
 - [x] **Task: Integrate Content Overlay System** b171430
     - [x] Write tests for visibility triggers based on scroll percentage.
     - [x] Create a `ContentOverlay` component using Framer Motion that synchronizes with the 3D scene stages.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 2: Camera Rig & Scripted Motion' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 2: Camera Rig & Scripted Motion' (Protocol in workflow.md)** 93eb016
 
 ## Phase 3: Visual Narrative & Polish
 - [ ] **Task: Implement Act-Specific Visuals**
