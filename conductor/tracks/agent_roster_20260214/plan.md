@@ -1,13 +1,13 @@
 # Implementation Plan: Dynamic Agent Roster
 
-## Phase 1: Data Architecture & Fetching
+## Phase 1: Data Architecture & Fetching [checkpoint: 131f172]
 - [x] **Task: Verify and Enhance Agent Schema** e48f927
     - [x] Review `src/sanity/schemaTypes/agent.ts` to ensure it matches the specification requirements.
     - [x] Add any missing fields (e.g., specialty tags, social links).
 - [x] **Task: Implement Data Fetching Layer** c3f0bf7
     - [x] Write unit tests for the agent fetching utility.
     - [x] Implement a clean data fetching pattern using `next-sanity` to retrieve all active agents.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 1: Data Architecture & Fetching' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 1: Data Architecture & Fetching' (Protocol in workflow.md)** 131f172
 
 ## Phase 2: High-Fidelity Roster UI
 - [ ] **Task: Develop Atomic Agent Card**
