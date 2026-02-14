@@ -1,4 +1,4 @@
-# Track agent_roster_20260214 Context
+# Track project_case_studies_20260214 Context
 
 - [Specification](./spec.md)
 - [Implementation Plan](./plan.md)
