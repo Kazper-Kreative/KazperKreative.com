@@ -10,6 +10,7 @@ import Button from '@/components/atoms/Button';
 import Link from 'next/link';
 import { client } from '@/sanity/lib/client';
 import { urlFor } from '@/sanity/lib/image';
+import CinematicLanding from '@/components/organisms/CinematicLanding';
 
 async function getProjects(): Promise<Project[]> {
   const query = `*[_type == "project"]{

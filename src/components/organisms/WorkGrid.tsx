@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import ProjectCard from '@/components/molecules/ProjectCard';
 import { motion } from 'framer-motion';

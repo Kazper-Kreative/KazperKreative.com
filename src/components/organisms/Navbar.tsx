@@ -17,9 +17,11 @@ const navLinks = [
 const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       if (window.scrollY > 20) {
         setScrolled(true);
@@ -79,8 +81,12 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Menu Button */}
         <div className="md:hidden">
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-white focus:outline-none">
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+            className="text-white focus:outline-none"
+            suppressHydrationWarning
+          >
+            {mounted ? (mobileMenuOpen ? <X size={24} /> : <Menu size={24} />) : <div className="w-6 h-6" />}
           </button>
         </div>
       </div>

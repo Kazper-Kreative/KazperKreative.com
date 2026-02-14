@@ -8,6 +8,12 @@ import Link from 'next/link';
 import TechnicalBackground from '@/components/atoms/TechnicalBackground';
 
 const HeroSection: React.FC = () => {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const handleScrollDown = () => {
     document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -48,8 +54,9 @@ const HeroSection: React.FC = () => {
         animate={{ y: [0, -10, 0] }}
         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         onClick={handleScrollDown}
+        suppressHydrationWarning
       >
-        <ArrowDown className="text-purple-400" size={32} />
+        {mounted ? <ArrowDown className="text-purple-400" size={32} /> : <div className="w-8 h-8" />}
       </motion.div>
     </motion.section>
   );

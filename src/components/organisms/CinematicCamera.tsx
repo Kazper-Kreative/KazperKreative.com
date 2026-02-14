@@ -14,17 +14,24 @@ const CinematicCamera: React.FC<CinematicCameraProps> = ({ progress }) => {
 
   const curve = useMemo(() => {
     return new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0, 0, 10),
-      new THREE.Vector3(5, 2, 5),
-      new THREE.Vector3(-5, -2, 0),
-      new THREE.Vector3(0, 0, -10),
+      new THREE.Vector3(0, 2, 10),    // Start
+      new THREE.Vector3(-2, 0, 0),    // Pass by Act 1
+      new THREE.Vector3(4, 3, -10),   // View Act 2 from above
+      new THREE.Vector3(0, 1, -25),   // Approach Act 3
+      new THREE.Vector3(0, 15, -50),  // Final fly-up
     ]);
   }, []);
 
-  useFrame(() => {
+  useFrame((state) => {
     const { position, lookAt } = getCameraTransform(curve, progress);
-    camera.position.lerp(position, 0.1);
+    
+    // Smooth follow
+    camera.position.lerp(position, 0.05);
     camera.lookAt(lookAt);
+
+    // Dynamic tilt based on horizontal movement
+    const targetZ = (position.x - camera.position.x) * 0.5;
+    camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, targetZ, 0.05);
   });
 
   return null;

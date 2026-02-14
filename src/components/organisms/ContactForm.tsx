@@ -8,7 +8,13 @@ interface ContactFormProps {
 }
 
 const ContactForm: React.FC<ContactFormProps> = ({ onClose }) => {
+  const [mounted, setMounted] = useState(false);
   const [name, setName] = useState('');
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
@@ -63,8 +69,9 @@ const ContactForm: React.FC<ContactFormProps> = ({ onClose }) => {
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
           aria-label="Close contact form"
+          suppressHydrationWarning
         >
-          <X size={24} />
+          {mounted ? <X size={24} /> : <div className="w-6 h-6" />}
         </button>
 
         <h2 className="text-3xl font-bold text-white mb-6 text-center">Contact Us</h2>
