@@ -1,7 +1,7 @@
 # Implementation Plan: Cinematic Landing Experience
 
 ## Phase 1: Scroll Engine & Scene Foundation
-- [ ] **Task: Setup Scroll Progress Provider**
+- [x] **Task: Setup Scroll Progress Provider** 54e97a8
     - [ ] Write unit tests for scroll progress calculation and normalization.
     - [ ] Implement a custom hook or provider to track scroll position and map it to a 0-1 range.
 - [ ] **Task: Create Cinematic Scene Container**
