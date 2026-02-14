@@ -15,3 +15,7 @@
 - **Testing Framework:** Jest
 - **Testing Library:** React Testing Library
 - **Linting:** ESLint
+
+## Performance & Accessibility
+- **Detection:** `usePerformanceConfig` hook for `prefers-reduced-motion` and device capability.
+- **Strategy:** Graceful degradation of 3D effects and simplified animation timelines.
