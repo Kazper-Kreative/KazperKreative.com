@@ -8,10 +8,11 @@
     - [x] Create `src/app/api/discovery/route.ts`.
     - [x] Implement validation logic.
     - [x] Secure endpoint against spam/abuse.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 1: Booking Logic & Data Schema' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 1: Booking Logic & Data Schema' (Protocol in workflow.md)** 993ffb2
 
 ## Phase 2: High-Fidelity Discovery UI
-- [ ] **Task: Develop Discovery Form Components**
+- [~] **Task: Develop Discovery Form Components**
+    - [~] Create a dedicated `/discovery` page.
     - [ ] Create atomic form elements (Inputs, Selects, Buttons).
     - [ ] Implement kinetic step-through or fluid scrolling entry.
 - [ ] **Task: Implement Cinematic Success State**

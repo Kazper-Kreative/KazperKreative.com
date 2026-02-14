@@ -8,3 +8,12 @@ export const client = createClient({
   apiVersion,
   useCdn: true, // Set to false if statically generating pages, using ISR or tag-based revalidation
 })
+
+// Client with write access for server-side mutations
+export const writeClient = createClient({
+  projectId,
+  dataset,
+  apiVersion,
+  useCdn: false,
+  token: process.env.SANITY_WRITE_TOKEN,
+})

@@ -36,14 +36,14 @@ const HeroSection: React.FC = () => {
           Kazper Kreative: Full-Cycle Game Development &amp; QA Validation.
         </p>
         <div className="flex flex-col sm:flex-row gap-4" suppressHydrationWarning>
-          <Link href="#work">
+          <Link href="/#work" suppressHydrationWarning>
             <Button variant="primary" size="lg">
               View Projects
             </Button>
           </Link>
-          <Link href="#work-with-us">
+          <Link href="/discovery" suppressHydrationWarning>
             <Button variant="secondary" size="lg">
-              Explore Opportunities
+              Initialize Operations
             </Button>
           </Link>
         </div>
