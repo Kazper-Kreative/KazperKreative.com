@@ -7,7 +7,7 @@
 - [x] **Task: Implement Project Fetching Layer** 2eca42c
     - [x] Write unit tests for fetching individual projects by slug.
     - [x] Implement a clean utility to retrieve full project details with all new schema fields.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 1: Data Schema & Retrieval' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 1: Data Schema & Retrieval' (Protocol in workflow.md)** af1c087
 
 ## Phase 2: Case Study Template & Layout [checkpoint: f45a1a1]
 - [x] **Task: Develop Case Study Layout Components** e995601
