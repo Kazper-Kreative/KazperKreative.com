@@ -5,8 +5,8 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 ## Active Tracks
-- [ ] **Track: Secure Discovery Portal**
-  *Link: [./tracks/secure_discovery_portal_20260214/](./tracks/secure_discovery_portal_20260214/)*
+- [x] **Track: Secure Discovery Portal**
+  *Link: [./archive/secure_discovery_portal_20260214/](./archive/secure_discovery_portal_20260214/)*
 
 ---
 
