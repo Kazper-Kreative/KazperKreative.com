@@ -6,7 +6,11 @@ import ContentOverlay from './ContentOverlay';
 import { motion, useScroll, useTransform, useMotionValueEvent } from 'framer-motion';
 import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
 
-const CinematicLanding: React.FC = () => {
+interface CinematicLandingProps {
+  isVisible?: boolean;
+}
+
+const CinematicLanding: React.FC<CinematicLandingProps> = ({ isVisible = true }) => {
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -29,19 +33,25 @@ const CinematicLanding: React.FC = () => {
   // Fade out the intro as we finish the scroll section (0.8 to 1.0)
   const opacity = useTransform(scrollYProgress, [0, 0.8, 0.9], [1, 1, 0]);
   const scale = useTransform(scrollYProgress, [0.8, 1], [1, 1.1]);
-  const pointerEvents = useTransform(scrollYProgress, (latest) => latest > 0.9 ? "none" : "auto");
+  const pointerEvents = useTransform(scrollYProgress, (latest) => latest > 0.85 ? "none" : "auto");
+  const visibility = useTransform(scrollYProgress, (latest) => latest > 0.99 ? "hidden" : "visible");
 
   // If reduced motion is preferred, we could show a static version or skip intro
   // For now, we'll just allow it but maybe simplify animations elsewhere
   
   return (
-    <div ref={containerRef} className="relative h-[400vh]" suppressHydrationWarning>
+    <div ref={containerRef} className="relative h-[400vh] bg-[#020205]" suppressHydrationWarning>
       <motion.div 
-        style={{ opacity, scale, pointerEvents: pointerEvents as any }} 
-        className="fixed inset-0 z-50 overflow-hidden will-change-transform"
+        style={{ 
+          opacity, 
+          scale, 
+          pointerEvents: pointerEvents as any,
+          visibility: visibility as any
+        }} 
+        className="fixed inset-0 z-50 overflow-hidden will-change-transform bg-[#020205]"
         suppressHydrationWarning
       >
-        {mounted && (
+        {mounted && isVisible && (
           <>
             <CinematicScene progress={progress} reducedMotion={reducedMotion} />
             <ContentOverlay progress={progress} reducedMotion={reducedMotion} />

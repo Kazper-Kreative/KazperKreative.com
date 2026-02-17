@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Button from '@/components/atoms/Button';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useUISound } from '@/hooks/useUISound';
 
 interface ProjectCardProps {
   title: string;
@@ -24,6 +25,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   slug,
 }) => {
   const [mounted, setMounted] = React.useState(false);
+  const { playSound } = useUISound();
 
   React.useEffect(() => {
     setMounted(true);
@@ -32,12 +34,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   return (
     <Link
       href={`/projects/${slug}`}
+      onMouseEnter={() => playSound('hover')}
+      onClick={() => playSound('click')}
       className="group relative overflow-hidden rounded-lg shadow-lg bg-zinc-900/70 block h-full transition-all duration-500"
       suppressHydrationWarning
     >
       <motion.div
         whileHover={{ y: -5, boxShadow: "0px 10px 30px rgba(0, 0, 0, 0.5)" }}
         className="h-full will-change-transform"
+        suppressHydrationWarning
       >
         <div className="relative w-full overflow-hidden" style={{ paddingTop: '56.25%' }} suppressHydrationWarning> {/* 16:9 Aspect Ratio */}
           {mounted && (
@@ -45,6 +50,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
               src={imageUrl}
               alt={title}
               fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               style={{ objectFit: 'cover' }}
               className="transition-transform duration-500 group-hover:scale-105 will-change-transform"
             />

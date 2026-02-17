@@ -8,7 +8,7 @@ interface ServiceCardProps {
   tags: string[];
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, icon, tags }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, icon, tags = [] }) => {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -21,7 +21,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, icon, tag
     if (typeof icon === 'string' && (icon.startsWith('http') || icon.startsWith('/'))) {
       return (
         <div className="relative w-12 h-12 mb-4">
-          <Image src={icon} alt={title} fill className="object-contain" />
+          <Image src={icon} alt={title} fill sizes="48px" className="object-contain" />
         </div>
       );
     }
@@ -37,7 +37,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, icon, tag
       <h3 className="text-2xl font-bold text-white mb-2" suppressHydrationWarning>{title}</h3>
       <p className="text-zinc-400 text-base mb-4 flex-grow" suppressHydrationWarning>{description}</p>
       <div className="flex flex-wrap gap-2" suppressHydrationWarning>
-        {tags.map((tag, index) => (
+        {tags && tags.map((tag, index) => (
           <span
             key={index}
             className="px-3 py-1 text-sm bg-zinc-700/50 text-zinc-300 rounded-full border border-zinc-600 group-hover:border-purple-400/30 transition-colors duration-300"

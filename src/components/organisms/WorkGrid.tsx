@@ -17,7 +17,7 @@ interface WorkGridProps {
   projects: Project[];
 }
 
-const WorkGrid: React.FC<WorkGridProps> = ({ projects }) => {
+const WorkGrid: React.FC<WorkGridProps> = ({ projects = [] }) => {
   return (
     <section className="container mx-auto px-4" suppressHydrationWarning>
       <h2 className="text-4xl sm:text-5xl font-bold text-center text-white mb-8 sm:mb-16" suppressHydrationWarning>DEPLOYED EXPERIENCES.</h2>
@@ -29,7 +29,7 @@ const WorkGrid: React.FC<WorkGridProps> = ({ projects }) => {
         className="grid grid-cols-1 md:grid-cols-2 gap-8 will-change-transform"
         suppressHydrationWarning
       >
-        {projects.map((project, index) => (
+        {projects && projects.map((project, index) => (
           <ProjectCard
             key={index}
             title={project.title}

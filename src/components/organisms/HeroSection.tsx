@@ -7,7 +7,11 @@ import Link from 'next/link';
 import TechnicalBackground from '@/components/atoms/TechnicalBackground';
 import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 
-const HeroSection: React.FC = () => {
+interface HeroSectionProps {
+  isVisible?: boolean;
+}
+
+const HeroSection: React.FC<HeroSectionProps> = ({ isVisible = true }) => {
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -26,7 +30,7 @@ const HeroSection: React.FC = () => {
       className="relative flex min-h-screen items-center justify-center bg-zinc-950 p-4 text-white sm:p-8 overflow-hidden"
       suppressHydrationWarning
     >
-      <TechnicalBackground />
+      <TechnicalBackground isVisible={isVisible} />
 
       <div className="relative z-10 flex flex-col items-center justify-center text-center max-w-4xl mx-auto px-4" suppressHydrationWarning>
         <h1 className="text-5xl font-black tracking-tight leading-none sm:text-6xl md:text-7xl lg:text-8xl mb-4 break-words" suppressHydrationWarning>

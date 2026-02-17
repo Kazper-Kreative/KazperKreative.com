@@ -10,6 +10,7 @@ import { urlFor } from '@/sanity/lib/image';
 import ClientSafeImage from '@/components/atoms/ClientSafeImage';
 import DynamicSceneWrapper from '@/components/organisms/DynamicSceneWrapper';
 import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
+import ProjectTracker from '@/components/utilities/ProjectTracker';
 import { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: any }): Promise<Metadata> {
@@ -46,6 +47,7 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
 
   return (
     <PageWrapper>
+      <ProjectTracker slug={slug} />
       <div className="bg-[#020205] min-h-screen" suppressHydrationWarning>
         <CaseStudyHeader 
           title={project.title} 

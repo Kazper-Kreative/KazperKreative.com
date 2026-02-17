@@ -2,46 +2,48 @@
 
 import React, { Suspense, useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { PerspectiveCamera, Environment, Float, MeshDistortMaterial } from '@react-three/drei';
+import { PerspectiveCamera, Environment, Float, MeshDistortMaterial, AdaptiveDpr, Preload } from '@react-three/drei';
 import CinematicCamera from './CinematicCamera';
 import * as THREE from 'three';
+import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
 
 interface CinematicSceneProps {
   progress: number;
   reducedMotion?: boolean;
 }
 
-const Monolith = ({ position, color = "#8B5CF6", size = [1, 2, 1], distort = 0, reducedMotion = false }: any) => (
-  <Float speed={reducedMotion ? 0 : 2} rotationIntensity={reducedMotion ? 0 : 0.5} floatIntensity={reducedMotion ? 0 : 0.5}>
-    <mesh position={position} castShadow receiveShadow>
+const Monolith = ({ position, color = "#8B5CF6", size = [1, 2, 1], reducedMotion = false }: any) => (
+  <Float speed={reducedMotion ? 0 : 1} rotationIntensity={reducedMotion ? 0 : 0.3} floatIntensity={reducedMotion ? 0 : 0.3}>
+    <mesh position={position}>
       <boxGeometry args={size} />
-      {distort > 0 && !reducedMotion ? (
-        <MeshDistortMaterial color={color} speed={distort} distort={0.4} metalness={0.8} roughness={0.2} emissive={color} emissiveIntensity={0.5} />
-      ) : (
-        <meshStandardMaterial color={color} metalness={0.8} roughness={0.2} emissive={color} emissiveIntensity={0.2} />
-      )}
+      <meshStandardMaterial 
+        color={color} 
+        metalness={0.9} 
+        roughness={0.1} 
+        emissive={color} 
+        emissiveIntensity={0.5} 
+      />
     </mesh>
   </Float>
 );
 
-const Particles = ({ count = 1000, progress, reducedMotion = false }: { count?: number; progress: number; reducedMotion?: boolean }) => {
+const Particles = ({ progress, reducedMotion = false }: { progress: number; reducedMotion?: boolean }) => {
+  const { particleCount } = usePerformanceConfig();
   const mesh = useRef<THREE.Points>(null!);
   const dummy = useMemo(() => {
-    const finalCount = reducedMotion ? count / 4 : count;
-    const positions = new Float32Array(finalCount * 3);
-    for (let i = 0; i < finalCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 40;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 40;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+    const count = Math.min(particleCount, 500); // Capped for performance
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 50;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
     }
     return positions;
-  }, [count, reducedMotion]);
+  }, [particleCount]);
 
   useFrame((state) => {
     if (reducedMotion) return;
-    const time = state.clock.getElapsedTime();
-    mesh.current.rotation.y = time * 0.05 + progress * 2;
-    mesh.current.rotation.x = time * 0.02;
+    mesh.current.rotation.y = state.clock.getElapsedTime() * 0.03 + progress * 1.5;
   });
 
   return (
@@ -49,24 +51,38 @@ const Particles = ({ count = 1000, progress, reducedMotion = false }: { count?: 
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[dummy, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.05} color="#8B5CF6" transparent opacity={0.4} sizeAttenuation />
+      <pointsMaterial size={0.08} color="#8B5CF6" transparent opacity={0.3} sizeAttenuation />
     </points>
   );
 };
 
 const CinematicScene: React.FC<CinematicSceneProps> = ({ progress, reducedMotion = false }) => {
+  const { dpr } = usePerformanceConfig();
+
   return (
-    <div className="fixed inset-0 z-0 bg-[#020205]" suppressHydrationWarning>
-      <Suspense fallback={<div className="bg-[#020205] w-full h-full" suppressHydrationWarning />}>
-        <Canvas shadows camera={{ fov: 75 }} suppressHydrationWarning>
+    <div className="fixed inset-0 z-0 bg-[#020205] overflow-hidden" suppressHydrationWarning>
+      <Suspense fallback={<div className="bg-[#020205] w-full h-full flex items-center justify-center" suppressHydrationWarning><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" suppressHydrationWarning /></div>}>
+        <Canvas 
+          camera={{ fov: 75 }} 
+          gl={{ 
+            antialias: false, // Performance boost
+            alpha: true, 
+            powerPreference: "high-performance",
+            stencil: false,
+            depth: true
+          }} 
+          dpr={dpr}
+          suppressHydrationWarning
+          onError={(error) => console.error("Three.js Canvas Error:", error)}
+        >
+          <color attach="background" args={["#020205"]} />
           <PerspectiveCamera makeDefault />
           <CinematicCamera progress={progress} reducedMotion={reducedMotion} />
           
-          <ambientLight intensity={0.1} />
-          <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={2} castShadow />
-          <pointLight position={[-10, -10, -10]} intensity={0.5} color="#4B5563" />
+          <ambientLight intensity={0.2} />
+          <pointLight position={[10, 10, 10]} intensity={1.5} color="#8B5CF6" />
+          <pointLight position={[-10, -10, -10]} intensity={0.5} color="#4C1D95" />
           
-          <Environment preset="night" />
           <Particles progress={progress} reducedMotion={reducedMotion} />
           
           {/* Act 1: Foundation - Stable, Solid */}
@@ -85,6 +101,9 @@ const CinematicScene: React.FC<CinematicSceneProps> = ({ progress, reducedMotion
           <gridHelper args={[100, 50, "#1F2937", "#111827"]} position={[0, -5, 0]} />
           
           <fog attach="fog" args={["#020205", 5, 40]} />
+          
+          <AdaptiveDpr pixelated />
+          <Preload all />
         </Canvas>
       </Suspense>
     </div>

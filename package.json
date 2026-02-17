@@ -28,7 +28,8 @@
     "sanity": "^4.22.0",
     "styled-components": "^6.3.9",
     "tailwind-merge": "^3.4.0",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

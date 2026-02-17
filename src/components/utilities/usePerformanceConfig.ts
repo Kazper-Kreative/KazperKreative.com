@@ -7,6 +7,7 @@ export const usePerformanceConfig = () => {
     reducedMotion: false,
     particleCount: 1000,
     show3D: true,
+    dpr: [1, 2] as [number, number],
   });
 
   useEffect(() => {
@@ -19,7 +20,8 @@ export const usePerformanceConfig = () => {
       setConfig({
         reducedMotion: reducedMotionQuery.matches,
         particleCount: isMobile ? 500 : 1000,
-        show3D: true, // We could set to false on very low end if needed
+        show3D: true,
+        dpr: isMobile ? [1, 1.5] : [1, 2],
       });
     };
 

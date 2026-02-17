@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
+import HUD from './HUD';
+import CommandPalette from './CommandPalette';
+import QuickActions from './QuickActions';
+import { useUISound } from '@/hooks/useUISound';
 
 const navLinks = [
   { name: 'Home', href: '/' },
@@ -19,12 +23,17 @@ const Navbar: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [platform, setPlatform] = useState<'mac' | 'win'>('win');
   const pathname = usePathname();
+  const { playSound } = useUISound();
 
   useEffect(() => {
     setMounted(true);
+    const isMac = typeof window !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
+    setPlatform(isMac ? 'mac' : 'win');
+
     const handleScroll = () => {
-      if (window.scrollY > 20) {
+      if (window.scrollY > 50) {
         setScrolled(true);
       } else {
         setScrolled(false);
@@ -36,104 +45,163 @@ const Navbar: React.FC = () => {
   }, []);
 
   const handleNavLinkClick = () => {
-    setMobileMenuOpen(false); // Close mobile menu on link click
+    playSound('click');
+    setMobileMenuOpen(false);
   };
 
+  if (!mounted) return null;
+
   return (
-    <motion.nav
-      className={`fixed w-full z-40 top-0 transition-all duration-300 ${
-        scrolled ? 'bg-black/80 backdrop-blur-md py-3 border-b border-purple-500/30' : 'bg-transparent py-5'
-      }`}
-      suppressHydrationWarning
-    >
-      <div className="container mx-auto px-4 flex justify-between items-center" suppressHydrationWarning>
-        <Link href="/" className="text-xl font-bold text-white hover:text-purple-400 transition-colors" suppressHydrationWarning>
-          KAZPER KREATIVE
-        </Link>
-        
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex space-x-6" suppressHydrationWarning>
-          {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className={`text-gray-300 hover:text-white transition-colors relative group ${
-                pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
-                  ? 'text-purple-400 font-semibold'
-                  : ''
-              }`}
-              suppressHydrationWarning
-            >
-              <motion.span
-                className="inline-block"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                suppressHydrationWarning
-              >
-                {link.name}
-              </motion.span>
-              <span
-                className={`absolute left-0 bottom-0 h-[2px] bg-purple-500 transition-all duration-300 ${
-                  pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
-                    ? 'w-full'
-                    : 'w-0 group-hover:w-full'
-                }`}
-                suppressHydrationWarning
-              ></span>
+    <>
+      <HUD />
+      <CommandPalette />
+      <QuickActions />
+      
+      <motion.nav
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        className={`fixed w-full z-[100] top-0 transition-all duration-500 will-change-transform ${
+          scrolled ? 'bg-black/40 backdrop-blur-md py-4 border-b border-purple-500/10' : 'bg-transparent py-8'
+        }`}
+        suppressHydrationWarning
+      >
+        <div className="container mx-auto px-8 flex justify-between items-center" suppressHydrationWarning>
+          <div className="flex items-center space-x-8">
+            <Link href="/" className="group flex items-center space-x-2" suppressHydrationWarning onClick={() => playSound('click')} onMouseEnter={() => playSound('hover')}>
+              <div className="w-8 h-8 bg-purple-600 rounded-sm flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
+                <span className="text-black font-black text-xs">K</span>
+              </div>
+              <span className="text-sm font-black tracking-[0.3em] text-white uppercase hidden sm:block">
+                KAZPER_KREATIVE
+              </span>
             </Link>
-          ))}
-        </div>
 
-        {/* Mobile Menu Button */}
-        <div className="md:hidden" suppressHydrationWarning>
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-            className="text-white focus:outline-none"
-            suppressHydrationWarning
-          >
-            <ClientSafeIcon name={mobileMenuOpen ? "X" : "Menu"} size={24} />
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu Overlay */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden bg-black/90 backdrop-blur-md absolute top-full left-0 w-full pb-4 border-b border-purple-500/30"
-            suppressHydrationWarning
-          >
-            <div className="flex flex-col items-center space-y-4 pt-4" suppressHydrationWarning>
+            <div className="hidden lg:flex items-center space-x-1 font-mono text-[10px] text-zinc-500">
+              <span className="px-2 py-1 border border-zinc-800 rounded">v1.0.4</span>
+              <span className="px-2 py-1 border border-zinc-800 rounded animate-pulse text-purple-400/70">STRIKE_READY</span>
+            </div>
+          </div>
+          
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8" suppressHydrationWarning>
+            <div className="flex space-x-6 mr-6 border-r border-zinc-800 pr-6">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className={`text-gray-300 text-lg hover:text-white transition-colors ${
-                    pathname === link.href || (link.href.includes('#') && pathname === link.href.split('#')[0])
-                      ? 'text-purple-400 font-semibold'
-                      : ''
+                  onMouseEnter={() => playSound('hover')}
+                  onClick={() => playSound('click')}
+                  className={`text-[10px] font-mono uppercase tracking-widest hover:text-purple-400 transition-colors ${
+                    pathname === link.href ? 'text-purple-500' : 'text-zinc-400'
                   }`}
-                  onClick={handleNavLinkClick}
                   suppressHydrationWarning
                 >
-                  <motion.span
-                    className="inline-block"
-                    whileHover={{ scale: 1.05 }}
-                    suppressHydrationWarning
-                  >
-                    {link.name}
-                  </motion.span>
+                  {link.name}
                 </Link>
               ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.nav>
+
+            <button 
+              className="flex items-center justify-center w-8 h-8 bg-zinc-900 border border-zinc-800 rounded hover:border-purple-500/50 transition-all group relative"
+              onClick={() => {
+                playSound('click');
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+              }}
+              onMouseEnter={() => playSound('hover')}
+              title={`Command Center (${platform === 'mac' ? '⌘K' : 'CTRL+K'})`}
+            >
+              <ClientSafeIcon name="Search" size={14} className="text-zinc-500 group-hover:text-purple-400" />
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-4" suppressHydrationWarning>
+             <button 
+              className="p-2 text-zinc-400"
+              onClick={() => {
+                playSound('click');
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+              }}
+              onMouseEnter={() => playSound('hover')}
+            >
+              <ClientSafeIcon name="Search" size={20} />
+            </button>
+            <button 
+              onClick={() => {
+                playSound('click');
+                setMobileMenuOpen(!mobileMenuOpen);
+              }} 
+              onMouseEnter={() => playSound('hover')}
+              className="text-white focus:outline-none p-2 border border-zinc-800 rounded"
+              suppressHydrationWarning
+            >
+              <ClientSafeIcon name={mobileMenuOpen ? "X" : "Menu"} size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu Overlay */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="md:hidden fixed inset-0 z-[90] bg-black flex flex-col p-8"
+              suppressHydrationWarning
+            >
+              <div className="flex justify-between items-center mb-12">
+                 <span className="text-xs font-mono text-purple-500">// MENU_ACCESS</span>
+                 <button onClick={() => {
+                   playSound('click');
+                   setMobileMenuOpen(false);
+                 }} className="p-2 border border-zinc-800 rounded">
+                    <ClientSafeIcon name="X" size={24} className="text-white" />
+                 </button>
+              </div>
+
+              <div className="flex flex-col space-y-6" suppressHydrationWarning>
+                {navLinks.map((link, i) => (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className="text-4xl font-black text-white uppercase tracking-tighter hover:text-purple-500 transition-colors"
+                    onMouseEnter={() => playSound('hover')}
+                    onClick={handleNavLinkClick}
+                    suppressHydrationWarning
+                  >
+                    <motion.span
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                    >
+                      {link.name}
+                    </motion.span>
+                  </Link>
+                ))}
+              </div>
+
+              <div className="mt-auto pt-8 border-t border-zinc-800 flex flex-col space-y-4 font-mono text-[10px] text-zinc-500">
+                <div className="flex justify-between">
+                  <span>LATENCY</span>
+                  <span className="text-purple-500">14MS</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ENCRYPTION</span>
+                  <span className="text-purple-500">AES_256</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>NODE</span>
+                  <span className="text-purple-500">ONTARIO_CA</span>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.nav>
+    </>
   );
 };
 

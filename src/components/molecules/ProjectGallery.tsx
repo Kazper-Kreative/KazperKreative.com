@@ -37,6 +37,7 @@ const ProjectGallery: React.FC<ProjectGalleryProps> = ({ images, title }) => {
                   src={image}
                   alt={`${title} gallery image ${index}`}
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   style={{ objectFit: 'cover' }}
                   className="transition-transform duration-700 group-hover:scale-105"
                 />

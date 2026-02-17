@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
+import { useUISound } from '@/hooks/useUISound';
 
 interface ButtonProps extends HTMLMotionProps<'button'> {
   variant?: 'primary' | 'secondary' | 'ghost';
@@ -13,8 +14,22 @@ const Button: React.FC<ButtonProps> = ({
   className,
   variant = 'primary',
   size = 'md',
+  onMouseEnter,
+  onClick,
   ...props
 }) => {
+  const { playSound } = useUISound();
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
+    playSound('hover');
+    if (onMouseEnter) onMouseEnter(e);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    playSound('click');
+    if (onClick) onClick(e);
+  };
+
   const baseStyles = 'inline-flex items-center justify-center rounded-md font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none';
 
   const variantStyles = {
@@ -34,7 +49,10 @@ const Button: React.FC<ButtonProps> = ({
       whileHover={{ scale: 1.05, y: -2 }}
       whileTap={{ scale: 0.95 }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
+      onMouseEnter={handleMouseEnter}
+      onClick={handleClick}
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className || ''}`}
+      suppressHydrationWarning
       {...props}
     >
       {children}

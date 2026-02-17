@@ -38,10 +38,12 @@ const BackToTopButton: React.FC = () => {
           exit={{ opacity: 0, y: 50 }}
           transition={{ duration: 0.3 }}
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 z-50"
+          className="fixed bottom-8 right-8 bg-zinc-900/80 backdrop-blur-md text-purple-500 p-4 border border-purple-500/30 rounded-sm shadow-2xl hover:bg-purple-600 hover:text-white transition-all z-50 group overflow-hidden"
           aria-label="Scroll to top"
         >
-          <ArrowUp size={24} />
+          <div className="absolute inset-0 bg-gradient-to-t from-purple-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <ArrowUp size={20} className="relative z-10 group-hover:-translate-y-1 transition-transform" />
+          <div className="absolute bottom-0 left-0 w-full h-[1px] bg-purple-500 origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
         </motion.button>
       )}
     </AnimatePresence>
