@@ -5,7 +5,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 ---
 
 ## Active Tracks
-- [ ] **Track: The Kazper Ecosystem (Simulated Reality)**
+- [~] **Track: The Kazper Ecosystem (Simulated Reality)**
   *Link: [./tracks/kazper_ecosystem_20260219/](./tracks/kazper_ecosystem_20260219/)*
 
 ---

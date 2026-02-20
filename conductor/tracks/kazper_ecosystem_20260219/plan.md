@@ -1,25 +1,25 @@
 # Implementation Plan: The Kazper Ecosystem (Simulated Reality)
 
 ## Phase 1: Infrastructure & Authentication
-- [ ] **Task: Identity Architecture**
-    - [ ] Choose and initialize Auth provider (NextAuth or Clerk).
-    - [ ] Define User Schema in Sanity (or external DB) for Roles: `CLIENT`, `AGENT`, `ADMIN`.
-    - [ ] Create basic middleware for role-based route protection.
-- [ ] **Task: Data Layer - Jobs & Profiles**
-    - [ ] Design Schema for `Job` (Brief, Status, Assigned Agent, Milestones).
-    - [ ] Design Schema for `AgentProfile` (XP, Projects, Rank, Bio).
-    - [ ] Design Schema for `Message` (Encrypted/Private channel logic).
+- [x] **Task: Identity Architecture**
+    - [x] Choose and initialize Auth provider (NextAuth or Clerk).
+    - [x] Define User Schema in Sanity (or external DB) for Roles: `CLIENT`, `AGENT`, `ADMIN`.
+    - [x] Create basic middleware for role-based route protection.
+- [x] **Task: Data Layer - Jobs & Profiles**
+    - [x] Design Schema for `Job` (Brief, Status, Assigned Agent, Milestones).
+    - [x] Design Schema for `AgentProfile` (XP, Projects, Rank, Bio).
+    - [x] Design Schema for `Message` (Encrypted/Private channel logic).
 - [ ] **Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Authentication' (Protocol in workflow.md)**
 
 ## Phase 2: The Command Center (Client Interface)
-- [ ] **Task: Job Submission Terminal**
-    - [ ] Create `BriefTerminal` component (Stylized command-line input).
-    - [ ] Implement multi-step brief submission logic.
-    - [ ] Add success/failure feedback loops with "System Sounds."
-- [ ] **Task: Client HUD Dashboard**
-    - [ ] Create `ClientDashboard` organism.
-    - [ ] Implement "My Projects" view with real-time status updates.
-    - [ ] Replace "Discovery Call" links with "Initialize Project" flow.
+- [x] **Task: Job Submission Terminal**
+    - [x] Create `BriefTerminal` component (Stylized command-line input).
+    - [x] Implement multi-step brief submission logic.
+    - [x] Add success/failure feedback loops with "System Sounds."
+- [x] **Task: Client HUD Dashboard**
+    - [x] Create `ClientDashboard` organism.
+    - [x] Implement "My Projects" view with real-time status updates.
+    - [x] Replace "Discovery Call" links with "Initialize Project" flow.
 - [ ] **Task: Conductor - User Manual Verification 'Phase 2: The Command Center' (Protocol in workflow.md)**
 
 ## Phase 3: The Workstation (Agent Interface)
