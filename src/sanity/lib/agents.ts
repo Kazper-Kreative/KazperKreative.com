@@ -8,6 +8,9 @@ export interface Agent {
   image: SanityImageSource;
   upworkUrl?: string;
   specialties?: string[];
+  xp?: number;
+  rank?: string;
+  status?: string;
 }
 
 export async function getAgents(): Promise<Agent[]> {
@@ -17,7 +20,10 @@ export async function getAgents(): Promise<Agent[]> {
     bio,
     image,
     upworkUrl,
-    specialties
+    specialties,
+    xp,
+    rank,
+    status
   }`;
   return await client.fetch(query);
 }

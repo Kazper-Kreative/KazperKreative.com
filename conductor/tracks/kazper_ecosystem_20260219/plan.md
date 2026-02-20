@@ -2,16 +2,15 @@
 
 ## Phase 1: Infrastructure & Authentication
 - [x] **Task: Identity Architecture**
-    - [x] Choose and initialize Auth provider (NextAuth or Clerk).
-    - [x] Define User Schema in Sanity (or external DB) for Roles: `CLIENT`, `AGENT`, `ADMIN`.
-    - [x] Create basic middleware for role-based route protection.
 - [x] **Task: Data Layer - Jobs & Profiles**
-    - [x] Design Schema for `Job` (Brief, Status, Assigned Agent, Milestones).
-    - [x] Design Schema for `AgentProfile` (XP, Projects, Rank, Bio).
-    - [x] Design Schema for `Message` (Encrypted/Private channel logic).
-- [ ] **Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Authentication' (Protocol in workflow.md)**
+- [x] **Task: Dynamic Role Hook**
+- [x] **Task: Identity Mapping (Account-to-Profile Link)**
+    - [x] Update NextAuth session to include Sanity `_id` and `role`.
+    - [x] Create `getProfileByEmail` utility for role resolution.
+    - [x] Implement auto-initialization for new Client profiles.
+- [x] **Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Authentication' (Protocol in workflow.md)**
 
-## Phase 2: The Command Center (Client Interface)
+## Phase 2: The Command Center (Client Interface) [checkpoint: da44656]
 - [x] **Task: Job Submission Terminal**
     - [x] Create `BriefTerminal` component (Stylized command-line input).
     - [x] Implement multi-step brief submission logic.
@@ -20,17 +19,23 @@
     - [x] Create `ClientDashboard` organism.
     - [x] Implement "My Projects" view with real-time status updates.
     - [x] Replace "Discovery Call" links with "Initialize Project" flow.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 2: The Command Center' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 2: The Command Center' (Protocol in workflow.md)**
 
 ## Phase 3: The Workstation (Agent Interface)
-- [ ] **Task: Gamified Agent Leaderboard**
-    - [ ] Refactor `AgentsGrid` into a `SquadRoster` with ranks/XP levels.
-    - [ ] Implement dynamic sorting based on "Agency Impact" or "Active Jobs."
-    - [ ] Add interactive "Dossier" view for each Agent.
-- [ ] **Task: Agent Task Board**
-    - [ ] Create `AgentWorkspace` to view assigned briefs.
-    - [ ] Implement "Accept/Decline" logic for incoming briefs.
-    - [ ] Build status management (In Progress, Review, Completed).
+- [x] **Task: Tactical Scan Onboarding**
+    - [x] Build a "Ghost Scan" animation for Newcomers on first load.
+    - [x] Automatically assign "GUEST_XXXX" ID and emerald HUD colors.
+- [x] **Task: Role-Based HUD Adaptations**
+    - [x] Integrate color-coded themes (Emerald=Client, Purple=Agent, Zinc=Guest).
+    - [x] Update `TechnicalBackground` to react to the current role's theme.
+- [x] **Task: Gamified Agent Leaderboard**
+    - [x] Refactor `AgentsGrid` into a `SquadRoster` with ranks/XP levels.
+    - [x] Implement dynamic sorting based on "Agency Impact" or "Active Jobs."
+    - [x] Add interactive "Dossier" view for each Agent.
+- [x] **Task: Agent Task Board**
+    - [x] Create `AgentWorkspace` to view assigned briefs.
+    - [x] Implement "Accept/Decline" logic for incoming briefs.
+    - [x] Build status management (In Progress, Review, Completed).
 - [ ] **Task: Conductor - User Manual Verification 'Phase 3: The Workstation' (Protocol in workflow.md)**
 
 ## Phase 4: Communication & Recruitment

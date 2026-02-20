@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 import { useUISound } from '@/hooks/useUISound';
 import { useGamificationStore } from '@/store/useGamificationStore';
@@ -12,11 +13,14 @@ const actions = [
   { id: 'services', name: 'Our Expertise (Services)', icon: 'Command', href: '/#services' },
   { id: 'work', name: 'View Deployed Experiences (Work)', icon: 'Command', href: '/#work' },
   { id: 'agents', name: 'Meet Our Engineers (Agents)', icon: 'Terminal', href: '/agents' },
-  { id: 'discovery', name: 'Initialize Discovery Operations', icon: 'Search', href: '/discovery' },
+  { id: 'initialize', name: 'Initialize New Project Brief', icon: 'Search', href: '/brief' },
+  { id: 'dashboard', name: 'My Dashboard (Operations)', icon: 'Terminal', href: '/dashboard' },
+  { id: 'workstation', name: 'Agency Workstation (Restricted)', icon: 'Terminal', href: '/workstation' },
   { id: 'contact', name: 'Direct Collaboration (Contact)', icon: 'Command', href: '/#contact' },
 ];
 
 const CommandPalette: React.FC = () => {
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -85,6 +89,16 @@ const CommandPalette: React.FC = () => {
         document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
+  };
+
+  const handleAuth = () => {
+    playSound('click');
+    if (session) {
+      signOut();
+    } else {
+      router.push('/unauthorized');
+    }
+    setIsOpen(false);
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -195,17 +209,30 @@ const CommandPalette: React.FC = () => {
 
             {activeTab === 'profile' && (
               <div className="p-8 max-h-[60vh] overflow-y-auto" suppressHydrationWarning>
-                <div className="flex items-center space-x-6 mb-8 border-b border-zinc-800 pb-8">
-                  <div className="w-20 h-20 bg-purple-600/20 border border-purple-500/50 rounded-lg flex items-center justify-center">
-                    <span className="text-4xl font-black text-purple-400">{level}</span>
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-white uppercase tracking-tight">Level {level} Engineer</h3>
-                    <p className="text-zinc-500 font-mono text-xs">EXPERIENCE_POINTS: {xp}</p>
-                    <div className="mt-2 w-48 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-purple-500" style={{ width: `${(xp % 1000) / 10}%` }} />
+                <div className="flex items-center justify-between mb-8 border-b border-zinc-800 pb-8">
+                  <div className="flex items-center space-x-6">
+                    <div className="w-20 h-20 bg-purple-600/20 border border-purple-500/50 rounded-lg flex items-center justify-center overflow-hidden">
+                      {session?.user?.image ? (
+                        <img src={session.user.image} alt={session.user.name || ''} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-4xl font-black text-purple-400">{level}</span>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-white uppercase tracking-tight">
+                        {session?.user?.name || `Level ${level} Engineer`}
+                      </h3>
+                      <p className="text-zinc-500 font-mono text-xs">ROLE: {((session?.user as any)?.role || 'GUEST').toUpperCase()}</p>
+                      <p className="text-zinc-500 font-mono text-[10px]">EXPERIENCE_POINTS: {xp}</p>
                     </div>
                   </div>
+                  
+                  <button 
+                    onClick={handleAuth}
+                    className="px-4 py-2 border border-purple-500/50 text-purple-400 hover:bg-purple-500/10 text-[10px] font-mono uppercase tracking-widest transition-all"
+                  >
+                    {session ? 'Term_Session (Sign Out)' : 'Auth_Link (Sign In)'}
+                  </button>
                 </div>
 
                 <h4 className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.3em] mb-4">// UNLOCKED_BADGES</h4>

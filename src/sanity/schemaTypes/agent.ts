@@ -30,9 +30,42 @@ export default defineType({
       },
     }),
     defineField({
-        name: 'upworkUrl',
-        title: 'Upwork URL',
-        type: 'url',
+      name: 'upworkUrl',
+      title: 'Upwork URL',
+      type: 'url',
+    }),
+    defineField({
+      name: 'xp',
+      title: 'XP',
+      type: 'number',
+      initialValue: 1000,
+    }),
+    defineField({
+      name: 'rank',
+      title: 'Rank',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Recruit', value: 'RECRUIT' },
+          { title: 'Specialist', value: 'SPECIALIST' },
+          { title: 'Elite', value: 'ELITE' },
+          { title: 'Commander', value: 'COMMANDER' },
+        ],
+      },
+      initialValue: 'RECRUIT',
+    }),
+    defineField({
+      name: 'status',
+      title: 'Status',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Strike Ready', value: 'STRIKE_READY' },
+          { title: 'On Mission', value: 'ON_MISSION' },
+          { title: 'Standby', value: 'STANDBY' },
+        ],
+      },
+      initialValue: 'STRIKE_READY',
     }),
     defineField({
       name: 'specialties',

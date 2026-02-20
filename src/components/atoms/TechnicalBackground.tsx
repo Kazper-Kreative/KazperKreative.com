@@ -1,28 +1,30 @@
 "use client";
 
-import React, { useRef, useMemo } from "react";
+import React, { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { AdaptiveDpr } from "@react-three/drei";
 import { usePerformanceConfig } from "@/components/utilities/usePerformanceConfig";
-import { AdaptiveDpr, Preload } from "@react-three/drei";
+import { useUserRole } from "@/hooks/useUserRole";
 
-const Particles = () => {
-  const { particleCount } = usePerformanceConfig();
+const Particles = ({ color }: { color: string }) => {
   const mesh = useRef<THREE.Points>(null!);
+  const count = 300;
 
-  const dummy = useMemo(() => {
-    const count = Math.min(particleCount / 4, 300); // Sharp reduction for hero background
-    const positions = new Float32Array(count * 3);
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 15;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 15;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 15;
+      pos[i] = (Math.random() - 0.5) * 10;
+      pos[i + 1] = (Math.random() - 0.5) * 10;
+      pos[i + 2] = (Math.random() - 0.5) * 10;
     }
-    return positions;
-  }, [particleCount]);
+    return pos;
+  }, []);
 
   useFrame((state) => {
-    mesh.current.rotation.y = state.clock.getElapsedTime() * 0.02;
+    if (mesh.current) {
+      mesh.current.rotation.y = state.clock.getElapsedTime() * 0.05;
+    }
   });
 
   return (
@@ -30,51 +32,60 @@ const Particles = () => {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          args={[dummy, 3]}
+          count={positions.length / 3}
+          array={positions}
+          itemSize={3}
         />
       </bufferGeometry>
       <pointsMaterial
-        size={0.02}
-        color="#8B5CF6"
+        size={0.03}
+        color={color}
         transparent
-        opacity={0.4}
+        opacity={0.6}
         sizeAttenuation
+        blending={THREE.AdditiveBlending}
       />
     </points>
   );
 };
 
-const TechnicalBackground: React.FC<{ isVisible?: boolean }> = ({ isVisible = true }) => {
-  const [mounted, setMounted] = React.useState(false);
-  const { dpr } = usePerformanceConfig();
+interface TechnicalBackgroundProps {
+  isVisible?: boolean;
+}
 
-  React.useEffect(() => {
+const TechnicalBackground: React.FC<TechnicalBackgroundProps> = ({ isVisible = true }) => {
+  const [mounted, setMounted] = useState(false);
+  const { dpr } = usePerformanceConfig();
+  const { role } = useUserRole();
+  const { getThemeColor } = useUserRole();
+  const themeColor = getThemeColor();
+
+  useEffect(() => {
     setMounted(true);
   }, []);
 
   if (!mounted || !isVisible) {
-    return <div className="absolute inset-0 z-0 bg-[#09090b] flex items-center justify-center" suppressHydrationWarning>
-      {!mounted && <div className="w-6 h-6 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" suppressHydrationWarning />}
-    </div>;
+    return (
+      <div className="absolute inset-0 z-0 bg-black flex items-center justify-center">
+        {!mounted && (
+          <div 
+            className="w-6 h-6 border-2 rounded-full animate-spin" 
+            style={{ borderColor: `${themeColor}30`, borderTopColor: themeColor }}
+          />
+        )}
+      </div>
+    );
   }
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden" suppressHydrationWarning>
+    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
       <Canvas 
-        camera={{ position: [0, 0, 8], fov: 75 }} 
-        gl={{ 
-          antialias: false, 
-          alpha: true, 
-          powerPreference: "high-performance",
-          stencil: false,
-          depth: false // Further optimization: disable depth if not needed for particles
-        }} 
         dpr={dpr}
-        onError={(error) => console.error("TechnicalBackground Canvas Error:", error)}
+        camera={{ position: [0, 0, 5], fov: 75 }}
+        gl={{ antialias: false, alpha: true }}
       >
-        <color attach="background" args={["#09090b"]} />
-        <ambientLight intensity={0.3} />
-        <Particles />
+        <color attach="background" args={["#000000"]} />
+        <Particles color={themeColor} />
         <AdaptiveDpr pixelated />
       </Canvas>
     </div>

@@ -8,14 +8,13 @@ import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 import HUD from './HUD';
 import CommandPalette from './CommandPalette';
 import QuickActions from './QuickActions';
+import IdentityBadge from '@/components/atoms/IdentityBadge';
 import { useUISound } from '@/hooks/useUISound';
 
 const navLinks = [
-  { name: 'Home', href: '/' },
   { name: 'Services', href: '/#services' },
   { name: 'Work', href: '/#work' },
   { name: 'Agents', href: '/agents' },
-  { name: 'Discovery', href: '/discovery' },
   { name: 'Contact', href: '/#contact' },
 ];
 
@@ -113,6 +112,7 @@ const Navbar: React.FC = () => {
               <ClientSafeIcon name="Search" size={14} className="text-zinc-500 group-hover:text-purple-400" />
               <div className="absolute -top-1 -right-1 w-2 h-2 bg-purple-500 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
+            <IdentityBadge />
           </div>
 
           {/* Mobile Menu Button */}

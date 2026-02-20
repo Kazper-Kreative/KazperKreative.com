@@ -1,4 +1,4 @@
-import AgentsGrid from "@/components/organisms/AgentsGrid";
+import SquadRoster from "@/components/organisms/SquadRoster";
 import PageWrapper from "@/components/layouts/PageWrapper";
 import { Metadata } from "next";
 import Button from "@/components/atoms/Button";
@@ -21,7 +21,7 @@ export default async function AgentsPage() {
 
   return (
     <PageWrapper>
-      <AgentsGrid agents={agents} />
+      <SquadRoster agents={agents} />
       <section className="container mx-auto px-4 py-16 text-center border-t border-zinc-900">
         <h2 className="text-3xl font-bold text-white mb-4">Operational Base: Upwork</h2>
         <p className="text-zinc-400 mb-8 max-w-2xl mx-auto">

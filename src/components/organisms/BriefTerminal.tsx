@@ -17,7 +17,7 @@ export default function BriefTerminal() {
   const [history, setHistory] = useState<string[]>(['> SYSTEM INITIALIZED', '> AWAITING COMMAND...']);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { playClick, playSuccess } = useUISound();
+  const { playSound } = useUISound();
 
   const step = STEPS[currentStep];
 
@@ -33,7 +33,7 @@ export default function BriefTerminal() {
       });
 
       if (response.ok) {
-        playSuccess();
+        playSound('success');
         setHistory(prev => [...prev, '> DATA ENCRYPTED', '> BRIEF SUBMITTED TO THE SQUAD.']);
       } else {
         setHistory(prev => [...prev, '> ERROR: UPLOAD FAILED', '> RETRYING COMMAND...']);
@@ -47,7 +47,7 @@ export default function BriefTerminal() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && inputValue.trim() && !isSubmitting) {
-      playClick();
+      playSound('click');
       const newHistory = [...history, `> ${step.label}: ${inputValue}`];
       
       const newValues = { ...values, [step.id]: inputValue };

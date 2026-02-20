@@ -13,6 +13,8 @@ import Button from '@/components/atoms/Button';
 import Link from 'next/link';
 import { urlFor } from '@/sanity/lib/image';
 import { useScroll, useMotionValueEvent } from 'framer-motion';
+import GhostScan from '@/components/organisms/GhostScan';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const CinematicLanding = dynamic(() => import('@/components/organisms/CinematicLanding'), {
   ssr: false,
@@ -27,6 +29,20 @@ interface HomeTemplateProps {
 const HomeTemplate: React.FC<HomeTemplateProps> = ({ initialProjects, initialServices }) => {
   const [showHero3D, setShowHero3D] = useState(false);
   const [showCinematic3D, setShowCinematic3D] = useState(true);
+  const [needsScan, setNeedsScan] = useState(false);
+  const { role } = useUserRole();
+
+  useEffect(() => {
+    const hasScanned = localStorage.getItem('kazper-ghost-scanned');
+    if (!hasScanned && role === 'GUEST') {
+      setNeedsScan(true);
+    }
+  }, [role]);
+
+  const handleScanComplete = () => {
+    setNeedsScan(false);
+    localStorage.setItem('kazper-ghost-scanned', 'true');
+  };
 
   const { scrollYProgress } = useScroll();
 
@@ -50,6 +66,7 @@ const HomeTemplate: React.FC<HomeTemplateProps> = ({ initialProjects, initialSer
 
   return (
     <PageWrapper>
+      {needsScan && <GhostScan onComplete={handleScanComplete} />}
       <CinematicLanding isVisible={showCinematic3D} />
       <HeroSection isVisible={showHero3D} />
       <section className="bg-zinc-900/50 py-12 sm:py-16 md:py-24 flex flex-col items-center justify-center text-center px-4" suppressHydrationWarning>
