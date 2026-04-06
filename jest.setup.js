@@ -5,8 +5,8 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom'
 
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
+// Mock window.matchMedia (only in jsdom environment)
+if (typeof window !== 'undefined') Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
     matches: false,
@@ -27,11 +27,13 @@ class MockIntersectionObserver {
   unobserve = jest.fn();
 }
 
-Object.defineProperty(window, 'IntersectionObserver', {
-  writable: true,
-  configurable: true,
-  value: MockIntersectionObserver,
-});
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'IntersectionObserver', {
+    writable: true,
+    configurable: true,
+    value: MockIntersectionObserver,
+  });
+}
 
 Object.defineProperty(global, 'IntersectionObserver', {
   writable: true,

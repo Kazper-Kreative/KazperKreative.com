@@ -1,21 +1,76 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import AgentWorkspace from './AgentWorkspace';
 
-describe('AgentWorkspace', () => {
-  const mockJobs = [
-    { _id: '1', title: 'New Brief', status: 'PENDING' },
-    { _id: '2', title: 'Active Op', status: 'ACTIVE' },
-  ];
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
+}));
 
+jest.mock('@/hooks/useUISound', () => ({
+  useUISound: () => ({ playSound: jest.fn() }),
+}));
+
+jest.mock('@/components/atoms/ClientSafeIcon', () => {
+  return function MockIcon({ name }: { name: string }) {
+    return <span data-testid={`icon-${name}`}>{name}</span>;
+  };
+});
+
+const mockJobs = [
+  { _id: 'job-1', title: 'Build MVP', status: 'PENDING' as const, description: 'Create an MVP', client: { name: 'Acme Corp' } },
+  { _id: 'job-2', title: 'QA Sprint', status: 'ACTIVE' as const, description: 'Run QA cycle' },
+  { _id: 'job-3', title: 'Ship v1', status: 'COMPLETED' as const },
+];
+
+describe('AgentWorkspace', () => {
   it('renders the workspace title', () => {
     render(<AgentWorkspace jobs={[]} />);
     expect(screen.getByText(/AGENCY WORKSTATION/i)).toBeInTheDocument();
   });
 
-  it('renders pending and active jobs', () => {
-    render(<AgentWorkspace jobs={mockJobs as any} />);
-    expect(screen.getByText(/New Brief/i)).toBeInTheDocument();
-    const activeOps = screen.getAllByText(/Active Op/i);
-    expect(activeOps.length).toBeGreaterThan(0);
+  it('renders three columns', () => {
+    render(<AgentWorkspace jobs={mockJobs} />);
+    expect(screen.getByText('INCOMING BRIEFS')).toBeInTheDocument();
+    expect(screen.getByText('ACTIVE OPERATIONS')).toBeInTheDocument();
+    expect(screen.getByText('MISSION ARCHIVE')).toBeInTheDocument();
+  });
+
+  it('displays jobs in correct columns', () => {
+    render(<AgentWorkspace jobs={mockJobs} />);
+    expect(screen.getByText('Build MVP')).toBeInTheDocument();
+    expect(screen.getByText('QA Sprint')).toBeInTheDocument();
+    expect(screen.getByText('Ship v1')).toBeInTheDocument();
+  });
+
+  it('shows client name when available', () => {
+    render(<AgentWorkspace jobs={mockJobs} />);
+    expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+  });
+
+  it('shows NO_DATA for empty columns', () => {
+    render(<AgentWorkspace jobs={[]} />);
+    const emptyLabels = screen.getAllByText('NO_DATA');
+    expect(emptyLabels.length).toBe(3);
+  });
+
+  it('moves job from PENDING to ACTIVE on accept', () => {
+    render(<AgentWorkspace jobs={[mockJobs[0]]} />);
+    fireEvent.click(screen.getByTestId('icon-Check'));
+    expect(screen.queryByTestId('icon-Check')).not.toBeInTheDocument();
+    expect(screen.getByText('COMPLETE')).toBeInTheDocument();
+  });
+
+  it('moves job from PENDING to DECLINED on decline', () => {
+    render(<AgentWorkspace jobs={[mockJobs[0]]} />);
+    fireEvent.click(screen.getByTestId('icon-X'));
+    expect(screen.queryByText('Build MVP')).not.toBeInTheDocument();
+  });
+
+  it('moves job from ACTIVE to COMPLETED on complete', () => {
+    render(<AgentWorkspace jobs={[mockJobs[1]]} />);
+    fireEvent.click(screen.getByText('COMPLETE'));
+    expect(screen.queryByText('COMPLETE')).not.toBeInTheDocument();
   });
 });
