@@ -100,7 +100,8 @@ const Navbar: React.FC = () => {
               ))}
             </div>
 
-            <button 
+            <button
+              aria-label={`Open command center (${platform === 'mac' ? '⌘K' : 'Ctrl+K'})`}
               className="flex items-center justify-center w-8 h-8 bg-zinc-900 border border-zinc-800 rounded hover:border-purple-500/50 transition-all group relative"
               onClick={() => {
                 playSound('click');
@@ -117,7 +118,8 @@ const Navbar: React.FC = () => {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-4" suppressHydrationWarning>
-             <button 
+             <button
+              aria-label="Open command center"
               className="p-2 text-zinc-400"
               onClick={() => {
                 playSound('click');
@@ -127,11 +129,13 @@ const Navbar: React.FC = () => {
             >
               <ClientSafeIcon name="Search" size={20} />
             </button>
-            <button 
+            <button
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
               onClick={() => {
                 playSound('click');
                 setMobileMenuOpen(!mobileMenuOpen);
-              }} 
+              }}
               onMouseEnter={() => playSound('hover')}
               className="text-white focus:outline-none p-2 border border-zinc-800 rounded"
               suppressHydrationWarning
@@ -154,7 +158,7 @@ const Navbar: React.FC = () => {
             >
               <div className="flex justify-between items-center mb-12">
                  <span className="text-xs font-mono text-purple-500">// MENU_ACCESS</span>
-                 <button onClick={() => {
+                 <button aria-label="Close menu" onClick={() => {
                    playSound('click');
                    setMobileMenuOpen(false);
                  }} className="p-2 border border-zinc-800 rounded">

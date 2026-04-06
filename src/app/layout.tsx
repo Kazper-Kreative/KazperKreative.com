@@ -16,10 +16,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kazperkreative.com";
+
 export const metadata: Metadata = {
   title: "Kazper Kreative LLC | High-End Game Development, QA & Immersive UI",
   description:
     "Premium agency specializing in high-end game development, QA engineering, and immersive UI, expanding into the Ontario market.",
+  metadataBase: new URL(siteUrl),
+  openGraph: {
+    title: "Kazper Kreative LLC",
+    description:
+      "Premium agency specializing in high-end game development, QA engineering, and immersive UI.",
+    url: siteUrl,
+    siteName: "Kazper Kreative LLC",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kazper Kreative LLC",
+    description:
+      "Premium agency specializing in high-end game development, QA engineering, and immersive UI.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

@@ -16,15 +16,16 @@ export default function AgentDossier({ agent, isOpen, onClose }: AgentDossierPro
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-8">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 md:p-8" role="dialog" aria-modal="true" aria-labelledby="dossier-heading">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            aria-hidden="true"
             className="absolute inset-0 bg-black/80 backdrop-blur-md"
           />
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -73,15 +74,16 @@ export default function AgentDossier({ agent, isOpen, onClose }: AgentDossierPro
 
               {/* Main Content */}
               <div className="w-full md:w-2/3 p-8 md:p-12 relative">
-                <button 
+                <button
                   onClick={onClose}
+                  aria-label="Close agent dossier"
                   className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors"
                 >
                   <ClientSafeIcon name="X" size={24} />
                 </button>
 
                 <p className="text-purple-500 font-mono text-xs mb-2 tracking-[0.4em] uppercase">// PERSONNEL_DOSSIER</p>
-                <h2 className="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tighter">{agent.name}</h2>
+                <h2 id="dossier-heading" className="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tighter">{agent.name}</h2>
                 <p className="text-zinc-400 text-lg italic mb-8">{agent.role}</p>
                 
                 <div className="h-px w-full bg-gradient-to-r from-purple-500/30 to-transparent mb-8" />

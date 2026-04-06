@@ -23,10 +23,8 @@ export async function POST(request: NextRequest) {
     `;
 
     await resend.emails.send({
-      // TODO: Replace with your own email address
-      from: 'Kazper Kreative <noreply@kazperkreative.com>',
-      // TODO: Replace with your own email address
-      to: 'mason@kazperkreative.com',
+      from: process.env.EMAIL_FROM || 'Kazper Kreative <noreply@kazperkreative.com>',
+      to: process.env.EMAIL_TO || 'mason@kazperkreative.com',
       subject: `New message from ${name}`,
       html: emailHtml,
     });

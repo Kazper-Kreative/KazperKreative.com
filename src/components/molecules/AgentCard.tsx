@@ -44,8 +44,12 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
   return (
     <>
       <div
+        role="button"
+        tabIndex={0}
+        aria-label={`View agent dossier for ${name}`}
         onMouseEnter={() => playSound('hover')}
         onClick={handleClick}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
         className="relative group bg-zinc-900/60 border border-zinc-800 hover:border-purple-500/50 rounded-xl shadow-2xl overflow-hidden p-8 text-left block h-full transition-all duration-500 cursor-pointer"
         suppressHydrationWarning
       >
