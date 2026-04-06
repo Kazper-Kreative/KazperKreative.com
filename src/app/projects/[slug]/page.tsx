@@ -1,4 +1,5 @@
 import { getProjectBySlug } from '@/sanity/lib/projects';
+import { client } from '@/sanity/lib/client';
 import PageWrapper from '@/components/layouts/PageWrapper';
 import CaseStudyHeader from '@/components/molecules/CaseStudyHeader';
 import TechnicalBlock from '@/components/molecules/TechnicalBlock';
@@ -12,6 +13,15 @@ import DynamicSceneWrapper from '@/components/organisms/DynamicSceneWrapper';
 import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 import ProjectTracker from '@/components/utilities/ProjectTracker';
 import { Metadata } from 'next';
+
+export const revalidate = 3600; // ISR: revalidate every hour
+
+export async function generateStaticParams() {
+  const slugs: { slug: string }[] = await client.fetch(
+    `*[_type == "project" && defined(slug.current)]{ "slug": slug.current }`
+  );
+  return slugs.map((s) => ({ slug: s.slug }));
+}
 
 export async function generateMetadata({ params }: { params: any }): Promise<Metadata> {
   const { slug } = await params;
