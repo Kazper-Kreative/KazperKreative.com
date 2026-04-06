@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUISound } from '@/hooks/useUISound';
 import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
+import CommsTerminal from './CommsTerminal';
 
 interface Job {
   _id: string;
@@ -15,6 +16,7 @@ interface Job {
 
 interface AgentWorkspaceProps {
   jobs: Job[];
+  currentUserEmail?: string;
 }
 
 const COLUMNS = [
@@ -23,8 +25,9 @@ const COLUMNS = [
   { id: 'COMPLETED', title: 'MISSION ARCHIVE', color: 'text-emerald-500', borderColor: 'border-emerald-500/30' },
 ];
 
-export default function AgentWorkspace({ jobs: initialJobs }: AgentWorkspaceProps) {
+export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '' }: AgentWorkspaceProps) {
   const [jobs, setJobs] = useState(initialJobs);
+  const [activeCommsJobId, setActiveCommsJobId] = useState<string | null>(null);
   const { playSound } = useUISound();
 
   const handleStatusChange = (jobId: string, newStatus: Job['status']) => {
@@ -86,12 +89,21 @@ export default function AgentWorkspace({ jobs: initialJobs }: AgentWorkspaceProp
                         </div>
                       )}
                       {job.status === 'ACTIVE' && (
-                        <button 
-                          onClick={() => handleStatusChange(job._id, 'COMPLETED')}
-                          className="text-purple-500 hover:bg-purple-500/10 p-1 rounded text-[10px] border border-purple-500/30 px-2"
-                        >
-                          COMPLETE
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => { playSound('click'); setActiveCommsJobId(job._id); }}
+                            className="text-cyan-500 hover:bg-cyan-500/10 p-1 rounded text-[10px] border border-cyan-500/30 px-2"
+                            aria-label={`Open comms for ${job.title}`}
+                          >
+                            COMMS
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(job._id, 'COMPLETED')}
+                            className="text-purple-500 hover:bg-purple-500/10 p-1 rounded text-[10px] border border-purple-500/30 px-2"
+                          >
+                            COMPLETE
+                          </button>
+                        </div>
                       )}
                     </div>
                     
@@ -119,6 +131,33 @@ export default function AgentWorkspace({ jobs: initialJobs }: AgentWorkspaceProp
           </div>
         ))}
       </div>
+
+      {/* Comms Terminal Panel */}
+      <AnimatePresence>
+        {activeCommsJobId && currentUserEmail && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-6"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-purple-500 text-[10px] font-mono tracking-widest">// COMMS_CHANNEL_OPEN</span>
+              <button
+                onClick={() => setActiveCommsJobId(null)}
+                className="text-zinc-500 hover:text-white text-[10px] font-mono border border-zinc-800 px-2 py-1 rounded"
+              >
+                CLOSE_CHANNEL
+              </button>
+            </div>
+            <CommsTerminal
+              jobId={activeCommsJobId}
+              jobTitle={jobs.find(j => j._id === activeCommsJobId)?.title || 'Unknown'}
+              currentUserEmail={currentUserEmail}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

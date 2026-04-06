@@ -1,30 +1,42 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
-import Button from '@/components/atoms/Button';
+import { Metadata } from 'next';
+import PageWrapper from '@/components/layouts/PageWrapper';
+import ApplicantTerminal from '@/components/organisms/ApplicantTerminal';
 
-const JoinPage: React.FC = () => {
-  return (
-    <div className="bg-zinc-950 min-h-screen flex flex-col">
-      <header className="p-4 sm:p-6">
-        <Link href="/" className="inline-flex items-center text-purple-400 hover:text-purple-300 transition-colors">
-          <ArrowLeft size={20} className="mr-2" />
-          Back to Home
-        </Link>
-      </header>
-      <main className="flex-grow flex flex-col items-center justify-center text-center px-4">
-        <h1 className="text-4xl font-bold text-white mb-4">Talent Application</h1>
-        <p className="text-zinc-400 mb-8 max-w-xl">
-          You will be redirected to our secure Notion portal to complete your application. Please ensure you have your portfolio and resume ready.
-        </p>
-        <Link href="https://lapis-elf-34a.notion.site/306453d752a780e8b9effbbf86df8620" target="_blank" rel="noopener noreferrer">
-          <Button variant="primary" size="lg" className="inline-flex items-center">
-            Proceed to Application <ExternalLink size={20} className="ml-2" />
-          </Button>
-        </Link>
-      </main>
-    </div>
-  );
+export const metadata: Metadata = {
+  title: 'Join the Roster | Kazper Kreative LLC',
+  description: 'Submit your dossier to join the Kazper Kreative engineering roster.',
 };
 
-export default JoinPage;
+export default function JoinPage() {
+  return (
+    <PageWrapper>
+      <div className="min-h-screen pt-32 pb-20 px-6 bg-black">
+        <div className="max-w-2xl mx-auto text-center mb-12">
+          <p className="text-purple-500 font-mono text-[10px] tracking-[0.4em] uppercase mb-4">
+            // RECRUITMENT_PROTOCOL
+          </p>
+          <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4">
+            Join the Roster
+          </h1>
+          <p className="text-zinc-400 text-lg max-w-xl mx-auto">
+            Submit your dossier through our secure applicant terminal.
+            All submissions are reviewed by senior operatives.
+          </p>
+        </div>
+
+        <ApplicantTerminal />
+
+        <div className="max-w-2xl mx-auto text-center mt-12">
+          <Link
+            href="/agents"
+            className="text-zinc-500 hover:text-purple-400 text-xs font-mono uppercase tracking-widest transition-colors"
+          >
+            &larr; Back to Squad Roster
+          </Link>
+        </div>
+      </div>
+    </PageWrapper>
+  );
+}

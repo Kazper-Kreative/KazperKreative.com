@@ -6,7 +6,8 @@ import lead from './lead'
 import client from './client'
 import job from './job'
 import message from './message'
+import applicant from './applicant'
 
 export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [project, service, agent, lead, client, job, message],
+  types: [project, service, agent, lead, client, job, message, applicant],
 }
