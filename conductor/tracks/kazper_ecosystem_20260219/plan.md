@@ -36,7 +36,7 @@
     - [x] Create `AgentWorkspace` to view assigned briefs.
     - [x] Implement "Accept/Decline" logic for incoming briefs.
     - [x] Build status management (In Progress, Review, Completed).
-- [ ] **Task: Conductor - User Manual Verification 'Phase 3: The Workstation' (Protocol in workflow.md)**
+- [x] **Task: Conductor - User Manual Verification 'Phase 3: The Workstation' (Protocol in workflow.md)**
 
 ## Phase 4: Communication & Recruitment
 - [ ] **Task: Encrypted Comms Terminal**

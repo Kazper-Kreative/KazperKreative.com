@@ -15,6 +15,8 @@ jest.mock('@react-three/drei', () => ({
   Environment: () => <div data-testid="environment" />,
   Float: ({ children }: { children: React.ReactNode }) => <div data-testid="float">{children}</div>,
   MeshDistortMaterial: () => <div data-testid="mesh-distort-material" />,
+  AdaptiveDpr: () => <div data-testid="adaptive-dpr" />,
+  Preload: () => <div data-testid="preload" />,
 }));
 
 describe('CinematicScene', () => {

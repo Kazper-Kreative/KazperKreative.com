@@ -2,6 +2,14 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import CaseStudyInteractiveScene from './CaseStudyInteractiveScene';
 
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, className, ...props }: any) => <div className={className} {...props}>{children}</div>,
+  },
+  useInView: jest.fn(() => true),
+}));
+
 // Mock @react-three/fiber
 jest.mock('@react-three/fiber', () => ({
   Canvas: ({ children }: { children: React.ReactNode }) => <div data-testid="r3f-canvas">{children}</div>,
@@ -16,6 +24,7 @@ jest.mock('@react-three/drei', () => ({
   Float: ({ children }: { children: React.ReactNode }) => <div data-testid="float">{children}</div>,
   PresentationControls: ({ children }: { children: React.ReactNode }) => <div data-testid="presentation-controls">{children}</div>,
   ContactShadows: () => <div data-testid="contact-shadows" />,
+  AdaptiveDpr: () => <div data-testid="adaptive-dpr" />,
 }));
 
 // Mock usePerformanceConfig

@@ -3,9 +3,7 @@ import BriefTerminal from './BriefTerminal';
 
 jest.mock('@/hooks/useUISound', () => ({
   useUISound: () => ({
-    playClick: jest.fn(),
-    playSuccess: jest.fn(),
-    playHover: jest.fn(),
+    playSound: jest.fn(),
   }),
 }));
 

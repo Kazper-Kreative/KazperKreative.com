@@ -10,6 +10,8 @@ jest.mock('framer-motion', () => ({
     p: ({ children, className, whileHover, whileTap, whileInView, ...props }: any) => <p className={className} {...props}>{children}</p>,
     h2: ({ children, className, whileHover, whileTap, whileInView, ...props }: any) => <h2 className={className} {...props}>{children}</h2>,
   },
+  useInView: jest.fn(() => true),
+  AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
 // Mock usePerformanceConfig

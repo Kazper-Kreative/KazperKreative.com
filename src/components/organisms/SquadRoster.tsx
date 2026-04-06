@@ -11,17 +11,7 @@ const TechnicalBackground = dynamic(() => import('@/components/atoms/TechnicalBa
   loading: () => <div className="absolute inset-0 bg-zinc-950" />
 });
 
-export interface Agent {
-  name: string;
-  pictureUrl: string;
-  role: string;
-  bio: string;
-  upworkUrl: string;
-  specialties?: string[];
-  xp?: number;
-  rank?: string;
-  status?: string;
-}
+import { Agent } from '@/types/agent';
 
 interface SquadRosterProps {
   agents: Agent[];

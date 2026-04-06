@@ -5,8 +5,10 @@ import AgentCard from './AgentCard';
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, whileHover, whileTap, ...props }: any) => <div className={className} {...props}>{children}</div>,
+    div: ({ children, className, whileHover, whileTap, whileInView, ...props }: any) => <div className={className} {...props}>{children}</div>,
+    h3: ({ children, className, ...props }: any) => <h3 className={className} {...props}>{children}</h3>,
   },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
 // Mock usePerformanceConfig
