@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/utilities/ThemeProvider";
 import { AudioProvider } from "@/components/utilities/AudioProvider";
 import AuthProvider from "@/components/utilities/AuthProvider";
 import RoleSync from "@/components/utilities/RoleSync";
+import ScanlineOverlay from "@/components/atoms/ScanlineOverlay";
+import GlitchTransition from "@/components/atoms/GlitchTransition";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,6 +66,8 @@ export default function RootLayout({
           <AuthProvider>
             <RoleSync />
             <AudioProvider>
+              <ScanlineOverlay />
+              <GlitchTransition />
               {children}
             </AudioProvider>
           </AuthProvider>

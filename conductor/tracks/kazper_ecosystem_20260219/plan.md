@@ -39,17 +39,17 @@
 - [x] **Task: Conductor - User Manual Verification 'Phase 3: The Workstation' (Protocol in workflow.md)**
 
 ## Phase 4: Communication & Recruitment
-- [ ] **Task: Encrypted Comms Terminal**
-    - [ ] Build a private messaging UI (Text-only, tactical feel).
-    - [ ] Integrate real-time subscription for instant message updates.
-- [ ] **Task: Applicant Terminal**
-    - [ ] Create `/join` route with a stylized recruitment terminal.
-    - [ ] Implement dossier submission flow for new applicants.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 4: Communication & Recruitment' (Protocol in workflow.md)**
+- [x] **Task: Encrypted Comms Terminal**
+    - [x] Build a private messaging UI (Text-only, tactical feel).
+    - [x] Integrate real-time subscription for instant message updates.
+- [x] **Task: Applicant Terminal**
+    - [x] Create `/join` route with a stylized recruitment terminal.
+    - [x] Implement dossier submission flow for new applicants.
+- [x] **Task: Conductor - User Manual Verification 'Phase 4: Communication & Recruitment' (Protocol in workflow.md)**
 
 ## Phase 5: Simulated Reality Refinement
-- [ ] **Task: UI/UX Ecosystem Polish**
-    - [ ] Integrate global "Simulated Reality" overlays (Scanlines, Glitch effects on transition).
-    - [ ] Optimize 3D backgrounds for persistent state across dashboard views.
-    - [ ] Audit performance to ensure <100ms interaction latency on mobile.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 5: Simulated Reality Refinement' (Protocol in workflow.md)**
+- [x] **Task: UI/UX Ecosystem Polish**
+    - [x] Integrate global "Simulated Reality" overlays (Scanlines, Glitch effects on transition).
+    - [x] Optimize 3D backgrounds for persistent state across dashboard views.
+    - [x] Audit performance to ensure <100ms interaction latency on mobile.
+- [x] **Task: Conductor - User Manual Verification 'Phase 5: Simulated Reality Refinement' (Protocol in workflow.md)**
