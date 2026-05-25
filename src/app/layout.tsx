@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "@/components/utilities/ThemeProvider";
 import AuthProvider from "@/components/utilities/AuthProvider";
 import RoleSync from "@/components/utilities/RoleSync";
@@ -114,6 +115,7 @@ export default function RootLayout({
           <AuthProvider>
             <RoleSync />
             {children}
+            <Analytics />
           </AuthProvider>
         </ThemeProvider>
       </body>
