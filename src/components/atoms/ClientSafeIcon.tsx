@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { ExternalLink, Menu, X, ArrowDown, ArrowRight, Search, Command, Terminal, UserPlus, FileText, Globe, Volume2, VolumeX, LucideProps } from 'lucide-react';
+import { ExternalLink, Menu, X, ArrowDown, ArrowRight, Search, Command, Terminal, UserPlus, FileText, Globe, Volume2, VolumeX, Check, Loader, Send, LucideProps } from 'lucide-react';
 
 const iconMap = {
   ExternalLink,
@@ -16,7 +16,10 @@ const iconMap = {
   FileText,
   Globe,
   Volume2,
-  VolumeX
+  VolumeX,
+  Check,
+  Loader,
+  Send,
 };
 
 export type IconName = keyof typeof iconMap;

@@ -1,16 +1,25 @@
 import ClientDashboard from '@/components/organisms/ClientDashboard';
 import PageWrapper from '@/components/layouts/PageWrapper';
 import { client } from '@/sanity/lib/client';
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
 
-async function getJobs() {
-  // In a real scenario, we'd filter by the logged-in client's ID
-  // For now, we fetch all 'job' types to see the system in action
-  const jobs = await client.fetch(`*[_type == "job"] | order(_createdAt desc)`);
-  return jobs;
+async function getJobs(sanityId: string) {
+  return client.fetch(
+    `*[_type == "job" && client._ref == $sanityId] | order(_createdAt desc)`,
+    { sanityId }
+  );
 }
 
 export default async function DashboardPage() {
-  const jobs = await getJobs();
+  const session = await auth();
+  const sanityId = session?.user?.sanityId;
+
+  if (!sanityId) {
+    redirect('/unauthorized');
+  }
+
+  const jobs = await getJobs(sanityId);
 
   return (
     <PageWrapper>
