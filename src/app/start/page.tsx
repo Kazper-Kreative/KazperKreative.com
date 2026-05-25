@@ -12,7 +12,7 @@ const steps = [
     id: 'identity',
     title: 'About you',
     description: 'Tell us who we\'ll be working with.',
-    fields: ['name', 'email', 'company'],
+    fields: ['name', 'email'],
   },
   {
     id: 'spec',
@@ -90,8 +90,9 @@ const StartPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-zinc-300 text-sm mb-2">Your name</label>
+              <label htmlFor="start-name" className="block text-zinc-300 text-sm mb-2">Your name</label>
               <input
+                id="start-name"
                 type="text"
                 name="name"
                 value={formData.name}
@@ -102,8 +103,9 @@ const StartPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-zinc-300 text-sm mb-2">Email</label>
+              <label htmlFor="start-email" className="block text-zinc-300 text-sm mb-2">Email</label>
               <input
+                id="start-email"
                 type="email"
                 name="email"
                 value={formData.email}
@@ -114,8 +116,9 @@ const StartPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-zinc-300 text-sm mb-2">Company (optional)</label>
+              <label htmlFor="start-company" className="block text-zinc-300 text-sm mb-2">Company (optional)</label>
               <input
+                id="start-company"
                 type="text"
                 name="company"
                 value={formData.company}
@@ -130,8 +133,9 @@ const StartPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-zinc-300 text-sm mb-2">What can we help with?</label>
+              <label htmlFor="start-project-type" className="block text-zinc-300 text-sm mb-2">What can we help with?</label>
               <select
+                id="start-project-type"
                 name="projectType"
                 value={formData.projectType}
                 onChange={handleInputChange}
@@ -147,8 +151,9 @@ const StartPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-zinc-300 text-sm mb-2">Budget range</label>
+              <label htmlFor="start-budget" className="block text-zinc-300 text-sm mb-2">Budget range</label>
               <select
+                id="start-budget"
                 name="budget"
                 value={formData.budget}
                 onChange={handleInputChange}
@@ -168,8 +173,9 @@ const StartPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-zinc-300 text-sm mb-2">Tell us about your project</label>
+              <label htmlFor="start-description" className="block text-zinc-300 text-sm mb-2">Tell us about your project</label>
               <textarea
+                id="start-description"
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
