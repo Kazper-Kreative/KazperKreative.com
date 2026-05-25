@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useUISound } from '@/hooks/useUISound';
 
 const STEPS = [
-  { id: 'title', label: 'PROJECT TITLE', placeholder: 'Enter project name...' },
-  { id: 'description', label: 'PROJECT DESCRIPTION', placeholder: 'What are we building?' },
-  { id: 'contact', label: 'IDENTIFICATION', placeholder: 'Enter your email...' },
+  { id: 'title', label: 'Project title', placeholder: 'Working title...' },
+  { id: 'description', label: 'What we\'re building', placeholder: 'A few sentences is plenty.' },
+  { id: 'contact', label: 'Email', placeholder: 'you@company.com' },
 ];
 
 export default function BriefTerminal() {
   const [currentStep, setCurrentStep] = useState(0);
   const [values, setValues] = useState<Record<string, string>>({});
   const [inputValue, setInputValue] = useState('');
-  const [history, setHistory] = useState<string[]>(['> SYSTEM INITIALIZED', '> AWAITING COMMAND...']);
+  const [history, setHistory] = useState<string[]>(['> Ready when you are.', '> What are we building?']);
   const inputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { playSound } = useUISound();
@@ -23,8 +23,8 @@ export default function BriefTerminal() {
 
   const submitBrief = async (finalValues: Record<string, string>) => {
     setIsSubmitting(true);
-    setHistory(prev => [...prev, '> UPLOADING TO ENCRYPTED SERVER...']);
-    
+    setHistory(prev => [...prev, '> Sending...']);
+
     try {
       const response = await fetch('/api/brief', {
         method: 'POST',
@@ -34,12 +34,12 @@ export default function BriefTerminal() {
 
       if (response.ok) {
         playSound('success');
-        setHistory(prev => [...prev, '> DATA ENCRYPTED', '> BRIEF SUBMITTED TO THE SQUAD.']);
+        setHistory(prev => [...prev, '> Thanks — we\'ll be in touch.']);
       } else {
-        setHistory(prev => [...prev, '> ERROR: UPLOAD FAILED', '> RETRYING COMMAND...']);
+        setHistory(prev => [...prev, '> Send failed. Please try again.']);
       }
-    } catch (error) {
-      setHistory(prev => [...prev, '> CRITICAL SYSTEM ERROR']);
+    } catch {
+      setHistory(prev => [...prev, '> Something went wrong. Try again?']);
     } finally {
       setIsSubmitting(false);
     }
@@ -49,14 +49,14 @@ export default function BriefTerminal() {
     if (e.key === 'Enter' && inputValue.trim() && !isSubmitting) {
       playSound('click');
       const newHistory = [...history, `> ${step.label}: ${inputValue}`];
-      
+
       const newValues = { ...values, [step.id]: inputValue };
       setValues(newValues);
       setInputValue('');
 
       if (currentStep < STEPS.length - 1) {
         setCurrentStep(currentStep + 1);
-        setHistory([...newHistory, `> PROCEEDING TO ${STEPS[currentStep + 1].label}...`]);
+        setHistory([...newHistory, `> ${STEPS[currentStep + 1].label}?`]);
       } else {
         setHistory(newHistory);
         submitBrief(newValues);
@@ -81,7 +81,7 @@ export default function BriefTerminal() {
 
       <div className="border-t border-emerald-500/30 pt-4">
         <div className="flex items-center gap-2">
-          <span className="animate-pulse">{isSubmitting ? 'UPLOADING...' : 'INITIALIZE BRIEFING:'}</span>
+          <span className="animate-pulse">{isSubmitting ? 'Sending...' : 'Brief:'}</span>
           {!isSubmitting && <span className="text-emerald-300/70">{step.label}</span>}
         </div>
         {!isSubmitting && (

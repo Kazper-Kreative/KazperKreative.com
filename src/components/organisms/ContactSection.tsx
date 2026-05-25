@@ -24,23 +24,23 @@ const ContactSection: React.FC = () => {
         <div className="flex flex-col gap-12 max-w-2xl mx-auto">
           {/* Block A: Fast Track Client Discovery */}
           <div className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800">
-            <h3 className="text-3xl font-bold text-purple-300 mb-4">Require Our Expertise?</h3>
+            <h3 className="text-3xl font-bold text-purple-300 mb-4">Have a project in mind?</h3>
             <p className="text-zinc-400 mb-6">
               Skip the queue. If you have a defined budget and timeline, book a 15-minute discovery call directly with our engineering lead.
             </p>
             <Link href="https://calendly.com/kazperkreative" target="_blank" rel="noopener noreferrer">
-              <Button variant="primary" size="lg">Book Discovery Call</Button>
+              <Button variant="primary" size="lg">Book a discovery call</Button>
             </Link>
           </div>
 
           {/* Block B: Talent Acquisition */}
           <div className="bg-zinc-900/50 p-8 rounded-2xl border border-zinc-800">
-            <h3 className="text-3xl font-bold text-purple-300 mb-4">Join the Roster</h3>
+            <h3 className="text-3xl font-bold text-purple-300 mb-4">Work with us</h3>
             <p className="text-zinc-400 mb-6">
-              Are you an Unreal Dev, Audio Engineer, or UI Specialist looking for contract work?
+              Unreal devs, audio engineers, and UI specialists — we&apos;re always open to talented contractors.
             </p>
             <Link href="/agents/join" onClick={() => unlockBadge('recruit')}>
-              <Button variant="secondary" size="lg">Apply to Join</Button>
+              <Button variant="secondary" size="lg">Apply</Button>
             </Link>
           </div>
         </div>

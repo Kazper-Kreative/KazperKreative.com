@@ -34,20 +34,20 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible = true }) => {
 
       <div className="relative z-10 flex flex-col items-center justify-center text-center max-w-4xl mx-auto px-4">
         <h1 className="text-5xl font-black tracking-tight leading-none sm:text-6xl md:text-7xl lg:text-8xl mb-4 break-words">
-          IMMERSION ENGINEERED.
+          Game development &amp; QA, engineered end-to-end.
         </h1>
         <p className="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl break-words">
-          Kazper Kreative: Full-Cycle Game Development &amp; QA Validation.
+          Kazper Kreative builds Unreal Engine titles, QA pipelines, and immersive UI for studios in Ontario and beyond.
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
-          <Link href="/#work">
+          <Link href="/discovery">
             <Button variant="primary" size="lg">
-              View Projects
+              Start a project
             </Button>
           </Link>
-          <Link href="/discovery">
+          <Link href="/#work">
             <Button variant="secondary" size="lg">
-              Initialize Operations
+              View our work
             </Button>
           </Link>
         </div>

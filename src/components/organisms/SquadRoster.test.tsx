@@ -7,16 +7,14 @@ describe('SquadRoster', () => {
     { name: 'Hunter', role: 'Architect', xp: 4500, rank: 'COMMANDER', pictureUrl: '/hunter.jpeg', bio: 'Bio', upworkUrl: '#' },
   ];
 
-  it('renders the roster title', () => {
+  it('renders the section title', () => {
     render(<SquadRoster agents={[]} />);
-    expect(screen.getByText(/THE ROSTER/i)).toBeInTheDocument();
+    expect(screen.getByText(/The team/i)).toBeInTheDocument();
   });
 
-  it('renders agent cards with XP and Rank', () => {
+  it('renders agent cards for each agent', () => {
     render(<SquadRoster agents={mockAgents as any} />);
     expect(screen.getByText(/Mason/i)).toBeInTheDocument();
     expect(screen.getByText(/Hunter/i)).toBeInTheDocument();
-    expect(screen.getByText(/5000 XP/i)).toBeInTheDocument();
-    expect(screen.getByText(/ELITE/i)).toBeInTheDocument();
   });
 });

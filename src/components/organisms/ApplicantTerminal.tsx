@@ -17,14 +17,14 @@ interface FormData {
 }
 
 const STEPS = [
-  { key: 'name' as const, label: 'FULL_NAME', prompt: 'Enter your real name, operative.' },
-  { key: 'callsign' as const, label: 'CALLSIGN', prompt: 'Choose your agent handle. (Optional — press Enter to skip)' },
-  { key: 'email' as const, label: 'SECURE_CONTACT', prompt: 'Provide a secure email for communications.' },
-  { key: 'role' as const, label: 'DESIRED_ROLE', prompt: 'What role are you applying for? (e.g. Full-Stack Dev, QA Engineer, Game Dev)' },
-  { key: 'specialties' as const, label: 'SPECIALIZED_SKILLS', prompt: 'List your specialties, comma-separated. (e.g. React, Unity, Rust)' },
-  { key: 'experience' as const, label: 'YEARS_ACTIVE', prompt: 'Years of professional experience.' },
-  { key: 'portfolioUrl' as const, label: 'PORTFOLIO_LINK', prompt: 'Link to your portfolio or GitHub. (Optional — press Enter to skip)' },
-  { key: 'bio' as const, label: 'MISSION_STATEMENT', prompt: 'Tell us why you want to join Kazper Kreative. What drives you?' },
+  { key: 'name' as const, label: 'Name', prompt: 'Your full name.' },
+  { key: 'callsign' as const, label: 'Handle (optional)', prompt: 'Username or callsign. Press Enter to skip.' },
+  { key: 'email' as const, label: 'Email', prompt: 'How should we reach you?' },
+  { key: 'role' as const, label: 'Role', prompt: 'What role are you applying for? (e.g. Full-stack dev, QA engineer, Game dev)' },
+  { key: 'specialties' as const, label: 'Skills', prompt: 'Comma-separated. (e.g. React, Unity, Rust)' },
+  { key: 'experience' as const, label: 'Years of experience', prompt: 'Years of professional experience.' },
+  { key: 'portfolioUrl' as const, label: 'Portfolio (optional)', prompt: 'Link to portfolio or GitHub. Press Enter to skip.' },
+  { key: 'bio' as const, label: 'Why Kazper?', prompt: 'Tell us a bit about yourself and why you want to work with us.' },
 ];
 
 export default function ApplicantTerminal() {
@@ -36,7 +36,7 @@ export default function ApplicantTerminal() {
   });
   const [status, setStatus] = useState<'active' | 'submitting' | 'success' | 'error'>('active');
   const [responseMsg, setResponseMsg] = useState('');
-  const [log, setLog] = useState<string[]>(['[SYS] APPLICANT_TERMINAL v2.0 initialized.', '[SYS] Begin dossier entry protocol.']);
+  const [log, setLog] = useState<string[]>(['> Welcome.', '> Let\'s get to know you.']);
   const { playSound } = useUISound();
 
   const currentStep = STEPS[step];
@@ -47,7 +47,7 @@ export default function ApplicantTerminal() {
     const isOptional = currentStep.key === 'callsign' || currentStep.key === 'portfolioUrl';
     if (!input.trim() && !isOptional) {
       playSound('click');
-      setLog(prev => [...prev, `[ERR] ${currentStep.label} is required.`]);
+      setLog(prev => [...prev, `! ${currentStep.label} is required.`]);
       return;
     }
 
@@ -66,7 +66,7 @@ export default function ApplicantTerminal() {
 
   const handleFinalSubmit = async (data: FormData) => {
     setStatus('submitting');
-    setLog(prev => [...prev, '[SYS] Transmitting dossier to HQ...']);
+    setLog(prev => [...prev, '> Sending...']);
 
     try {
       const res = await fetch('/api/applicants', {
@@ -84,17 +84,17 @@ export default function ApplicantTerminal() {
       if (res.ok) {
         setStatus('success');
         setResponseMsg(result.message);
-        setLog(prev => [...prev, `[SYS] ${result.message}`, `[SYS] DOSSIER_ID: ${result.id}`]);
+        setLog(prev => [...prev, `> ${result.message}`]);
         playSound('success');
       } else {
         setStatus('error');
         setResponseMsg(result.message);
-        setLog(prev => [...prev, `[ERR] ${result.message}`]);
+        setLog(prev => [...prev, `! ${result.message}`]);
       }
     } catch {
       setStatus('error');
       setResponseMsg('Connection lost. Try again.');
-      setLog(prev => [...prev, '[ERR] Transmission failed.']);
+      setLog(prev => [...prev, '! Send failed.']);
     }
   };
 
@@ -107,7 +107,7 @@ export default function ApplicantTerminal() {
           <span className="w-3 h-3 rounded-full bg-amber-500/80" />
           <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
         </div>
-        <span className="text-purple-500 text-[10px] tracking-widest">APPLICANT_TERMINAL // KAZPER_KREATIVE</span>
+        <span className="text-purple-400 text-[10px] tracking-widest">Apply to Kazper Kreative</span>
       </div>
 
       {/* Terminal Body */}
@@ -121,8 +121,8 @@ export default function ApplicantTerminal() {
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 className={`text-xs leading-relaxed ${
-                  line.startsWith('[ERR]') ? 'text-red-500' :
-                  line.startsWith('[SYS]') ? 'text-purple-500' :
+                  line.startsWith('!') ? 'text-red-500' :
+                  line.startsWith('>') ? 'text-zinc-400' :
                   'text-zinc-400'
                 }`}
               >
@@ -136,7 +136,7 @@ export default function ApplicantTerminal() {
         {status === 'active' && currentStep && (
           <div>
             <p className="text-purple-400 text-[10px] uppercase tracking-widest mb-1">
-              [{String(step + 1).padStart(2, '0')}/{String(STEPS.length).padStart(2, '0')}] {currentStep.label}
+              [{step + 1} of {STEPS.length}] {currentStep.label}
             </p>
             <p className="text-zinc-500 text-xs mb-3">{currentStep.prompt}</p>
             <div className="flex items-center bg-black border border-zinc-800 rounded px-4 py-2 focus-within:border-purple-500/50 transition-colors">
@@ -147,7 +147,7 @@ export default function ApplicantTerminal() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleSubmitStep(); }}
                 className="flex-1 bg-transparent text-white outline-none text-sm"
-                placeholder={`Enter ${currentStep.label.toLowerCase()}...`}
+                placeholder={currentStep.label}
                 autoFocus
                 aria-label={currentStep.label}
               />
@@ -156,9 +156,9 @@ export default function ApplicantTerminal() {
         )}
 
         {status === 'submitting' && (
-          <div className="flex items-center gap-3 text-purple-500 text-sm">
+          <div className="flex items-center gap-3 text-purple-400 text-sm">
             <ClientSafeIcon name="Loader" size={16} className="animate-spin" />
-            TRANSMITTING_DOSSIER...
+            Sending...
           </div>
         )}
 
@@ -167,20 +167,20 @@ export default function ApplicantTerminal() {
             <div className="w-16 h-16 mx-auto mb-4 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center">
               <ClientSafeIcon name="Check" size={32} className="text-emerald-500" />
             </div>
-            <p className="text-emerald-400 font-bold text-lg uppercase tracking-wider mb-2">Dossier Received</p>
+            <p className="text-emerald-400 font-bold text-lg mb-2">Application received</p>
             <p className="text-zinc-500 text-xs">{responseMsg}</p>
           </div>
         )}
 
         {status === 'error' && (
           <div className="text-center py-8">
-            <p className="text-red-500 font-bold uppercase tracking-wider mb-2">Transmission Failed</p>
+            <p className="text-red-500 font-bold mb-2">Send failed</p>
             <p className="text-zinc-500 text-xs">{responseMsg}</p>
             <button
-              onClick={() => { setStatus('active'); setStep(0); setLog(['[SYS] Terminal reset. Retry protocol.']); }}
+              onClick={() => { setStatus('active'); setStep(0); setLog(['> Let\'s try that again.']); }}
               className="mt-4 px-4 py-2 border border-purple-500/50 text-purple-400 text-xs uppercase tracking-widest hover:bg-purple-500/10 rounded transition-colors"
             >
-              RETRY
+              Try again
             </button>
           </div>
         )}

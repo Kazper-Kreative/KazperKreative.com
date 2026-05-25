@@ -10,20 +10,20 @@ import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 const steps = [
   {
     id: 'identity',
-    title: 'Identity Verification',
-    description: 'Provide your name and organization to begin initialization.',
+    title: 'About you',
+    description: 'Tell us who we\'ll be working with.',
     fields: ['name', 'email', 'company'],
   },
   {
     id: 'spec',
-    title: 'Project Specification',
-    description: 'Select the operational unit and resource allocation range.',
+    title: 'Project details',
+    description: 'A quick sense of what you need and the budget.',
     fields: ['projectType', 'budget'],
   },
   {
     id: 'scope',
-    title: 'Mission Briefing',
-    description: 'Describe the technical objectives and desired outcomes.',
+    title: 'Project description',
+    description: 'What are you building and what does success look like?',
     fields: ['description'],
   },
 ];
@@ -72,11 +72,11 @@ const DiscoveryPage: React.FC = () => {
       if (response.ok) {
         setIsSuccess(true);
       } else {
-        alert('Initialization failed. Please check network connectivity.');
+        alert('Submission failed. Please try again.');
       }
     } catch (error) {
       console.error('Error submitting lead:', error);
-      alert('System error during initialization.');
+      alert('Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -90,38 +90,38 @@ const DiscoveryPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// NAME</label>
+              <label className="block text-zinc-300 text-sm mb-2">Your name</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors font-light"
-                placeholder="OPERATIVE NAME"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                placeholder="Your full name"
                 required
               />
             </div>
             <div>
-              <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// EMAIL_ADDRESS</label>
+              <label className="block text-zinc-300 text-sm mb-2">Email</label>
               <input
                 type="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors font-light"
-                placeholder="CONTACT_PROTOCOL@DOMAIN.COM"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                placeholder="you@company.com"
                 required
               />
             </div>
             <div>
-              <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// ORGANIZATION</label>
+              <label className="block text-zinc-300 text-sm mb-2">Company (optional)</label>
               <input
                 type="text"
                 name="company"
                 value={formData.company}
                 onChange={handleInputChange}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors font-light"
-                placeholder="ENTITY_NAME (OPTIONAL)"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                placeholder="Company name"
               />
             </div>
           </div>
@@ -130,35 +130,35 @@ const DiscoveryPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// PROJECT_TYPE</label>
+              <label className="block text-zinc-300 text-sm mb-2">What can we help with?</label>
               <select
                 name="projectType"
                 value={formData.projectType}
                 onChange={handleInputChange}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors font-light appearance-none cursor-pointer"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors appearance-none cursor-pointer"
                 required
               >
-                <option value="" disabled>SELECT UNIT</option>
-                <option value="game-dev">GAME_DEVELOPMENT</option>
-                <option value="web-app">WEB_APPLICATION</option>
-                <option value="qa">QA_VALIDATION</option>
-                <option value="automation">AUTOMATION_PROTOCOL</option>
-                <option value="other">OTHER_OPS</option>
+                <option value="" disabled>Select one</option>
+                <option value="game-dev">Game development</option>
+                <option value="web-app">Web application</option>
+                <option value="qa">QA engineering</option>
+                <option value="automation">Automation</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div>
-              <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// BUDGET_ALLOCATION</label>
+              <label className="block text-zinc-300 text-sm mb-2">Budget range</label>
               <select
                 name="budget"
                 value={formData.budget}
                 onChange={handleInputChange}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors font-light appearance-none cursor-pointer"
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors appearance-none cursor-pointer"
                 required
               >
-                <option value="" disabled>SELECT RANGE</option>
-                <option value="under-5k">&lt; $5,000</option>
-                <option value="5k-15k">$5,000 - $15,000</option>
-                <option value="15k-50k">$15,000 - $50,000</option>
+                <option value="" disabled>Select range</option>
+                <option value="under-5k">Under $5,000</option>
+                <option value="5k-15k">$5,000 – $15,000</option>
+                <option value="15k-50k">$15,000 – $50,000</option>
                 <option value="50k-plus">$50,000+</option>
               </select>
             </div>
@@ -168,13 +168,13 @@ const DiscoveryPage: React.FC = () => {
         return (
           <div className="space-y-6">
             <div>
-              <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// MISSION_DETAILS</label>
+              <label className="block text-zinc-300 text-sm mb-2">Tell us about your project</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors font-light min-h-[200px] resize-none"
-                placeholder="DESCRIBE_TECHNICAL_REQUIREMENTS..."
+                className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors min-h-[200px] resize-none"
+                placeholder="What you're building, timeline, what success looks like..."
                 required
               />
             </div>
@@ -189,20 +189,20 @@ const DiscoveryPage: React.FC = () => {
     return (
       <PageWrapper>
         <div className="min-h-screen bg-[#020205] flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-xl w-full bg-zinc-950 border border-purple-500/30 rounded-2xl p-12 text-center shadow-2xl shadow-purple-900/20"
+            className="max-w-xl w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-12 text-center shadow-2xl"
           >
             <div className="w-20 h-20 bg-purple-500/10 rounded-full flex items-center justify-center mx-auto mb-8 border border-purple-500/20">
-              <ClientSafeIcon name="ExternalLink" size={32} className="text-purple-500" />
+              <ClientSafeIcon name="Check" size={32} className="text-purple-400" />
             </div>
-            <h1 className="text-4xl font-black text-white mb-4 uppercase tracking-tighter">System Initialized.</h1>
-            <p className="text-zinc-400 mb-12 font-light leading-relaxed">
-              Your discovery brief has been securely transmitted. Our engineering leads will review the operational parameters and contact you shortly.
+            <h1 className="text-4xl font-black text-white mb-4 tracking-tighter">Thanks — we&apos;ll be in touch.</h1>
+            <p className="text-zinc-400 mb-12 leading-relaxed">
+              We&apos;ve received your project brief. Expect a reply within one business day.
             </p>
             <Button variant="secondary" onClick={() => window.location.href = '/'}>
-              Return to Control Center
+              Back to home
             </Button>
           </motion.div>
         </div>
@@ -220,28 +220,18 @@ const DiscoveryPage: React.FC = () => {
 
         <div className="container mx-auto max-w-2xl relative z-10">
           <div className="mb-12">
-            <motion.p 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-purple-500 font-mono text-xs tracking-[0.4em] uppercase mb-4"
-             
-            >
-              // PROJECT_DISCOVERY_PORTAL
-            </motion.p>
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter mb-6"
-             
+              className="text-5xl md:text-6xl font-black text-white tracking-tighter mb-6"
             >
-              INITIALIZE OPS.
+              Start a project.
             </motion.h1>
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="text-zinc-400 text-lg font-light leading-relaxed"
-             
+              className="text-zinc-400 text-lg leading-relaxed"
             >
               Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
             </motion.p>
@@ -251,12 +241,11 @@ const DiscoveryPage: React.FC = () => {
             {/* Step Indicators */}
             <div className="flex gap-2 mb-12">
               {steps.map((_, index) => (
-                <div 
+                <div
                   key={index}
                   className={`h-1 flex-grow rounded-full transition-colors duration-500 ${
                     index <= currentStep ? 'bg-purple-500' : 'bg-zinc-800'
                   }`}
-                 
                 />
               ))}
             </div>
@@ -269,12 +258,11 @@ const DiscoveryPage: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                 
                 >
                   <p className="text-zinc-500 text-sm mb-8 italic">
                     {steps[currentStep].description}
                   </p>
-                  
+
                   <div>
                     {renderStepContent()}
                   </div>
@@ -285,40 +273,33 @@ const DiscoveryPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={prevStep}
-                  className={`text-zinc-500 font-mono text-xs uppercase tracking-widest hover:text-white transition-colors ${
+                  className={`text-zinc-500 text-sm hover:text-white transition-colors ${
                     currentStep === 0 ? 'invisible' : 'visible'
                   }`}
-                 
                 >
-                  &lt; BACK
+                  &larr; Back
                 </button>
 
                 {currentStep < steps.length - 1 ? (
-                  <Button 
-                    type="button" 
-                    variant="primary" 
+                  <Button
+                    type="button"
+                    variant="primary"
                     onClick={nextStep}
                     disabled={steps[currentStep].fields.some(field => !(formData as any)[field])}
                   >
-                    NEXT_STEP <ClientSafeIcon name="ArrowRight" size={16} className="ml-2" />
+                    Next <ClientSafeIcon name="ArrowRight" size={16} className="ml-2" />
                   </Button>
                 ) : (
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     variant="primary"
                     disabled={isSubmitting || steps[currentStep].fields.some(field => !(formData as any)[field])}
                   >
-                    {isSubmitting ? 'TRANSMITTING...' : 'START_MISSION'}
+                    {isSubmitting ? 'Sending...' : 'Send brief'}
                   </Button>
                 )}
               </div>
             </form>
-          </div>
-          
-          <div className="mt-8 text-center">
-            <p className="text-zinc-600 font-mono text-[10px] tracking-widest uppercase">
-              // SECURE_TERMINAL_ENCRYPTION_ACTIVE
-            </p>
           </div>
         </div>
       </div>

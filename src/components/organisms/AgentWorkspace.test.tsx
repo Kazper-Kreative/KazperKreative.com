@@ -27,14 +27,14 @@ const mockJobs = [
 describe('AgentWorkspace', () => {
   it('renders the workspace title', () => {
     render(<AgentWorkspace jobs={[]} />);
-    expect(screen.getByText(/AGENCY WORKSTATION/i)).toBeInTheDocument();
+    expect(screen.getByText(/Workstation/i)).toBeInTheDocument();
   });
 
   it('renders three columns', () => {
     render(<AgentWorkspace jobs={mockJobs} />);
-    expect(screen.getByText('INCOMING BRIEFS')).toBeInTheDocument();
-    expect(screen.getByText('ACTIVE OPERATIONS')).toBeInTheDocument();
-    expect(screen.getByText('MISSION ARCHIVE')).toBeInTheDocument();
+    expect(screen.getByText('New')).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('Completed')).toBeInTheDocument();
   });
 
   it('displays jobs in correct columns', () => {
@@ -49,9 +49,9 @@ describe('AgentWorkspace', () => {
     expect(screen.getByText('Acme Corp')).toBeInTheDocument();
   });
 
-  it('shows NO_DATA for empty columns', () => {
+  it('shows empty-state message for empty columns', () => {
     render(<AgentWorkspace jobs={[]} />);
-    const emptyLabels = screen.getAllByText('NO_DATA');
+    const emptyLabels = screen.getAllByText('Nothing here yet');
     expect(emptyLabels.length).toBe(3);
   });
 
@@ -59,7 +59,7 @@ describe('AgentWorkspace', () => {
     render(<AgentWorkspace jobs={[mockJobs[0]]} />);
     fireEvent.click(screen.getByTestId('icon-Check'));
     expect(screen.queryByTestId('icon-Check')).not.toBeInTheDocument();
-    expect(screen.getByText('COMPLETE')).toBeInTheDocument();
+    expect(screen.getByText('Complete')).toBeInTheDocument();
   });
 
   it('moves job from PENDING to DECLINED on decline', () => {
@@ -70,7 +70,7 @@ describe('AgentWorkspace', () => {
 
   it('moves job from ACTIVE to COMPLETED on complete', () => {
     render(<AgentWorkspace jobs={[mockJobs[1]]} />);
-    fireEvent.click(screen.getByText('COMPLETE'));
-    expect(screen.queryByText('COMPLETE')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Complete'));
+    expect(screen.queryByText('Complete')).not.toBeInTheDocument();
   });
 });

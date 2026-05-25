@@ -23,6 +23,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, id: result._id });
   } catch (error) {
     console.error('Submission error:', error);
-    return NextResponse.json({ success: false, error: 'Initialization Failed' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Submission failed' }, { status: 500 });
   }
 }

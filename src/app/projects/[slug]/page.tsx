@@ -43,9 +43,9 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
       <PageWrapper>
         <div className="min-h-screen flex items-center justify-center bg-black">
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-white mb-8">ENTRY_NOT_FOUND</h1>
+            <h1 className="text-4xl font-bold text-white mb-8">Project not found</h1>
             <Link href="/#work">
-              <Button variant="secondary">Return to Registry</Button>
+              <Button variant="secondary">Back to work</Button>
             </Link>
           </div>
         </div>
@@ -101,26 +101,26 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
 
         <div className="container mx-auto max-w-5xl px-4 py-12">
           {project.technicalChallenge && project.technicalChallenge.length > 0 && (
-            <TechnicalBlock 
-              title="The Challenge" 
-              content={project.technicalChallenge} 
-              label="CHALLENGE_LOG" 
+            <TechnicalBlock
+              title="The challenge"
+              content={project.technicalChallenge}
+              label="Challenge"
             />
           )}
 
           {project.solutionArchitecture && project.solutionArchitecture.length > 0 && (
-            <TechnicalBlock 
-              title="Architecture & Execution" 
-              content={project.solutionArchitecture} 
-              label="EXECUTION_LOG" 
+            <TechnicalBlock
+              title="Architecture & execution"
+              content={project.solutionArchitecture}
+              label="Execution"
             />
           )}
 
           {project.impactMetrics && project.impactMetrics.length > 0 && (
-            <TechnicalBlock 
-              title="Operational Impact" 
-              content={project.impactMetrics} 
-              label="METRICS_LOG" 
+            <TechnicalBlock
+              title="Impact"
+              content={project.impactMetrics}
+              label="Impact"
             />
           )}
         </div>
@@ -131,13 +131,13 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
 
         <div className="container mx-auto max-w-5xl px-4 py-24 text-center">
           <div className="h-px w-full bg-zinc-900 mb-12" />
-          <h3 className="text-2xl font-bold text-white mb-8">Ready to deploy your vision?</h3>
+          <h3 className="text-2xl font-bold text-white mb-8">Have a project in mind?</h3>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/#contact">
-              <Button size="lg" variant="primary">Initialize Partnership</Button>
+            <Link href="/discovery">
+              <Button size="lg" variant="primary">Start a project</Button>
             </Link>
             <Link href="/#work">
-              <Button size="lg" variant="secondary">Back to Work</Button>
+              <Button size="lg" variant="secondary">Back to work</Button>
             </Link>
           </div>
         </div>

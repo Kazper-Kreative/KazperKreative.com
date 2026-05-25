@@ -84,13 +84,10 @@ export default function CommsTerminal({ jobId, jobTitle, currentUserEmail }: Com
     <div className="flex flex-col h-full bg-zinc-950 border border-purple-500/20 rounded-lg overflow-hidden font-mono">
       {/* Header */}
       <div className="px-6 py-4 border-b border-purple-500/20 bg-black/60 flex items-center justify-between">
-        <div>
-          <p className="text-purple-500 text-[10px] tracking-[0.3em] uppercase">// ENCRYPTED_CHANNEL</p>
-          <h3 className="text-white font-bold text-sm uppercase tracking-tight">{jobTitle}</h3>
-        </div>
+        <h3 className="text-white font-bold text-sm tracking-tight">{jobTitle}</h3>
         <div className="flex items-center gap-2 text-[10px] text-emerald-500">
           <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-          LIVE
+          Live
         </div>
       </div>
 
@@ -98,11 +95,11 @@ export default function CommsTerminal({ jobId, jobTitle, currentUserEmail }: Com
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar min-h-[300px] max-h-[50vh]">
         {loading ? (
           <div className="flex items-center justify-center h-full text-zinc-600 text-xs">
-            ESTABLISHING_SECURE_LINK...
+            Loading...
           </div>
         ) : messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-zinc-600 text-xs">
-            NO_TRANSMISSIONS // Channel clear
+            No messages yet.
           </div>
         ) : (
           <AnimatePresence>
@@ -122,7 +119,7 @@ export default function CommsTerminal({ jobId, jobTitle, currentUserEmail }: Com
                   }`}>
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-[9px] uppercase tracking-widest ${isOwn ? 'text-purple-400' : 'text-zinc-500'}`}>
-                        {isOwn ? 'YOU' : msg.sender.split('@')[0]}
+                        {isOwn ? 'You' : msg.sender.split('@')[0]}
                       </span>
                       <span className="text-[9px] text-zinc-600">{formatTimestamp(msg.timestamp)}</span>
                     </div>
@@ -145,7 +142,7 @@ export default function CommsTerminal({ jobId, jobTitle, currentUserEmail }: Com
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }}
-              placeholder="Transmit message..."
+              placeholder="Type a message..."
               className="flex-1 bg-transparent text-white outline-none text-sm placeholder:text-zinc-600"
               disabled={sending}
               aria-label="Message input"
@@ -155,12 +152,11 @@ export default function CommsTerminal({ jobId, jobTitle, currentUserEmail }: Com
             onClick={handleSend}
             disabled={sending || !input.trim()}
             aria-label="Send message"
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors"
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-bold rounded-lg transition-colors"
           >
             <ClientSafeIcon name="Send" size={16} />
           </button>
         </div>
-        <p className="text-[9px] text-zinc-600 mt-2 text-center">AES_256 // END-TO-END SECURED</p>
       </div>
     </div>
   );

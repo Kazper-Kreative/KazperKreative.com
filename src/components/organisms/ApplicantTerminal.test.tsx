@@ -26,8 +26,8 @@ describe('ApplicantTerminal', () => {
 
   it('renders the terminal with initial prompt', () => {
     render(<ApplicantTerminal />);
-    expect(screen.getByText(/APPLICANT_TERMINAL \/\/ KAZPER_KREATIVE/)).toBeInTheDocument();
-    expect(screen.getByText(/FULL_NAME/)).toBeInTheDocument();
+    expect(screen.getByText(/Apply to Kazper Kreative/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Name/i).length).toBeGreaterThan(0);
   });
 
   it('advances to next step on Enter', () => {
@@ -36,7 +36,7 @@ describe('ApplicantTerminal', () => {
     fireEvent.change(input, { target: { value: 'Jane Doe' } });
     fireEvent.keyDown(input, { key: 'Enter' });
 
-    expect(screen.getByText(/CALLSIGN/)).toBeInTheDocument();
+    expect(screen.getByText(/Handle \(optional\)/i)).toBeInTheDocument();
   });
 
   it('shows error for empty required fields', () => {
@@ -58,7 +58,7 @@ describe('ApplicantTerminal', () => {
     // Step 2: callsign (optional — skip)
     fireEvent.keyDown(input, { key: 'Enter' });
 
-    // Should advance to step 3
-    expect(screen.getByText(/SECURE_CONTACT/)).toBeInTheDocument();
+    // Should advance to step 3 (Email)
+    expect(screen.getByText(/\[3 of 8\] Email/)).toBeInTheDocument();
   });
 });

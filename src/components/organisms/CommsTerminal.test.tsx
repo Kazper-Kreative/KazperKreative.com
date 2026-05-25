@@ -31,13 +31,13 @@ describe('CommsTerminal', () => {
   it('renders the channel header with job title', () => {
     render(<CommsTerminal jobId="job-1" jobTitle="Build MVP" currentUserEmail="me@test.com" />);
     expect(screen.getByText('Build MVP')).toBeInTheDocument();
-    expect(screen.getByText('LIVE')).toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
   });
 
   it('shows empty channel message when no messages', async () => {
     render(<CommsTerminal jobId="job-1" jobTitle="Build MVP" currentUserEmail="me@test.com" />);
     await waitFor(() => {
-      expect(screen.getByText(/NO_TRANSMISSIONS/)).toBeInTheDocument();
+      expect(screen.getByText(/No messages yet/)).toBeInTheDocument();
     });
   });
 

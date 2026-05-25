@@ -25,13 +25,10 @@ describe('AgentDossier', () => {
 
   it('should render agent details when isOpen is true', () => {
     render(<AgentDossier agent={mockAgent} isOpen={true} onClose={() => {}} />);
-    
+
     expect(screen.getByText('Test Agent')).toBeInTheDocument();
     expect(screen.getByText('Test Role')).toBeInTheDocument();
     expect(screen.getByText('Test Bio')).toBeInTheDocument();
-    expect(screen.getByText('SR. AGENT')).toBeInTheDocument();
-    expect(screen.getByText('1500 XP')).toBeInTheDocument();
-    expect(screen.getByText('ACTIVE')).toBeInTheDocument();
     expect(screen.getByText('React')).toBeInTheDocument();
     expect(screen.getByText('Next.js')).toBeInTheDocument();
   });

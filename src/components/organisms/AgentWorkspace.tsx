@@ -20,9 +20,9 @@ interface AgentWorkspaceProps {
 }
 
 const COLUMNS = [
-  { id: 'PENDING', title: 'INCOMING BRIEFS', color: 'text-amber-500', borderColor: 'border-amber-500/30' },
-  { id: 'ACTIVE', title: 'ACTIVE OPERATIONS', color: 'text-purple-500', borderColor: 'border-purple-500/30' },
-  { id: 'COMPLETED', title: 'MISSION ARCHIVE', color: 'text-emerald-500', borderColor: 'border-emerald-500/30' },
+  { id: 'PENDING', title: 'New', color: 'text-amber-500', borderColor: 'border-amber-500/30' },
+  { id: 'ACTIVE', title: 'Active', color: 'text-purple-400', borderColor: 'border-purple-500/30' },
+  { id: 'COMPLETED', title: 'Completed', color: 'text-emerald-500', borderColor: 'border-emerald-500/30' },
 ];
 
 export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '' }: AgentWorkspaceProps) {
@@ -32,31 +32,25 @@ export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '
 
   const handleStatusChange = (jobId: string, newStatus: Job['status']) => {
     playSound(newStatus === 'ACTIVE' ? 'success' : 'click');
-    setJobs(prev => prev.map(job => 
+    setJobs(prev => prev.map(job =>
       job._id === jobId ? { ...job, status: newStatus } : job
     ));
     // In a real app, we'd call an API here to update Sanity
   };
 
   return (
-    <div className="w-full font-mono">
-      <header className="flex items-center justify-between border-b border-purple-500/30 pb-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-purple-500 tracking-tighter">AGENCY WORKSTATION</h1>
-          <p className="text-purple-900 text-xs">OPERATOR: AUTHORIZED // LEVEL: ELITE</p>
-        </div>
-        <div className="text-right">
-          <span className="text-purple-500/50 text-[10px] animate-pulse">LIVE_FEED_ACTIVE</span>
-        </div>
+    <div className="w-full">
+      <header className="border-b border-zinc-800 pb-4 mb-8">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Workstation</h1>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[70vh]">
         {COLUMNS.map(col => (
           <div key={col.id} className={`flex flex-col h-full bg-zinc-900/40 border ${col.borderColor} rounded-lg overflow-hidden`}>
             <div className={`p-4 border-b ${col.borderColor} bg-black/40`}>
-              <h3 className={`text-xs font-bold tracking-widest ${col.color}`}>{col.title}</h3>
+              <h3 className={`text-sm font-bold tracking-wide ${col.color}`}>{col.title}</h3>
             </div>
-            
+
             <div className="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
               <AnimatePresence>
                 {jobs.filter(job => job.status === col.id || (col.id === 'ACTIVE' && job.status === 'IN_REVIEW')).map(job => (
@@ -69,20 +63,20 @@ export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '
                     className="bg-black/60 border border-zinc-800 p-4 rounded hover:border-purple-500/50 transition-colors group"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[9px] text-zinc-500 uppercase">#{job._id.slice(0, 6)}</span>
+                      <span className="text-[9px] text-zinc-500">#{job._id.slice(0, 6)}</span>
                       {job.status === 'PENDING' && (
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             onClick={() => handleStatusChange(job._id, 'ACTIVE')}
                             className="text-emerald-500 hover:bg-emerald-500/10 p-1 rounded"
-                            title="Accept Mission"
+                            title="Accept"
                           >
                             <ClientSafeIcon name="Check" size={14} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleStatusChange(job._id, 'DECLINED')}
                             className="text-red-500 hover:bg-red-500/10 p-1 rounded"
-                            title="Decline Mission"
+                            title="Decline"
                           >
                             <ClientSafeIcon name="X" size={14} />
                           </button>
@@ -93,23 +87,23 @@ export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '
                           <button
                             onClick={() => { playSound('click'); setActiveCommsJobId(job._id); }}
                             className="text-cyan-500 hover:bg-cyan-500/10 p-1 rounded text-[10px] border border-cyan-500/30 px-2"
-                            aria-label={`Open comms for ${job.title}`}
+                            aria-label={`Open chat for ${job.title}`}
                           >
-                            COMMS
+                            Chat
                           </button>
                           <button
                             onClick={() => handleStatusChange(job._id, 'COMPLETED')}
-                            className="text-purple-500 hover:bg-purple-500/10 p-1 rounded text-[10px] border border-purple-500/30 px-2"
+                            className="text-purple-400 hover:bg-purple-500/10 p-1 rounded text-[10px] border border-purple-500/30 px-2"
                           >
-                            COMPLETE
+                            Complete
                           </button>
                         </div>
                       )}
                     </div>
-                    
+
                     <h4 className="text-white font-bold text-sm mb-1">{job.title}</h4>
-                    <p className="text-zinc-500 text-xs line-clamp-2">{job.description || 'No briefing provided.'}</p>
-                    
+                    <p className="text-zinc-500 text-xs line-clamp-2">{job.description || 'No description.'}</p>
+
                     {job.client && (
                       <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center gap-2">
                         <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center text-[8px] font-bold">
@@ -121,10 +115,10 @@ export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '
                   </motion.div>
                 ))}
               </AnimatePresence>
-              
+
               {jobs.filter(job => job.status === col.id).length === 0 && (
-                <div className="h-24 flex items-center justify-center text-zinc-700 text-[10px] italic border border-dashed border-zinc-800 rounded">
-                  NO_DATA
+                <div className="h-24 flex items-center justify-center text-zinc-700 text-xs italic border border-dashed border-zinc-800 rounded">
+                  Nothing here yet
                 </div>
               )}
             </div>
@@ -132,7 +126,7 @@ export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '
         ))}
       </div>
 
-      {/* Comms Terminal Panel */}
+      {/* Chat panel */}
       <AnimatePresence>
         {activeCommsJobId && currentUserEmail && (
           <motion.div
@@ -142,12 +136,12 @@ export default function AgentWorkspace({ jobs: initialJobs, currentUserEmail = '
             className="mt-6"
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-purple-500 text-[10px] font-mono tracking-widest">// COMMS_CHANNEL_OPEN</span>
+              <span className="text-zinc-500 text-xs uppercase tracking-widest">Conversation</span>
               <button
                 onClick={() => setActiveCommsJobId(null)}
-                className="text-zinc-500 hover:text-white text-[10px] font-mono border border-zinc-800 px-2 py-1 rounded"
+                className="text-zinc-500 hover:text-white text-xs border border-zinc-800 px-3 py-1 rounded"
               >
-                CLOSE_CHANNEL
+                Close
               </button>
             </div>
             <CommsTerminal

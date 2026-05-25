@@ -27,10 +27,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       id: result._id,
-      message: 'Dossier submitted. Standby for evaluation.',
+      message: 'Application received. We\'ll be in touch.',
     });
   } catch (error) {
     console.error('Applicant submission error:', error);
-    return NextResponse.json({ message: 'Submission failed. Try again.' }, { status: 500 });
+    return NextResponse.json({ message: 'Submission failed. Please try again.' }, { status: 500 });
   }
 }

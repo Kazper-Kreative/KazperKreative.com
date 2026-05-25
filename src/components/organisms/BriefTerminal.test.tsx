@@ -10,7 +10,7 @@ jest.mock('@/hooks/useUISound', () => ({
 describe('BriefTerminal', () => {
   it('renders the initial prompt', () => {
     render(<BriefTerminal />);
-    expect(screen.getByText(/INITIALIZE BRIEFING/i)).toBeInTheDocument();
+    expect(screen.getByText(/Brief:/i)).toBeInTheDocument();
   });
 
   it('updates input value on change', () => {
@@ -25,9 +25,9 @@ describe('BriefTerminal', () => {
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'My Awesome Project' } });
     fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    
-    // Check if it asks for the next piece of info (e.g., Description)
-    const descriptionPrompts = screen.getAllByText(/PROJECT DESCRIPTION/i);
+
+    // Check if it asks for the next piece of info (the "What we're building" step)
+    const descriptionPrompts = screen.getAllByText(/What we're building/i);
     expect(descriptionPrompts.length).toBeGreaterThan(0);
   });
 });

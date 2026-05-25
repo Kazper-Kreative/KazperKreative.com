@@ -9,7 +9,7 @@ describe('ClientDashboard', () => {
 
   it('renders the dashboard title', () => {
     render(<ClientDashboard jobs={[]} />);
-    expect(screen.getByText(/CLIENT COMMAND CENTER/i)).toBeInTheDocument();
+    expect(screen.getByText(/Your projects/i)).toBeInTheDocument();
   });
 
   it('renders a list of jobs', () => {
@@ -20,6 +20,6 @@ describe('ClientDashboard', () => {
 
   it('shows a message when no jobs are present', () => {
     render(<ClientDashboard jobs={[]} />);
-    expect(screen.getByText(/NO ACTIVE OPERATIONS FOUND/i)).toBeInTheDocument();
+    expect(screen.getByText(/No projects yet/i)).toBeInTheDocument();
   });
 });

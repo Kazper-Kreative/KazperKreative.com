@@ -16,17 +16,15 @@ const CaseStudyHeader: React.FC<CaseStudyHeaderProps> = ({ title, category, desc
         <motion.p
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="text-purple-500 font-mono text-sm mb-4 tracking-[0.4em] uppercase"
-         
+          className="text-purple-400 text-sm mb-4 tracking-widest uppercase"
         >
-          // PROJECT_SPEC :: {category}
+          Case study · {category}
         </motion.p>
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-6xl md:text-8xl font-black text-white mb-8 uppercase tracking-tighter"
-         
+          className="text-6xl md:text-8xl font-black text-white mb-8 tracking-tighter"
         >
           {title}
         </motion.h1>

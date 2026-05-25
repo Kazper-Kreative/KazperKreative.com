@@ -59,33 +59,22 @@ const SquadRoster: React.FC<SquadRosterProps> = ({ agents = [] }) => {
       {isInView && <TechnicalBackground isVisible={true} />}
       
       <div className="relative z-10 mb-20 text-left max-w-4xl">
-        <motion.p 
-          initial={{ opacity: 0, x: -20 }}
-          animate={isInView ? { opacity: 1, x: 0 } : {}}
-          className="text-purple-500 font-mono text-xs mb-4 tracking-[0.4em] uppercase"
-         
-        >
-          // SQUAD_ROSTER_ACCESS_GRANTED
-        </motion.p>
-        <motion.h2 
+        <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.1 }}
-          className="text-5xl md:text-7xl font-black text-white mb-8 uppercase tracking-tighter"
-         
+          className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter"
         >
-          THE ROSTER.
+          The team.
         </motion.h2>
         <div className="h-px w-full bg-gradient-to-r from-purple-500/30 to-transparent mb-8" />
-        <motion.p 
+        <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.2 }}
           className="text-zinc-400 text-lg md:text-xl max-w-2xl leading-relaxed font-light"
-         
         >
-          High-performance tactical units assigned to deployment operations. 
-          Ranks determined by successful missions and agency impact.
+          The engineers behind every Kazper Kreative build. Each one brings deep specialty to their craft.
         </motion.p>
       </div>
 

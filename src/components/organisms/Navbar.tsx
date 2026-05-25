@@ -75,10 +75,6 @@ const Navbar: React.FC = () => {
               </span>
             </Link>
 
-            <div className="hidden lg:flex items-center space-x-1 font-mono text-[10px] text-zinc-500">
-              <span className="px-2 py-1 border border-zinc-800 rounded">v1.0.4</span>
-              <span className="px-2 py-1 border border-zinc-800 rounded animate-pulse text-purple-400/70">STRIKE_READY</span>
-            </div>
           </div>
           
           {/* Desktop Navigation */}
@@ -157,7 +153,7 @@ const Navbar: React.FC = () => {
              
             >
               <div className="flex justify-between items-center mb-12">
-                 <span className="text-xs font-mono text-purple-500">// MENU_ACCESS</span>
+                 <span className="text-xs text-zinc-500 uppercase tracking-widest">Menu</span>
                  <button aria-label="Close menu" onClick={() => {
                    playSound('click');
                    setMobileMenuOpen(false);
@@ -187,20 +183,6 @@ const Navbar: React.FC = () => {
                 ))}
               </div>
 
-              <div className="mt-auto pt-8 border-t border-zinc-800 flex flex-col space-y-4 font-mono text-[10px] text-zinc-500">
-                <div className="flex justify-between">
-                  <span>LATENCY</span>
-                  <span className="text-purple-500">14MS</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>ENCRYPTION</span>
-                  <span className="text-purple-500">AES_256</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>NODE</span>
-                  <span className="text-purple-500">ONTARIO_CA</span>
-                </div>
-              </div>
             </motion.div>
           )}
         </AnimatePresence>

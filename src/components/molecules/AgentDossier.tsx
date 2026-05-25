@@ -44,21 +44,6 @@ export default function AgentDossier({ agent, isOpen, onClose }: AgentDossierPro
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 to-transparent" />
                 </div>
-                
-                <div className="space-y-4 font-mono">
-                  <div>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">RANK</p>
-                    <p className="text-purple-400 font-bold">{agent.rank}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">EXPERIENCE</p>
-                    <p className="text-white font-bold">{agent.xp} XP</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest">STATUS</p>
-                    <p className="text-emerald-500 font-bold">{agent.status}</p>
-                  </div>
-                </div>
 
                 <div className="mt-auto pt-8">
                   <a
@@ -67,7 +52,7 @@ export default function AgentDossier({ agent, isOpen, onClose }: AgentDossierPro
                     rel="noopener noreferrer"
                     className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 rounded-lg transition-colors text-xs uppercase tracking-widest"
                   >
-                    View Upwork Profile <ClientSafeIcon name="ExternalLink" size={14} />
+                    View Upwork profile <ClientSafeIcon name="ExternalLink" size={14} />
                   </a>
                 </div>
               </div>
@@ -76,35 +61,38 @@ export default function AgentDossier({ agent, isOpen, onClose }: AgentDossierPro
               <div className="w-full md:w-2/3 p-8 md:p-12 relative">
                 <button
                   onClick={onClose}
-                  aria-label="Close agent dossier"
+                  aria-label="Close profile"
                   className="absolute top-8 right-8 text-zinc-500 hover:text-white transition-colors"
                 >
                   <ClientSafeIcon name="X" size={24} />
                 </button>
 
-                <p className="text-purple-500 font-mono text-xs mb-2 tracking-[0.4em] uppercase">// PERSONNEL_DOSSIER</p>
-                <h2 id="dossier-heading" className="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tighter">{agent.name}</h2>
+                <h2 id="dossier-heading" className="text-4xl md:text-5xl font-black text-white mb-2 tracking-tighter">{agent.name}</h2>
                 <p className="text-zinc-400 text-lg italic mb-8">{agent.role}</p>
-                
+
                 <div className="h-px w-full bg-gradient-to-r from-purple-500/30 to-transparent mb-8" />
-                
+
                 <div className="prose prose-invert max-w-none mb-8">
                   <p className="text-zinc-300 leading-relaxed text-lg">
                     {agent.bio}
                   </p>
                 </div>
 
-                <h4 className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.3em] mb-4">// SPECIALIZED_SKILLSET</h4>
-                <div className="flex flex-wrap gap-3">
-                  {agent.specialties?.map((specialty, i) => (
-                    <span
-                      key={i}
-                      className="px-3 py-1.5 bg-zinc-800/50 text-zinc-300 rounded border border-zinc-700 font-mono text-xs uppercase tracking-wider"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
+                {agent.specialties && agent.specialties.length > 0 && (
+                  <>
+                    <h4 className="text-xs text-zinc-500 uppercase tracking-widest mb-4">Specialties</h4>
+                    <div className="flex flex-wrap gap-3">
+                      {agent.specialties.map((specialty, i) => (
+                        <span
+                          key={i}
+                          className="px-3 py-1.5 bg-zinc-800/50 text-zinc-300 rounded border border-zinc-700 text-xs"
+                        >
+                          {specialty}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
