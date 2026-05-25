@@ -13,7 +13,7 @@ const actions = [
   { id: 'services', name: 'Our Expertise (Services)', icon: 'Command', href: '/#services' },
   { id: 'work', name: 'View Deployed Experiences (Work)', icon: 'Command', href: '/#work' },
   { id: 'agents', name: 'Meet Our Engineers (Agents)', icon: 'Terminal', href: '/agents' },
-  { id: 'initialize', name: 'Initialize New Project Brief', icon: 'Search', href: '/brief' },
+  { id: 'initialize', name: 'Start a project', icon: 'Search', href: '/start' },
   { id: 'dashboard', name: 'My Dashboard (Operations)', icon: 'Terminal', href: '/dashboard' },
   { id: 'workstation', name: 'Agency Workstation (Restricted)', icon: 'Terminal', href: '/workstation' },
   { id: 'contact', name: 'Direct Collaboration (Contact)', icon: 'Command', href: '/#contact' },

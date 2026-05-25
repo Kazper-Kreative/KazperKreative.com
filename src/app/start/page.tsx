@@ -28,7 +28,7 @@ const steps = [
   },
 ];
 
-const DiscoveryPage: React.FC = () => {
+const StartPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
@@ -63,7 +63,7 @@ const DiscoveryPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/discovery', {
+      const response = await fetch('/api/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -214,7 +214,6 @@ const DiscoveryPage: React.FC = () => {
   return (
     <PageWrapper>
       <div className="min-h-screen bg-[#020205] pt-32 pb-24 px-4 relative overflow-hidden">
-        {/* Background Decor */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-900/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-900/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -238,7 +237,6 @@ const DiscoveryPage: React.FC = () => {
           </div>
 
           <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative">
-            {/* Step Indicators */}
             <div className="flex gap-2 mb-12">
               {steps.map((_, index) => (
                 <div
@@ -308,4 +306,4 @@ const DiscoveryPage: React.FC = () => {
   );
 };
 
-export default DiscoveryPage;
+export default StartPage;

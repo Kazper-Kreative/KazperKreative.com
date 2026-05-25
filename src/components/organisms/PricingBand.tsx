@@ -14,7 +14,7 @@ export default function PricingBand() {
           Fixed-scope sprints and longer retainers both welcome. Bring us a clear brief
           and we&apos;ll come back with a concrete plan within one business day.
         </p>
-        <Link href="/discovery">
+        <Link href="/start">
           <Button variant="primary" size="lg">
             Start a project
           </Button>

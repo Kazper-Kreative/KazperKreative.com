@@ -1,16 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
 import HeroSection from '@/components/organisms/HeroSection';
 import GhostScan from '@/components/organisms/GhostScan';
+import CinematicLanding from '@/components/organisms/CinematicLanding';
 import { useScroll, useMotionValueEvent } from 'framer-motion';
 import { useUserRole } from '@/hooks/useUserRole';
-
-const CinematicLanding = dynamic(() => import('@/components/organisms/CinematicLanding'), {
-  ssr: false,
-  loading: () => <div className="fixed inset-0 bg-[#020205] z-50" />,
-});
 
 export default function HomeHero() {
   const [showHero3D, setShowHero3D] = useState(false);

@@ -42,7 +42,7 @@ export default function ClientDashboard({ jobs }: ClientDashboardProps) {
         <div className="h-64 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-lg">
           <p className="text-zinc-500 mb-4">No projects yet.</p>
           <Link
-            href="/discovery"
+            href="/start"
             className="text-purple-400 hover:text-purple-300 border border-purple-500/50 px-4 py-2 hover:bg-purple-500/10 transition-colors text-sm rounded"
           >
             Start a project

@@ -133,7 +133,7 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
           <div className="h-px w-full bg-zinc-900 mb-12" />
           <h3 className="text-2xl font-bold text-white mb-8">Have a project in mind?</h3>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/discovery">
+            <Link href="/start">
               <Button size="lg" variant="primary">Start a project</Button>
             </Link>
             <Link href="/#work">

@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/discovery', destination: '/start', permanent: true },
+      { source: '/brief', destination: '/start', permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -18,7 +18,7 @@ jest.mock('resend', () => ({
 }));
 
 function makeRequest(body: Record<string, unknown>) {
-  return new NextRequest('http://localhost:3000/api/discovery', {
+  return new NextRequest('http://localhost:3000/api/start', {
     method: 'POST',
     body: JSON.stringify(body),
     headers: { 'Content-Type': 'application/json' },
@@ -34,7 +34,7 @@ const validBody = {
   description: 'Build an RPG',
 };
 
-describe('POST /api/discovery', () => {
+describe('POST /api/start', () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -72,8 +72,6 @@ describe('POST /api/discovery', () => {
     mockCreate.mockRejectedValueOnce(new Error('Sanity down'));
 
     const res = await POST(makeRequest(validBody));
-    const data = await res.json();
-
     expect(res.status).toBe(200);
     expect(mockSend).toHaveBeenCalled();
   });

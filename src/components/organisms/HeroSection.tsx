@@ -40,7 +40,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible = true }) => {
           Kazper Kreative builds Unreal Engine titles, QA pipelines, and immersive UI for studios in Ontario and beyond.
         </p>
         <div className="flex flex-col sm:flex-row gap-4">
-          <Link href="/discovery">
+          <Link href="/start">
             <Button variant="primary" size="lg">
               Start a project
             </Button>
