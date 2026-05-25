@@ -12,6 +12,7 @@ describe('IdentityBadge', () => {
     (useUserRole as any).mockReturnValue({
       role: 'CLIENT',
       identityId: 'CLIENT_123',
+      setIdentityId: jest.fn(),
       getThemeColor: () => '#10b981',
     });
 

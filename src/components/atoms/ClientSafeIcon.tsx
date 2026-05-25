@@ -38,7 +38,7 @@ const ClientSafeIcon: React.FC<ClientSafeIconProps> = ({ name, ...props }) => {
   const Icon = iconMap[name];
 
   if (!mounted || !Icon) {
-    return <div className={props.className} style={{ width: props.size, height: props.size }} suppressHydrationWarning />;
+    return <div className={props.className} style={{ width: props.size, height: props.size }} />;
   }
 
   return <Icon {...props} />;

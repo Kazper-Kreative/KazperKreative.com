@@ -18,20 +18,20 @@ const TechnicalBlock: React.FC<TechnicalBlockProps> = ({ title, content, label }
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.8 }}
       className="bg-zinc-900/30 border border-zinc-800 rounded-2xl p-8 md:p-12 mb-12 backdrop-blur-sm"
-      suppressHydrationWarning
+     
     >
-      <div className="flex items-center mb-6" suppressHydrationWarning>
-        <div className="h-px w-8 bg-purple-600 mr-4" suppressHydrationWarning />
-        <span className="text-purple-500 font-mono text-xs tracking-[0.3em] uppercase" suppressHydrationWarning>
+      <div className="flex items-center mb-6">
+        <div className="h-px w-8 bg-purple-600 mr-4" />
+        <span className="text-purple-500 font-mono text-xs tracking-[0.3em] uppercase">
           // {label}
         </span>
       </div>
       
-      <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 uppercase tracking-tight" suppressHydrationWarning>
+      <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 uppercase tracking-tight">
         {title}
       </h2>
       
-      <div className="prose prose-invert max-w-none text-zinc-400 leading-relaxed" suppressHydrationWarning>
+      <div className="prose prose-invert max-w-none text-zinc-400 leading-relaxed">
         <PortableText value={content} />
       </div>
     </motion.div>

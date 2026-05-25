@@ -58,7 +58,7 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
   return (
     <PageWrapper>
       <ProjectTracker slug={slug} />
-      <div className="bg-[#020205] min-h-screen" suppressHydrationWarning>
+      <div className="bg-[#020205] min-h-screen">
         <CaseStudyHeader 
           title={project.title} 
           category={project.category} 
@@ -66,13 +66,13 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
         />
 
         {mainImageUrl && (
-          <div className="container mx-auto max-w-5xl px-4 mb-24" suppressHydrationWarning>
+          <div className="container mx-auto max-w-5xl px-4 mb-24">
             <Link 
               href={project.caseStudyUrl || '#'} 
               target={project.caseStudyUrl ? "_blank" : undefined}
               rel={project.caseStudyUrl ? "noopener noreferrer" : undefined}
               className={`block relative aspect-video rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl shadow-purple-900/20 group ${!project.caseStudyUrl ? 'pointer-events-none' : ''}`}
-              suppressHydrationWarning
+             
             >
               <ClientSafeImage 
                 src={mainImageUrl} 
@@ -82,10 +82,10 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
                 priority
                 className="transition-transform duration-700 group-hover:scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" suppressHydrationWarning />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
               
               {project.caseStudyUrl && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0" suppressHydrationWarning>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
                   <Button variant="primary" size="lg" className="pointer-events-none">
                     Visit Live Project <ClientSafeIcon name="ExternalLink" size={18} className="ml-2" />
                   </Button>
@@ -95,11 +95,11 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
           </div>
         )}
 
-        <div className="container mx-auto max-w-5xl px-4 mb-24" suppressHydrationWarning>
+        <div className="container mx-auto max-w-5xl px-4 mb-24">
           <DynamicSceneWrapper metadata={project.interactiveMetadata} />
         </div>
 
-        <div className="container mx-auto max-w-5xl px-4 py-12" suppressHydrationWarning>
+        <div className="container mx-auto max-w-5xl px-4 py-12">
           {project.technicalChallenge && project.technicalChallenge.length > 0 && (
             <TechnicalBlock 
               title="The Challenge" 
@@ -129,10 +129,10 @@ export default async function ProjectCaseStudyPage({ params }: { params: any }) 
           <ProjectGallery images={project.gallery as any} title={project.title} />
         )}
 
-        <div className="container mx-auto max-w-5xl px-4 py-24 text-center" suppressHydrationWarning>
-          <div className="h-px w-full bg-zinc-900 mb-12" suppressHydrationWarning />
-          <h3 className="text-2xl font-bold text-white mb-8" suppressHydrationWarning>Ready to deploy your vision?</h3>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center" suppressHydrationWarning>
+        <div className="container mx-auto max-w-5xl px-4 py-24 text-center">
+          <div className="h-px w-full bg-zinc-900 mb-12" />
+          <h3 className="text-2xl font-bold text-white mb-8">Ready to deploy your vision?</h3>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/#contact">
               <Button size="lg" variant="primary">Initialize Partnership</Button>
             </Link>

@@ -40,7 +40,7 @@ const CinematicLanding: React.FC<CinematicLandingProps> = ({ isVisible = true })
   // For now, we'll just allow it but maybe simplify animations elsewhere
   
   return (
-    <div ref={containerRef} className="relative h-[400vh] bg-[#020205]" suppressHydrationWarning>
+    <div ref={containerRef} className="relative h-[400vh] bg-[#020205]">
       <motion.div 
         style={{ 
           opacity, 
@@ -49,7 +49,7 @@ const CinematicLanding: React.FC<CinematicLandingProps> = ({ isVisible = true })
           visibility: visibility as any
         }} 
         className="fixed inset-0 z-50 overflow-hidden will-change-transform bg-[#020205]"
-        suppressHydrationWarning
+       
       >
         {mounted && isVisible && (
           <>

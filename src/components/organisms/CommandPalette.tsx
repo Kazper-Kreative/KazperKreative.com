@@ -126,25 +126,25 @@ const CommandPalette: React.FC = () => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4" suppressHydrationWarning>
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/60 backdrop-blur-md"
             onClick={() => setIsOpen(false)}
-            suppressHydrationWarning
+           
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: -20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             className="relative w-full max-w-2xl bg-zinc-900/90 border border-purple-500/30 rounded-xl shadow-2xl overflow-hidden"
-            suppressHydrationWarning
+           
             onKeyDown={onKeyDown}
           >
             {/* Tabs */}
-            <div className="flex border-b border-zinc-800 bg-black/20" suppressHydrationWarning>
+            <div className="flex border-b border-zinc-800 bg-black/20">
               {(['commands', 'profile', 'diagnostics'] as const).map((tab) => (
                 <button
                   key={tab}
@@ -163,7 +163,7 @@ const CommandPalette: React.FC = () => {
 
             {activeTab === 'commands' && (
               <>
-                <div className="flex items-center px-4 py-4 border-b border-zinc-800" suppressHydrationWarning>
+                <div className="flex items-center px-4 py-4 border-b border-zinc-800">
                   <div className="mr-3 w-8 h-8 bg-purple-600/10 border border-purple-500/30 rounded flex items-center justify-center text-[10px] font-mono text-purple-400 font-bold">
                     {modKey}
                   </div>
@@ -180,7 +180,7 @@ const CommandPalette: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="max-h-[60vh] overflow-y-auto py-2" suppressHydrationWarning>
+                <div className="max-h-[60vh] overflow-y-auto py-2">
                   {filteredActions.length > 0 ? (
                     filteredActions.map((action, index) => (
                       <div
@@ -208,7 +208,7 @@ const CommandPalette: React.FC = () => {
             )}
 
             {activeTab === 'profile' && (
-              <div className="p-8 max-h-[60vh] overflow-y-auto" suppressHydrationWarning>
+              <div className="p-8 max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-8 border-b border-zinc-800 pb-8">
                   <div className="flex items-center space-x-6">
                     <div className="w-20 h-20 bg-purple-600/20 border border-purple-500/50 rounded-lg flex items-center justify-center overflow-hidden">
@@ -263,7 +263,7 @@ const CommandPalette: React.FC = () => {
             )}
 
             {activeTab === 'diagnostics' && (
-              <div className="p-8 font-mono text-xs text-zinc-400 space-y-4" suppressHydrationWarning>
+              <div className="p-8 font-mono text-xs text-zinc-400 space-y-4">
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <p className="text-purple-500">// SYSTEM_METRICS</p>
@@ -287,7 +287,7 @@ const CommandPalette: React.FC = () => {
               </div>
             )}
 
-            <div className="px-4 py-2 border-t border-zinc-800 bg-black/20 flex justify-between items-center text-[10px] text-zinc-500 font-mono" suppressHydrationWarning>
+            <div className="px-4 py-2 border-t border-zinc-800 bg-black/20 flex justify-between items-center text-[10px] text-zinc-500 font-mono">
               <span>SYSTEM-V INTERFACE</span>
               <div className="flex space-x-4">
                 <span>TAB TO SWITCH</span>

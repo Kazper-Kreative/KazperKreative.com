@@ -69,7 +69,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onClose }) => {
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
           aria-label="Close contact form"
-          suppressHydrationWarning
+         
         >
           {mounted ? <X size={24} /> : <div className="w-6 h-6" />}
         </button>

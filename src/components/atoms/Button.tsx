@@ -52,7 +52,7 @@ const Button: React.FC<ButtonProps> = ({
       onMouseEnter={handleMouseEnter}
       onClick={handleClick}
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className || ''}`}
-      suppressHydrationWarning
+     
       {...props}
     >
       {children}

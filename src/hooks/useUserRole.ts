@@ -22,7 +22,9 @@ export const useUserRole = create<UserRoleState>()(
   persist(
     (set, get) => ({
       role: 'GUEST',
-      identityId: 'GUEST_' + Math.random().toString(36).substring(2, 9).toUpperCase(),
+      // Empty default keeps SSR and pre-hydration client render in sync.
+      // IdentityBadge generates a real ID on mount if persist didn't restore one.
+      identityId: '',
       setRole: (role) => set({ role }),
       setIdentityId: (identityId) => set({ identityId }),
       getThemeColor: () => THEME_COLORS[get().role],

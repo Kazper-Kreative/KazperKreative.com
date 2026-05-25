@@ -11,7 +11,7 @@ const ClientSafeImage: React.FC<ImageProps> = (props) => {
   }, []);
 
   if (!mounted) {
-    return <div className={props.className} style={props.style} suppressHydrationWarning />;
+    return <div className={props.className} style={props.style} />;
   }
 
   return <Image {...props} />;

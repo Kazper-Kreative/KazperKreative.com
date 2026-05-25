@@ -51,19 +51,19 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
         onClick={handleClick}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(); } }}
         className="relative group bg-zinc-900/60 border border-zinc-800 hover:border-purple-500/50 rounded-xl shadow-2xl overflow-hidden p-8 text-left block h-full transition-all duration-500 cursor-pointer"
-        suppressHydrationWarning
+       
       >
         <motion.div
           whileHover={reducedMotion ? {} : { y: -10 }}
           className="h-full flex flex-col will-change-transform"
-          suppressHydrationWarning
+         
         >
           <div className="flex justify-between items-start mb-4 font-mono text-[9px] tracking-widest">
             <span className={statusColor}>// {status}</span>
             <span className="text-zinc-500">RANK: <span className="text-purple-400">{rank}</span></span>
           </div>
 
-          <div className="relative w-full aspect-square mb-6 rounded-lg overflow-hidden border border-zinc-700 group-hover:border-purple-500/50 transition-colors duration-500" suppressHydrationWarning>
+          <div className="relative w-full aspect-square mb-6 rounded-lg overflow-hidden border border-zinc-700 group-hover:border-purple-500/50 transition-colors duration-500">
             {mounted && (
               <Image
                 src={pictureUrl}
@@ -74,13 +74,13 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
                 className={`transition-transform duration-700 will-change-transform ${reducedMotion ? '' : 'group-hover:scale-105'}`}
               />
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 to-transparent opacity-60 group-hover:opacity-30 transition-opacity duration-500" suppressHydrationWarning />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/60 to-transparent opacity-60 group-hover:opacity-30 transition-opacity duration-500" />
             <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded text-[10px] text-white font-mono">
               {xp} XP
             </div>
           </div>
 
-          <div className="flex-grow" suppressHydrationWarning>
+          <div className="flex-grow">
             <h3 className="text-2xl font-black text-white mb-1 uppercase tracking-tight transition-colors duration-300 group-hover:text-purple-400">
               {name}
             </h3>
@@ -90,7 +90,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-6" suppressHydrationWarning>
+          <div className="flex flex-wrap gap-2 mb-6">
             {specialties.map((specialty, index) => (
               <span
                 key={index}
@@ -101,7 +101,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ name, pictureUrl, role, bio, upwo
             ))}
           </div>
           
-          <div className="flex items-center text-zinc-500 group-hover:text-purple-400 transition-colors duration-300 text-xs font-bold uppercase tracking-widest" suppressHydrationWarning>
+          <div className="flex items-center text-zinc-500 group-hover:text-purple-400 transition-colors duration-300 text-xs font-bold uppercase tracking-widest">
             Access Dossier <ClientSafeIcon name="ArrowRight" className="ml-2 transform group-hover:translate-x-1 transition-transform" size={14} />
           </div>
         </motion.div>

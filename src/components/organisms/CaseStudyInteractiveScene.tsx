@@ -22,7 +22,7 @@ const CaseStudyInteractiveScene: React.FC<CaseStudyInteractiveSceneProps> = ({ m
       animate={{ opacity: 1 }}
       transition={{ duration: 1, ease: "easeOut" }}
       className="relative aspect-video w-full bg-[#020205] rounded-2xl overflow-hidden border border-zinc-800 shadow-2xl shadow-purple-900/10" 
-      suppressHydrationWarning
+     
     >
       {isInView && (
         <Suspense fallback={null}>
@@ -35,7 +35,7 @@ const CaseStudyInteractiveScene: React.FC<CaseStudyInteractiveSceneProps> = ({ m
               stencil: false
             }}
             dpr={dpr}
-            suppressHydrationWarning
+           
             className="w-full h-full"
           >
             <PerspectiveCamera makeDefault position={[0, 0, 4]} />
@@ -68,8 +68,8 @@ const CaseStudyInteractiveScene: React.FC<CaseStudyInteractiveSceneProps> = ({ m
         </Suspense>
       )}
       
-      <div className="absolute bottom-4 left-4 pointer-events-none z-20" suppressHydrationWarning>
-        <p className="text-purple-500 font-mono text-[10px] tracking-[0.2em] uppercase" suppressHydrationWarning>
+      <div className="absolute bottom-4 left-4 pointer-events-none z-20">
+        <p className="text-purple-500 font-mono text-[10px] tracking-[0.2em] uppercase">
           // INTERACTIVE_UNIT_01 :: DRAG_TO_ROTATE
         </p>
       </div>

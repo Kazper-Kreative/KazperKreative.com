@@ -9,7 +9,7 @@ interface PageWrapperProps {
 
 const PageWrapper: React.FC<PageWrapperProps> = ({ children, className }) => {
   return (
-    <div className={`min-h-screen bg-background text-foreground ${className || ''}`} suppressHydrationWarning>
+    <div className={`min-h-screen bg-background text-foreground ${className || ''}`}>
       <Navbar />
       <main className="pt-20 sm:pt-24">
         {children}

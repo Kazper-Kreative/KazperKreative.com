@@ -19,9 +19,9 @@ const ProjectGallery: React.FC<ProjectGalleryProps> = ({ images, title }) => {
   if (!images || images.length === 0) return null;
 
   return (
-    <div className="py-24 px-4 bg-zinc-950/50" suppressHydrationWarning>
-      <div className="container mx-auto" suppressHydrationWarning>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8" suppressHydrationWarning>
+    <div className="py-24 px-4 bg-zinc-950/50">
+      <div className="container mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {images.map((image, index) => (
             <motion.div
               key={index}
@@ -30,7 +30,7 @@ const ProjectGallery: React.FC<ProjectGalleryProps> = ({ images, title }) => {
               viewport={{ once: true }}
               transition={{ duration: 0.8, delay: index * 0.1 }}
               className="relative aspect-video rounded-xl overflow-hidden border border-zinc-800 group"
-              suppressHydrationWarning
+             
             >
               {mounted && (
                 <Image
@@ -42,7 +42,7 @@ const ProjectGallery: React.FC<ProjectGalleryProps> = ({ images, title }) => {
                   className="transition-transform duration-700 group-hover:scale-105"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" suppressHydrationWarning />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </motion.div>
           ))}
         </div>

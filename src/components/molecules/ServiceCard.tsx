@@ -31,12 +31,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ title, description, icon, tag
   return (
     <div 
       className="group relative p-4 sm:p-6 rounded-lg bg-zinc-900/50 border border-zinc-800 hover:border-purple-500/50 transition-all duration-300 hover:-translate-y-1 transform h-full flex flex-col"
-      suppressHydrationWarning
+     
     >
-      <div suppressHydrationWarning>{renderIcon()}</div>
-      <h3 className="text-2xl font-bold text-white mb-2" suppressHydrationWarning>{title}</h3>
-      <p className="text-zinc-400 text-base mb-4 flex-grow" suppressHydrationWarning>{description}</p>
-      <div className="flex flex-wrap gap-2" suppressHydrationWarning>
+      <div>{renderIcon()}</div>
+      <h3 className="text-2xl font-bold text-white mb-2">{title}</h3>
+      <p className="text-zinc-400 text-base mb-4 flex-grow">{description}</p>
+      <div className="flex flex-wrap gap-2">
         {tags && tags.map((tag, index) => (
           <span
             key={index}

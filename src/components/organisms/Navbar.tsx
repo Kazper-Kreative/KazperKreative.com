@@ -62,11 +62,11 @@ const Navbar: React.FC = () => {
         className={`fixed w-full z-[100] top-0 transition-all duration-500 will-change-transform ${
           scrolled ? 'bg-black/40 backdrop-blur-md py-4 border-b border-purple-500/10' : 'bg-transparent py-8'
         }`}
-        suppressHydrationWarning
+       
       >
-        <div className="container mx-auto px-8 flex justify-between items-center" suppressHydrationWarning>
+        <div className="container mx-auto px-8 flex justify-between items-center">
           <div className="flex items-center space-x-8">
-            <Link href="/" className="group flex items-center space-x-2" suppressHydrationWarning onClick={() => playSound('click')} onMouseEnter={() => playSound('hover')}>
+            <Link href="/" className="group flex items-center space-x-2" onClick={() => playSound('click')} onMouseEnter={() => playSound('hover')}>
               <div className="w-8 h-8 bg-purple-600 rounded-sm flex items-center justify-center group-hover:rotate-90 transition-transform duration-500">
                 <span className="text-black font-black text-xs">K</span>
               </div>
@@ -82,7 +82,7 @@ const Navbar: React.FC = () => {
           </div>
           
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8" suppressHydrationWarning>
+          <div className="hidden md:flex items-center space-x-8">
             <div className="flex space-x-6 mr-6 border-r border-zinc-800 pr-6">
               {navLinks.map((link) => (
                 <Link
@@ -93,7 +93,7 @@ const Navbar: React.FC = () => {
                   className={`text-[10px] font-mono uppercase tracking-widest hover:text-purple-400 transition-colors ${
                     pathname === link.href ? 'text-purple-500' : 'text-zinc-400'
                   }`}
-                  suppressHydrationWarning
+                 
                 >
                   {link.name}
                 </Link>
@@ -117,7 +117,7 @@ const Navbar: React.FC = () => {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-4" suppressHydrationWarning>
+          <div className="md:hidden flex items-center space-x-4">
              <button
               aria-label="Open command center"
               className="p-2 text-zinc-400"
@@ -138,7 +138,7 @@ const Navbar: React.FC = () => {
               }}
               onMouseEnter={() => playSound('hover')}
               className="text-white focus:outline-none p-2 border border-zinc-800 rounded"
-              suppressHydrationWarning
+             
             >
               <ClientSafeIcon name={mobileMenuOpen ? "X" : "Menu"} size={20} />
             </button>
@@ -154,7 +154,7 @@ const Navbar: React.FC = () => {
               exit={{ opacity: 0, x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="md:hidden fixed inset-0 z-[90] bg-black flex flex-col p-8"
-              suppressHydrationWarning
+             
             >
               <div className="flex justify-between items-center mb-12">
                  <span className="text-xs font-mono text-purple-500">// MENU_ACCESS</span>
@@ -166,7 +166,7 @@ const Navbar: React.FC = () => {
                  </button>
               </div>
 
-              <div className="flex flex-col space-y-6" suppressHydrationWarning>
+              <div className="flex flex-col space-y-6">
                 {navLinks.map((link, i) => (
                   <Link
                     key={link.name}
@@ -174,7 +174,7 @@ const Navbar: React.FC = () => {
                     className="text-4xl font-black text-white uppercase tracking-tighter hover:text-purple-500 transition-colors"
                     onMouseEnter={() => playSound('hover')}
                     onClick={handleNavLinkClick}
-                    suppressHydrationWarning
+                   
                   >
                     <motion.span
                       initial={{ opacity: 0, x: -20 }}

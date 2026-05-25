@@ -88,8 +88,8 @@ const DiscoveryPage: React.FC = () => {
     switch (step.id) {
       case 'identity':
         return (
-          <div className="space-y-6" suppressHydrationWarning>
-            <div suppressHydrationWarning>
+          <div className="space-y-6">
+            <div>
               <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// NAME</label>
               <input
                 type="text"
@@ -101,7 +101,7 @@ const DiscoveryPage: React.FC = () => {
                 required
               />
             </div>
-            <div suppressHydrationWarning>
+            <div>
               <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// EMAIL_ADDRESS</label>
               <input
                 type="email"
@@ -113,7 +113,7 @@ const DiscoveryPage: React.FC = () => {
                 required
               />
             </div>
-            <div suppressHydrationWarning>
+            <div>
               <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// ORGANIZATION</label>
               <input
                 type="text"
@@ -128,8 +128,8 @@ const DiscoveryPage: React.FC = () => {
         );
       case 'spec':
         return (
-          <div className="space-y-6" suppressHydrationWarning>
-            <div suppressHydrationWarning>
+          <div className="space-y-6">
+            <div>
               <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// PROJECT_TYPE</label>
               <select
                 name="projectType"
@@ -146,7 +146,7 @@ const DiscoveryPage: React.FC = () => {
                 <option value="other">OTHER_OPS</option>
               </select>
             </div>
-            <div suppressHydrationWarning>
+            <div>
               <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// BUDGET_ALLOCATION</label>
               <select
                 name="budget"
@@ -166,8 +166,8 @@ const DiscoveryPage: React.FC = () => {
         );
       case 'scope':
         return (
-          <div className="space-y-6" suppressHydrationWarning>
-            <div suppressHydrationWarning>
+          <div className="space-y-6">
+            <div>
               <label className="block text-purple-500 font-mono text-[10px] tracking-widest uppercase mb-2">// MISSION_DETAILS</label>
               <textarea
                 name="description"
@@ -213,18 +213,18 @@ const DiscoveryPage: React.FC = () => {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen bg-[#020205] pt-32 pb-24 px-4 relative overflow-hidden" suppressHydrationWarning>
+      <div className="min-h-screen bg-[#020205] pt-32 pb-24 px-4 relative overflow-hidden">
         {/* Background Decor */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-900/5 rounded-full blur-[120px] pointer-events-none" suppressHydrationWarning />
-        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-900/5 rounded-full blur-[120px] pointer-events-none" suppressHydrationWarning />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-purple-900/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-900/5 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="container mx-auto max-w-2xl relative z-10" suppressHydrationWarning>
-          <div className="mb-12" suppressHydrationWarning>
+        <div className="container mx-auto max-w-2xl relative z-10">
+          <div className="mb-12">
             <motion.p 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="text-purple-500 font-mono text-xs tracking-[0.4em] uppercase mb-4"
-              suppressHydrationWarning
+             
             >
               // PROJECT_DISCOVERY_PORTAL
             </motion.p>
@@ -232,7 +232,7 @@ const DiscoveryPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-5xl md:text-6xl font-black text-white uppercase tracking-tighter mb-6"
-              suppressHydrationWarning
+             
             >
               INITIALIZE OPS.
             </motion.h1>
@@ -241,27 +241,27 @@ const DiscoveryPage: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
               className="text-zinc-400 text-lg font-light leading-relaxed"
-              suppressHydrationWarning
+             
             >
               Step {currentStep + 1} of {steps.length}: {steps[currentStep].title}
             </motion.p>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative" suppressHydrationWarning>
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative">
             {/* Step Indicators */}
-            <div className="flex gap-2 mb-12" suppressHydrationWarning>
+            <div className="flex gap-2 mb-12">
               {steps.map((_, index) => (
                 <div 
                   key={index}
                   className={`h-1 flex-grow rounded-full transition-colors duration-500 ${
                     index <= currentStep ? 'bg-purple-500' : 'bg-zinc-800'
                   }`}
-                  suppressHydrationWarning
+                 
                 />
               ))}
             </div>
 
-            <form onSubmit={handleSubmit} suppressHydrationWarning>
+            <form onSubmit={handleSubmit}>
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentStep}
@@ -269,26 +269,26 @@ const DiscoveryPage: React.FC = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                  suppressHydrationWarning
+                 
                 >
-                  <p className="text-zinc-500 text-sm mb-8 italic" suppressHydrationWarning>
+                  <p className="text-zinc-500 text-sm mb-8 italic">
                     {steps[currentStep].description}
                   </p>
                   
-                  <div suppressHydrationWarning>
+                  <div>
                     {renderStepContent()}
                   </div>
                 </motion.div>
               </AnimatePresence>
 
-              <div className="flex justify-between mt-12 pt-8 border-t border-zinc-900" suppressHydrationWarning>
+              <div className="flex justify-between mt-12 pt-8 border-t border-zinc-900">
                 <button
                   type="button"
                   onClick={prevStep}
                   className={`text-zinc-500 font-mono text-xs uppercase tracking-widest hover:text-white transition-colors ${
                     currentStep === 0 ? 'invisible' : 'visible'
                   }`}
-                  suppressHydrationWarning
+                 
                 >
                   &lt; BACK
                 </button>
@@ -315,8 +315,8 @@ const DiscoveryPage: React.FC = () => {
             </form>
           </div>
           
-          <div className="mt-8 text-center" suppressHydrationWarning>
-            <p className="text-zinc-600 font-mono text-[10px] tracking-widest uppercase" suppressHydrationWarning>
+          <div className="mt-8 text-center">
+            <p className="text-zinc-600 font-mono text-[10px] tracking-widest uppercase">
               // SECURE_TERMINAL_ENCRYPTION_ACTIVE
             </p>
           </div>

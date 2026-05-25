@@ -60,8 +60,8 @@ const CinematicScene: React.FC<CinematicSceneProps> = ({ progress, reducedMotion
   const { dpr } = usePerformanceConfig();
 
   return (
-    <div className="fixed inset-0 z-0 bg-[#020205] overflow-hidden" suppressHydrationWarning>
-      <Suspense fallback={<div className="bg-[#020205] w-full h-full flex items-center justify-center" suppressHydrationWarning><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" suppressHydrationWarning /></div>}>
+    <div className="fixed inset-0 z-0 bg-[#020205] overflow-hidden">
+      <Suspense fallback={<div className="bg-[#020205] w-full h-full flex items-center justify-center"><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>}>
         <Canvas 
           camera={{ fov: 75 }} 
           gl={{ 
@@ -72,7 +72,7 @@ const CinematicScene: React.FC<CinematicSceneProps> = ({ progress, reducedMotion
             depth: true
           }} 
           dpr={dpr}
-          suppressHydrationWarning
+         
           onError={(error) => console.error("Three.js Canvas Error:", error)}
         >
           <color attach="background" args={["#020205"]} />

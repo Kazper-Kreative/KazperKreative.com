@@ -97,7 +97,7 @@ const HUD: React.FC = () => {
       <>
         <BadgeToast />
         
-        <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden" suppressHydrationWarning>
+        <div className="fixed inset-0 pointer-events-none z-[60] overflow-hidden">
           {/* Corner Brackets */}
           <div className="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-purple-500/30" />
           <div className="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-purple-500/30" />
