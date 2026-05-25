@@ -1,25 +1,13 @@
-"use client";
-
-import React, { useState, useRef, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-import HeroSection from '@/components/organisms/HeroSection';
+import React from 'react';
+import Link from 'next/link';
+import HomeHero from '@/components/organisms/HomeHero';
 import PageWrapper from '@/components/layouts/PageWrapper';
 import ServicesGrid, { Service } from '@/components/organisms/ServicesGrid';
 import WorkGrid, { Project } from '@/components/organisms/WorkGrid';
+import PricingBand from '@/components/organisms/PricingBand';
 import ContactSection from '@/components/organisms/ContactSection';
-import ContactCTA from '@/components/organisms/ContactCTA';
 import Footer from '@/components/molecules/Footer';
 import Button from '@/components/atoms/Button';
-import Link from 'next/link';
-import { urlFor } from '@/sanity/lib/image';
-import { useScroll, useMotionValueEvent } from 'framer-motion';
-import GhostScan from '@/components/organisms/GhostScan';
-import { useUserRole } from '@/hooks/useUserRole';
-
-const CinematicLanding = dynamic(() => import('@/components/organisms/CinematicLanding'), {
-  ssr: false,
-  loading: () => <div className="fixed inset-0 bg-[#020205] z-50" />
-});
 
 interface HomeTemplateProps {
   initialProjects: Project[];
@@ -27,48 +15,10 @@ interface HomeTemplateProps {
 }
 
 const HomeTemplate: React.FC<HomeTemplateProps> = ({ initialProjects, initialServices }) => {
-  const [showHero3D, setShowHero3D] = useState(false);
-  const [showCinematic3D, setShowCinematic3D] = useState(true);
-  const [needsScan, setNeedsScan] = useState(false);
-  const { role } = useUserRole();
-
-  useEffect(() => {
-    const hasScanned = localStorage.getItem('kazper-ghost-scanned');
-    if (!hasScanned && role === 'GUEST') {
-      setNeedsScan(true);
-    }
-  }, [role]);
-
-  const handleScanComplete = () => {
-    setNeedsScan(false);
-    localStorage.setItem('kazper-ghost-scanned', 'true');
-  };
-
-  const { scrollYProgress } = useScroll();
-
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    // Global scroll progress thresholds.
-    // Adjust based on page length. Cinematic is 400vh.
-    // If the page is ~800vh total, 0.5 would be the end of Cinematic.
-    // We want Hero3D to show as Cinematic fades (0.8 local = ~0.4 global)
-    if (latest > 0.3) {
-      setShowHero3D(true);
-    } else {
-      setShowHero3D(false);
-    }
-
-    if (latest > 0.6) {
-       setShowCinematic3D(false);
-    } else {
-       setShowCinematic3D(true);
-    }
-  });
-
   return (
     <PageWrapper>
-      {needsScan && <GhostScan onComplete={handleScanComplete} />}
-      <CinematicLanding isVisible={showCinematic3D} />
-      <HeroSection isVisible={showHero3D} />
+      <HomeHero />
+
       <section className="bg-zinc-900/50 py-12 sm:py-16 md:py-24 flex flex-col items-center justify-center text-center px-4">
         <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 break-words">Meet the team.</h2>
         <p className="text-lg sm:text-xl text-zinc-400 mb-10 max-w-2xl px-4">
@@ -81,18 +31,23 @@ const HomeTemplate: React.FC<HomeTemplateProps> = ({ initialProjects, initialSer
           </Button>
         </Link>
       </section>
+
       <div id="services" className="py-12 sm:py-16 md:py-24">
         <ServicesGrid services={initialServices} />
       </div>
+
       <div id="work" className="py-12 sm:py-16 md:py-24">
         <WorkGrid projects={initialProjects} />
       </div>
+
+      <div id="pricing" className="py-12 sm:py-16 md:py-24 bg-zinc-900/30">
+        <PricingBand />
+      </div>
+
       <div id="contact" className="py-12 sm:py-16 md:py-24">
         <ContactSection />
       </div>
-      <div id="legacy-contact" className="py-12 sm:py-16 md:py-24">
-        <ContactCTA />
-      </div>
+
       <Footer />
     </PageWrapper>
   );

@@ -21,14 +21,14 @@ const geistMono = Geist_Mono({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kazperkreative.com";
 
 export const metadata: Metadata = {
-  title: "Kazper Kreative LLC | High-End Game Development, QA & Immersive UI",
+  title: "Kazper Kreative LLC | Game development, QA & immersive UI",
   description:
-    "Premium agency specializing in high-end game development, QA engineering, and immersive UI, expanding into the Ontario market.",
+    "Kazper Kreative builds Unreal Engine titles, QA pipelines, and immersive UI for studios in Ontario and beyond.",
   metadataBase: new URL(siteUrl),
   openGraph: {
     title: "Kazper Kreative LLC",
     description:
-      "Premium agency specializing in high-end game development, QA engineering, and immersive UI.",
+      "Game development, QA engineering, and immersive UI — engineered end-to-end.",
     url: siteUrl,
     siteName: "Kazper Kreative LLC",
     locale: "en_US",
@@ -38,12 +38,59 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Kazper Kreative LLC",
     description:
-      "Premium agency specializing in high-end game development, QA engineering, and immersive UI.",
+      "Game development, QA engineering, and immersive UI — engineered end-to-end.",
   },
   robots: {
     index: true,
     follow: true,
   },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "Kazper Kreative LLC",
+      url: siteUrl,
+      description:
+        "Game development, QA engineering, and immersive UI agency based in Ontario, Canada.",
+      sameAs: [
+        "https://www.upwork.com/agencies/1990979485860235162/",
+      ],
+    },
+    {
+      "@type": "Service",
+      "@id": `${siteUrl}/#service-game-dev`,
+      name: "Game development",
+      serviceType: "Game development",
+      provider: { "@id": `${siteUrl}/#organization` },
+      areaServed: { "@type": "Place", name: "Ontario, Canada" },
+      description:
+        "End-to-end Unreal Engine game development, from prototype to ship.",
+    },
+    {
+      "@type": "Service",
+      "@id": `${siteUrl}/#service-qa`,
+      name: "QA engineering",
+      serviceType: "Software quality assurance",
+      provider: { "@id": `${siteUrl}/#organization` },
+      areaServed: { "@type": "Place", name: "Ontario, Canada" },
+      description:
+        "QA pipelines, automation, and performance analysis for games and web applications.",
+    },
+    {
+      "@type": "Service",
+      "@id": `${siteUrl}/#service-ui`,
+      name: "Immersive UI",
+      serviceType: "User interface design and engineering",
+      provider: { "@id": `${siteUrl}/#organization` },
+      areaServed: { "@type": "Place", name: "Ontario, Canada" },
+      description:
+        "Real-time, motion-rich interfaces for games, web applications, and dashboards.",
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -57,6 +104,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
