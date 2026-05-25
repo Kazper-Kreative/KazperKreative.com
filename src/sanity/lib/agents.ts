@@ -11,10 +11,11 @@ export interface Agent {
   xp?: number;
   rank?: string;
   status?: string;
+  active?: boolean;
 }
 
 export async function getAgents(): Promise<Agent[]> {
-  const query = `*[_type == "agent"]{
+  const query = `*[_type == "agent" && active != false]{
     name,
     role,
     bio,

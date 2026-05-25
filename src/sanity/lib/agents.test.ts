@@ -25,7 +25,7 @@ describe('agents utility', () => {
 
     const agents = await getAgents();
 
-    expect(client.fetch).toHaveBeenCalledWith(expect.stringContaining('*[_type == "agent"]'));
+    expect(client.fetch).toHaveBeenCalledWith(expect.stringContaining('_type == "agent" && active != false'));
     expect(agents).toEqual(mockAgents);
   });
 });

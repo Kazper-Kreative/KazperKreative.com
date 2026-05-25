@@ -76,12 +76,27 @@ export default defineType({
         layout: 'tags',
       },
     }),
+    defineField({
+      name: 'active',
+      title: 'Active on public roster',
+      description: 'Uncheck to archive an agent. Inactive agents are kept in Sanity but hidden from the website.',
+      type: 'boolean',
+      initialValue: true,
+    }),
   ],
   preview: {
     select: {
       title: 'name',
       subtitle: 'role',
       media: 'image',
+      active: 'active',
+    },
+    prepare({ title, subtitle, media, active }) {
+      return {
+        title: active === false ? `${title} (archived)` : title,
+        subtitle,
+        media,
+      };
     },
   },
 })
