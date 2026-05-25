@@ -29,8 +29,8 @@ body {
   font-family: var(--font-geist-sans);
 }
 
-/* Simulated Reality CRT vignette */
-body::after {
+/* Simulated Reality CRT vignette — scoped to /experience only */
+.cinematic-vignette::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -52,7 +52,7 @@ body::after {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body::after {
+  .cinematic-vignette::after {
     display: none;
   }
 }

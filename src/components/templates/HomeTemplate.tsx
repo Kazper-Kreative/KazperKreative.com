@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import HomeHero from '@/components/organisms/HomeHero';
+import HeroSection from '@/components/organisms/HeroSection';
 import PageWrapper from '@/components/layouts/PageWrapper';
 import ServicesGrid, { Service } from '@/components/organisms/ServicesGrid';
 import WorkGrid, { Project } from '@/components/organisms/WorkGrid';
@@ -17,7 +17,7 @@ interface HomeTemplateProps {
 const HomeTemplate: React.FC<HomeTemplateProps> = ({ initialProjects, initialServices }) => {
   return (
     <PageWrapper>
-      <HomeHero />
+      <HeroSection />
 
       <section className="bg-zinc-900/50 py-12 sm:py-16 md:py-24 flex flex-col items-center justify-center text-center px-4">
         <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 break-words">Meet the team.</h2>

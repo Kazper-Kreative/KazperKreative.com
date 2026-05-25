@@ -4,7 +4,7 @@ import React from 'react';
 import Button from '@/components/atoms/Button';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import TechnicalBackground from '@/components/atoms/TechnicalBackground';
+import TechnicalBackground from '@/components/organisms/TechnicalBackground';
 import ClientSafeIcon from '@/components/atoms/ClientSafeIcon';
 
 interface HeroSectionProps {
@@ -51,6 +51,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ isVisible = true }) => {
             </Button>
           </Link>
         </div>
+        <Link
+          href="/experience"
+          className="mt-8 text-xs uppercase tracking-widest text-zinc-500 hover:text-purple-400 transition-colors"
+        >
+          Enter the experience &rarr;
+        </Link>
       </div>
 
       <motion.div

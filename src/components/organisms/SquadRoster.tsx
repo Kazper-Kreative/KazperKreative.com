@@ -6,7 +6,7 @@ import { motion, Variants, useInView } from 'framer-motion';
 import dynamic from 'next/dynamic';
 import { usePerformanceConfig } from '@/components/utilities/usePerformanceConfig';
 
-const TechnicalBackground = dynamic(() => import('@/components/atoms/TechnicalBackground'), {
+const TechnicalBackground = dynamic(() => import('@/components/organisms/TechnicalBackground'), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-zinc-950" />
 });
