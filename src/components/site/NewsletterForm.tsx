@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { inbox } from "@/lib/supabase/submissions";
+import { EMAIL_PATTERN } from "@/lib/validation";
 
 export default function NewsletterForm({
   label = "Join",
@@ -37,6 +38,8 @@ export default function NewsletterForm({
         placeholder="you@email.com"
         aria-label="Email"
         required
+        pattern={EMAIL_PATTERN}
+        title="Enter a valid email address, e.g. you@studio.com"
       />
       <button type="submit">{done ? doneLabel : label}</button>
     </form>

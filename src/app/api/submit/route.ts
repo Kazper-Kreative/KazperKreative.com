@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase/client";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSubmissionEmail } from "@/lib/email";
+import { isValidEmail } from "@/lib/validation";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,12 @@ export async function POST(req: Request) {
 
   // Honeypot tripped — pretend success, store nothing.
   if (hp) return NextResponse.json({ ok: true });
+
+  // Server-side email validation backstop (covers direct API posts).
+  const email = fields.Email ?? fields.email;
+  if (email !== undefined && !isValidEmail(email)) {
+    return NextResponse.json({ error: "invalid_email" }, { status: 400 });
+  }
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const human = await verifyTurnstile(token, ip);

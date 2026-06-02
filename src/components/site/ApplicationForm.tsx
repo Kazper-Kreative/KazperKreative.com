@@ -7,6 +7,7 @@ import {
   submitForm,
 } from "@/lib/supabase/submissions";
 import Turnstile from "@/components/site/Turnstile";
+import { EMAIL_PATTERN } from "@/lib/validation";
 
 export default function ApplicationForm() {
   const [sent, setSent] = useState(false);
@@ -63,7 +64,13 @@ export default function ApplicationForm() {
         </div>
         <div className="field">
           <label>Email</label>
-          <input type="email" required placeholder="you@email.com" />
+          <input
+            type="email"
+            required
+            pattern={EMAIL_PATTERN}
+            title="Enter a valid email address, e.g. you@studio.com"
+            placeholder="you@email.com"
+          />
         </div>
       </div>
       <div className="field">
