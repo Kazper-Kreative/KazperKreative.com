@@ -408,13 +408,13 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 .cta-band>*{position:relative;z-index:1}
 
 /* Forms (contact / join) */
-.form{display:grid;gap:16px}
-.field{display:flex;flex-direction:column;gap:7px}
+.form{display:grid;gap:16px;min-width:0}
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
 .field label{font-family:var(--font-mono);font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim)}
-.field input,.field select,.field textarea{background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px;color:var(--text);font-family:inherit;font-size:15px}
+.field input,.field select,.field textarea{width:100%;max-width:100%;min-width:0;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px;color:var(--text);font-family:inherit;font-size:15px}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
 .field textarea{min-height:130px;resize:vertical}
-.row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:0}
 
 /* Process steps */
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
@@ -506,6 +506,8 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 
 /* ---- Contact ---- */
 .contact-grid{display:grid;grid-template-columns:1.3fr .9fr;gap:clamp(24px,3vw,40px);align-items:start}
+.contact-grid>*{min-width:0}
+.contact-aside .card-link{overflow-wrap:anywhere}
 .next{list-style:none;display:flex;flex-direction:column;gap:14px}
 .next li{display:flex;gap:12px;align-items:flex-start;color:var(--text-dim);font-size:15px}
 .next li span{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;color:var(--accent-ink);background:var(--accent);font-weight:700}
