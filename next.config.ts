@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
 
 // Security headers applied to every response.
-// CSP is Report-Only here so the team can monitor violations in DevTools
-// before flipping to enforce. Once you've watched for breakage for a
-// release or two, swap "Content-Security-Policy-Report-Only" for
-// "Content-Security-Policy".
+// CSP is now enforced. It covers Next's inline bootstrap/JSON-LD
+// ('unsafe-inline'), self-hosted next/font + Vercel Analytics ('self'),
+// inline style attributes, local images, and Supabase REST/Auth/Realtime.
+// If you add a third-party (script, font, API), widen the matching
+// directive or it will be blocked.
 const contentSecurityPolicy = [
   "default-src 'self'",
   // Next.js needs 'unsafe-inline' for its hydration bootstrap and JSON-LD.
@@ -28,7 +29,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "Content-Security-Policy-Report-Only", value: contentSecurityPolicy },
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
 ];
 
 const nextConfig: NextConfig = {

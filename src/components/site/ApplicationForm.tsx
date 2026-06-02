@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { captureForm } from "@/lib/supabase/submissions";
+import { captureForm, isHoneypotFilled } from "@/lib/supabase/submissions";
 
 export default function ApplicationForm() {
   const [sent, setSent] = useState(false);
@@ -26,10 +26,24 @@ export default function ApplicationForm() {
       data-delay="1"
       onSubmit={(e) => {
         e.preventDefault();
-        captureForm(e.currentTarget, "Application");
+        const form = e.currentTarget;
+        if (isHoneypotFilled(form)) {
+          setSent(true);
+          return;
+        }
+        captureForm(form, "Application");
         setSent(true);
       }}
     >
+      <input
+        type="text"
+        name="company_url"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="hp-field"
+        data-hp
+      />
       <div className="row-2">
         <div className="field">
           <label>Name</label>

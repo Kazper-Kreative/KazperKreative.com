@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { captureForm } from "@/lib/supabase/submissions";
+import { captureForm, isHoneypotFilled } from "@/lib/supabase/submissions";
 
 export default function ContactForm() {
   const [sent, setSent] = useState(false);
@@ -27,10 +27,25 @@ export default function ContactForm() {
       data-reveal
       onSubmit={(e) => {
         e.preventDefault();
-        captureForm(e.currentTarget, "Contact");
+        const form = e.currentTarget;
+        // Bot filled the honeypot — show success but don't store anything.
+        if (isHoneypotFilled(form)) {
+          setSent(true);
+          return;
+        }
+        captureForm(form, "Contact");
         setSent(true);
       }}
     >
+      <input
+        type="text"
+        name="company_url"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="hp-field"
+        data-hp
+      />
       <div className="row-2">
         <div className="field">
           <label>Name</label>

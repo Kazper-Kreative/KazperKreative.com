@@ -423,6 +423,8 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 }
 .field select option{background:var(--surface-2);color:var(--text)}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:0}
+/* Honeypot — visually hidden spam trap; real users never see or fill it */
+.hp-field{position:absolute!important;left:-9999px!important;top:auto;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
 
 /* Process steps */
 .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}

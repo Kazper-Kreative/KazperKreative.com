@@ -151,6 +151,7 @@ export function captureForm(
     "input, select, textarea"
   ).forEach((el) => {
     if (el.type === "submit" || el.type === "button") return;
+    if (el.hasAttribute("data-hp")) return; // skip the honeypot field
     const fieldWrap = el.closest(".field");
     const label = fieldWrap?.querySelector("label")?.textContent?.trim();
     const key = label || el.getAttribute("aria-label") || el.name || el.type;
@@ -158,4 +159,11 @@ export function captureForm(
   });
   void Promise.resolve(inbox.save({ type, fields })).catch(() => {});
   return fields;
+}
+
+/** True if the form's hidden honeypot field was filled — i.e. likely a bot. */
+export function isHoneypotFilled(form: HTMLFormElement): boolean {
+  return Array.from(form.querySelectorAll<HTMLInputElement>("[data-hp]")).some(
+    (el) => !!el.value
+  );
 }
