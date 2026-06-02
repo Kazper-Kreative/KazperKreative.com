@@ -1,0 +1,512 @@
+<!doctype html>
+<!--
+  The Study — Stockfish edition (Kazper Kreative "lab" build).
+  Ported from the chess-web-handoff package and re-themed to the site's
+  Inferno palette + Space Grotesk / Hanken Grotesk. Real Stockfish 18
+  (lite single-threaded WASM) drives BOTH the opponent (strength capped via
+  UCI "Skill Level") and the coach (full-strength eval bar / grading / hints).
+  Rules/board: chess.js (vendored locally). Engine talks UCI over a Web Worker.
+  Served at /lab/chess/app.html, framed by the auth-gated /lab/chess route.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>The Study — Stockfish</title>
+<script src="/lab/chess/chess.min.js"></script>
+<style>
+  @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500 700;font-display:swap;
+    src:url(/lab/chess/fonts/space-grotesk-latin.woff2) format('woff2')}
+  @font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:400 600;font-display:swap;
+    src:url(/lab/chess/fonts/hanken-grotesk-latin.woff2) format('woff2')}
+  :root{
+    --bg:#07070C; --panel:#101019; --panel-edge:rgba(255,255,255,.10);
+    --ink:#ECEDF4; --ink-dim:#9B9CB0; --ink-faint:#65667A;
+    --brass:#FF7A45; --brass-deep:#FF2E84;
+    --light:#c9c4e0; --dark:#4f3f7a;
+    --sel:rgba(255,122,69,.50); --last:rgba(255,46,132,.28); --hint:#FF7A45;
+    --good:#5fcf7a; --warn:#FFC042; --bad:#FF5A4E; --great:#33D6E0;
+    --shadow:0 22px 60px -20px rgba(0,0,0,.8);
+    --grad:linear-gradient(110deg,#FF5A2C 0%,#FF2E84 26%,#B931FF 52%,#7B3FF2 74%,#FFC042 100%);
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:
+      radial-gradient(60vw 50vw at 78% -10%,rgba(123,63,242,.22),transparent 60%),
+      radial-gradient(50vw 45vw at 6% 110%,rgba(255,46,132,.14),transparent 55%),
+      radial-gradient(55vw 50vw at 50% 118%,rgba(33,229,214,.10),transparent 60%),var(--bg);
+    color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;min-height:100vh;
+    padding:28px 18px 60px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto}
+  header{margin:0 0 22px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;font-size:clamp(30px,6vw,46px);
+    margin:0;letter-spacing:-.02em;line-height:1;
+    background:var(--grad);-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  header .sub{color:var(--ink-faint);font-size:14px;font-family:'Space Grotesk',system-ui,sans-serif;
+    text-transform:uppercase;letter-spacing:.16em}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:26px;align-items:start}
+  @media(max-width:760px){.layout{grid-template-columns:1fr;gap:20px}}
+  .board-area{display:flex;gap:12px;align-items:stretch}
+  .evalbar{width:18px;border-radius:7px;overflow:hidden;position:relative;background:#1B1B27;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);flex:0 0 auto}
+  .evalbar .white{position:absolute;left:0;right:0;bottom:0;
+    background:linear-gradient(180deg,#ECEDF4,#9B9CB0);transition:height .45s cubic-bezier(.4,0,.2,1);height:50%}
+  .evalbar .mid{position:absolute;left:0;right:0;height:1px;background:rgba(0,0,0,.45);top:50%}
+  .board-box{flex:1 1 auto;min-width:0}
+  .board{position:relative;width:100%;aspect-ratio:1/1;border-radius:8px;overflow:hidden;
+    box-shadow:var(--shadow);user-select:none;-webkit-user-select:none;
+    display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+    outline:1px solid rgba(0,0,0,.5)}
+  .sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .sq.l{background:var(--light)} .sq.d{background:var(--dark)}
+  .sq .pc{font-size:min(8.4vw,62px);line-height:1;z-index:2;pointer-events:none;text-shadow:0 1px 1px rgba(0,0,0,.28)}
+  @media(min-width:760px){.sq .pc{font-size:54px}}
+  .sq .pc.w{color:#fdfcff;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+  .sq .pc.b{color:#15121d;text-shadow:0 1px 0 rgba(255,255,255,.2)}
+  .sq.sel::after{content:"";position:absolute;inset:0;background:var(--sel);z-index:1}
+  .sq.last::after{content:"";position:absolute;inset:0;background:var(--last);z-index:0}
+  .sq.check::before{content:"";position:absolute;inset:0;z-index:1;
+    background:radial-gradient(circle,rgba(255,90,78,.85),rgba(255,90,78,0) 72%)}
+  .sq .dot{position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(10,8,16,.34);z-index:1;pointer-events:none}
+  .sq .ring{position:absolute;inset:7%;border-radius:50%;border:5px solid rgba(10,8,16,.32);z-index:1;pointer-events:none}
+  .coord{position:absolute;font-size:10px;font-family:'Space Grotesk',system-ui,sans-serif;z-index:2;pointer-events:none;opacity:.72}
+  .coord.f{right:4px;bottom:2px} .coord.r{left:4px;top:2px}
+  .coord.on-l{color:var(--dark)} .coord.on-d{color:var(--light)}
+  #arrows{position:absolute;inset:0;z-index:3;pointer-events:none}
+  .panel{background:linear-gradient(180deg,#101019,#0A0A12);border:1px solid var(--panel-edge);
+    border-radius:14px;padding:16px 16px 18px;box-shadow:var(--shadow)}
+  .panel+.panel{margin-top:16px}
+  .status{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:600;font-size:18px;margin:0 0 4px}
+  .evalnum{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--brass);font-size:15px;letter-spacing:.3px}
+  .coach{min-height:76px}
+  .coach .tag{display:inline-block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:12px;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:999px;margin-bottom:8px;border:1px solid currentColor}
+  .coach .msg{font-size:14.5px;line-height:1.5;color:var(--ink-dim);margin:0}
+  .coach .msg b{color:var(--ink)}
+  .tag.great{color:var(--great)} .tag.best,.tag.good{color:var(--good)}
+  .tag.inacc{color:var(--warn)} .tag.mistake,.tag.blunder{color:var(--bad)}
+  .placeholder{color:var(--ink-faint);font-size:14px}
+  .controls{display:flex;flex-direction:column;gap:13px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  label.lbl{font-size:13px;color:var(--ink-dim);letter-spacing:.3px}
+  .seg{display:flex;background:#15151F;border:1px solid var(--panel-edge);border-radius:9px;overflow:hidden}
+  .seg button{flex:1;background:none;border:none;color:var(--ink-faint);padding:7px 6px;
+    font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:12.5px;cursor:pointer;transition:.18s}
+  .seg button.on{background:rgba(255,122,69,.14);color:var(--brass)}
+  .seg button:hover{color:var(--ink)}
+  .btns{display:flex;gap:9px;flex-wrap:wrap}
+  .btn{flex:1;min-width:84px;background:linear-gradient(180deg,#1B1B27,#15151F);border:1px solid var(--panel-edge);
+    color:var(--ink);border-radius:9px;padding:10px 8px;font-family:'Space Grotesk',system-ui,sans-serif;font-size:14px;font-weight:600;
+    cursor:pointer;transition:.16s;letter-spacing:.2px}
+  .btn:hover{border-color:var(--brass);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.primary,.btn.on{background:var(--brass);color:#1c0a02;border-color:var(--brass)}
+  .btn:disabled{opacity:.4;cursor:default;transform:none}
+  .moves{font-family:'Space Grotesk',system-ui,sans-serif;font-size:13.5px;max-height:182px;overflow:auto;line-height:1.85}
+  .moves .ply{display:grid;grid-template-columns:34px 1fr 1fr;gap:4px;padding:1px 4px;border-radius:5px}
+  .moves .ply:nth-child(odd){background:rgba(255,255,255,.025)}
+  .moves .no{color:var(--ink-faint)}
+  .moves .empty{color:var(--ink-faint);font-family:'Hanken Grotesk',system-ui,sans-serif;font-size:13px}
+  .thinking{color:var(--brass);font-style:italic;font-size:13px;height:16px;margin-top:6px}
+  .hr{height:1px;background:var(--panel-edge);margin:12px 0}
+  .promo{position:fixed;inset:0;background:rgba(5,4,8,.74);display:none;align-items:center;justify-content:center;z-index:50}
+  .promo.show{display:flex}
+  .promo .card{background:var(--panel);border:1px solid var(--brass-deep);border-radius:14px;padding:18px 22px;text-align:center;box-shadow:var(--shadow)}
+  .promo h3{font-family:'Space Grotesk',system-ui,sans-serif;margin:0 0 12px;font-weight:600}
+  .promo .opts{display:flex;gap:8px}
+  .promo .opts button{font-size:42px;background:#15151F;border:1px solid var(--panel-edge);border-radius:10px;width:64px;height:64px;cursor:pointer;color:#fdfcff}
+  .promo .opts button:hover{border-color:var(--brass)}
+  footer{margin-top:26px;color:var(--ink-faint);font-size:12.5px;text-align:center}
+  .engine-flag{color:var(--good)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Study</h1>
+    <span class="sub">Powered by Stockfish 18</span>
+  </header>
+  <div class="layout">
+    <div>
+      <div class="board-area">
+        <div class="evalbar" title="Stockfish evaluation"><div class="white" id="evalWhite"></div><div class="mid"></div></div>
+        <div class="board-box"><div class="board" id="board"></div></div>
+      </div>
+      <div class="thinking" id="thinking"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <p class="status" id="status">Loading engine…</p>
+        <div class="evalnum" id="evalNum">—</div>
+        <div class="hr"></div>
+        <div class="coach" id="coach"><div class="placeholder">Loading Stockfish. One moment…</div></div>
+      </div>
+      <div class="panel controls">
+        <div class="row"><label class="lbl">Opponent strength</label></div>
+        <div class="seg" id="levelSeg">
+          <button data-lvl="0" class="on">Beginner</button>
+          <button data-lvl="1">Casual</button>
+          <button data-lvl="2">Strong</button>
+          <button data-lvl="3">Master</button>
+        </div>
+        <div class="row"><label class="lbl">Play as</label>
+          <div class="seg" id="sideSeg" style="max-width:150px">
+            <button data-side="w" class="on">White</button><button data-side="b">Black</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn" id="hintBtn">Show best move</button>
+          <button class="btn" id="undoBtn">Take back</button>
+        </div>
+        <button class="btn primary" id="newBtn">New game</button>
+      </div>
+      <div class="panel"><div class="moves" id="moves"><div class="empty">No moves yet.</div></div></div>
+    </div>
+  </div>
+  <footer><span id="flag">Engine: starting…</span></footer>
+</div>
+
+<div class="promo" id="promo"><div class="card"><h3>Promote to</h3><div class="opts" id="promoOpts"></div></div></div>
+
+<script>
+/* ===================== game + state ===================== */
+const game = new Chess();
+const LEVELS = [
+  {name:'Beginner', skill:0,  movetime:300},
+  {name:'Casual',   skill:5,  movetime:450},
+  {name:'Strong',   skill:11, movetime:700},
+  {name:'Master',   skill:20, movetime:1000},
+];
+const ANALYSIS_MS = 600;
+let level=0, humanColor='w', orientation='w';
+let selected=null, legalDests=[], lastMove=null;
+let busy=true;                 // gate input until engine ready / while engine works
+let hintOn=false, hintMove=null;
+let currentAnalysis=null;      // {best, scoreWhite, mateWhite, pv} for the position the human faces
+
+const GLYPH={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+const FILES=['a','b','c','d','e','f','g','h'];
+
+/* ===================== Stockfish (UCI over Worker) ===================== */
+let engine=null, engineReady=false, lineHandler=null;
+let engineBusy=false; const taskQueue=[];
+
+function engineSend(cmd){ engine.postMessage(cmd); }
+function onEngineLine(raw){
+  const line = (typeof raw==='string') ? raw : (raw && raw.data) ? raw.data : String(raw);
+  if(!engineReady){
+    if(line==='uciok'){
+      engineSend('setoption name Threads value 1');
+      engineSend('setoption name Hash value 32');
+      engineReady=true; onEngineReady();
+    }
+    return;
+  }
+  if(lineHandler) lineHandler(line);
+}
+function runTask(taskFn){
+  return new Promise(resolve=>{
+    taskQueue.push(async()=>{ const r=await taskFn(); resolve(r); });
+    pumpTasks();
+  });
+}
+async function pumpTasks(){
+  if(engineBusy||taskQueue.length===0) return;
+  engineBusy=true;
+  const t=taskQueue.shift();
+  await t();
+  engineBusy=false;
+  pumpTasks();
+}
+// one UCI search; resolves {best, scoreWhite, mateWhite, pv}
+function uciSearch(fen, skill, goCmd){
+  return new Promise(resolve=>{
+    let cp=null, mate=null, pv=null;
+    const stm = fen.split(' ')[1];
+    lineHandler = (line)=>{
+      if(line.indexOf('info')===0 && line.indexOf(' pv ')>=0){
+        const sm=line.match(/score (cp|mate) (-?\d+)/);
+        if(sm){ if(sm[1]==='cp'){cp=+sm[2];mate=null;} else {mate=+sm[2];cp=null;} }
+        const pm=line.match(/ pv (\S+)/); if(pm) pv=pm[1];
+      } else if(line.indexOf('bestmove')===0){
+        const best=line.split(/\s+/)[1];
+        lineHandler=null;
+        resolve({
+          best,
+          scoreWhite: cp!=null ? (stm==='w'?cp:-cp) : null,
+          mateWhite:  mate!=null ? (stm==='w'?mate:-mate) : null,
+          pv: pv||best
+        });
+      }
+    };
+    engineSend('setoption name Skill Level value '+skill);
+    engineSend('position fen '+fen);
+    engineSend(goCmd);
+  });
+}
+const analyze   = (fen)=>runTask(()=>uciSearch(fen,20,'go movetime '+ANALYSIS_MS));
+const enginePlay= (fen,lvl)=>{ const L=LEVELS[lvl]; return runTask(()=>uciSearch(fen,L.skill,'go movetime '+L.movetime)); };
+
+function initEngine(){
+  try{
+    engine=new Worker('/lab/chess/stockfish-18-lite-single.js');
+    engine.addEventListener('message', onEngineLine);
+    engine.addEventListener('error', e=>{
+      document.getElementById('coach').innerHTML =
+        '<div class="placeholder">Could not start the engine. Make sure the page is served over http(s), not opened as a file.</div>';
+      document.getElementById('flag').textContent='Engine: failed to load';
+    });
+    engineSend('uci');
+  }catch(err){
+    document.getElementById('flag').textContent='Engine: failed to load';
+  }
+}
+function onEngineReady(){
+  document.getElementById('flag').innerHTML='Engine: <span class="engine-flag">Stockfish 18 ready</span>';
+  newGame();
+}
+
+/* ===================== rendering ===================== */
+const boardEl=document.getElementById('board');
+function sqName(f,r){ return FILES[f]+r; }
+function disp(file,rank){ return orientation==='w' ? {row:8-rank,col:file} : {row:rank-1,col:7-file}; }
+function render(){
+  boardEl.innerHTML='';
+  const checkSq=inCheckSquare();
+  for(let row=0;row<8;row++)for(let col=0;col<8;col++){
+    let file,rank;
+    if(orientation==='w'){file=col;rank=8-row;} else {file=7-col;rank=row+1;}
+    const name=sqName(file,rank), isLight=(file+rank)%2!==0;
+    const cell=document.createElement('div');
+    cell.className='sq '+(isLight?'l':'d'); cell.dataset.sq=name;
+    const pc=game.get(name);
+    if(pc){const s=document.createElement('span');s.className='pc '+pc.color;s.textContent=GLYPH[pc.type];cell.appendChild(s);}
+    if(lastMove&&(name===lastMove.from||name===lastMove.to)) cell.classList.add('last');
+    if(selected===name) cell.classList.add('sel');
+    if(checkSq===name) cell.classList.add('check');
+    if(legalDests.includes(name)){const d=document.createElement('div');d.className=pc?'ring':'dot';cell.appendChild(d);}
+    if(col===0){const c=document.createElement('span');c.className='coord r '+(isLight?'on-l':'on-d');c.textContent=rank;cell.appendChild(c);}
+    if(row===7){const c=document.createElement('span');c.className='coord f '+(isLight?'on-l':'on-d');c.textContent=FILES[file];cell.appendChild(c);}
+    cell.addEventListener('click',()=>onSquare(name));
+    boardEl.appendChild(cell);
+  }
+  if(hintOn&&hintMove&&game.turn()===humanColor&&!game.game_over()) drawArrow(hintMove.from,hintMove.to);
+}
+function inCheckSquare(){
+  if(!game.in_check()) return null;
+  const t=game.turn(), b=game.board();
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){const pc=b[r][c];if(pc&&pc.type==='k'&&pc.color===t)return FILES[c]+(8-r);}
+  return null;
+}
+
+/* ===================== interaction ===================== */
+function onSquare(name){
+  if(busy||game.game_over()||game.turn()!==humanColor) return;
+  const pc=game.get(name);
+  if(pc&&pc.color===humanColor){
+    selected=name; legalDests=game.moves({square:name,verbose:true}).map(m=>m.to); render(); return;
+  }
+  if(selected&&legalDests.includes(name)){
+    const moving=game.get(selected);
+    if(moving.type==='p'&&(name[1]==='8'||name[1]==='1')) askPromotion(selected,name);
+    else doHumanMove({from:selected,to:name});
+    return;
+  }
+  selected=null; legalDests=[]; render();
+}
+function askPromotion(from,to){
+  const promo=document.getElementById('promo'), opts=document.getElementById('promoOpts');
+  opts.innerHTML='';
+  ['q','r','b','n'].forEach(t=>{
+    const btn=document.createElement('button'); btn.textContent=GLYPH[t];
+    btn.onclick=()=>{promo.classList.remove('show'); doHumanMove({from,to,promotion:t});};
+    opts.appendChild(btn);
+  });
+  promo.classList.add('show');
+}
+
+async function doHumanMove(mv){
+  if(busy) return;
+  const before=currentAnalysis;                 // analysis of the position before this move
+  const preFen=game.fen();
+  const move=game.move({from:mv.from,to:mv.to,promotion:mv.promotion||'q'});
+  if(!move){selected=null;legalDests=[];render();return;}
+  lastMove={from:move.from,to:move.to};
+  selected=null; legalDests=[]; clearArrow(); render(); updateStatus(); renderMoves();
+
+  busy=true;
+  setThinking('Reviewing your move…');
+  const after=await analyze(game.fen());
+  coachGrade(move,before,after,preFen);
+  refreshEvalBar(after);
+
+  if(game.game_over()){ currentAnalysis=after; busy=false; setThinking(''); updateStatus(); return; }
+
+  setThinking('Stockfish is thinking…');
+  const reply=await enginePlay(game.fen(),level);
+  const m=game.move({from:reply.best.slice(0,2),to:reply.best.slice(2,4),promotion:reply.best[4]});
+  if(m) lastMove={from:m.from,to:m.to};
+  render(); updateStatus(); renderMoves();
+
+  busy=false;
+  await settle();
+}
+
+/* ===================== coaching ===================== */
+function cpOf(a){
+  if(!a) return 0;
+  if(a.mateWhite!=null) return a.mateWhite>0 ? 100000-a.mateWhite*100 : -100000-a.mateWhite*100;
+  return a.scoreWhite!=null ? a.scoreWhite : 0;
+}
+function classify(loss,best){
+  if(best) return {tag:'best',label:'Best move'};
+  if(loss<25)  return {tag:'great',label:'Excellent'};
+  if(loss<70)  return {tag:'good',label:'Good'};
+  if(loss<150) return {tag:'inacc',label:'Inaccuracy'};
+  if(loss<350) return {tag:'mistake',label:'Mistake'};
+  return {tag:'blunder',label:'Blunder'};
+}
+function sanFromUci(fen,uci){
+  try{const c=new Chess(fen);const m=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});return m?m.san:uci;}
+  catch(e){return uci;}
+}
+function coachGrade(move,before,after,preFen){
+  const bCp=cpOf(before), aCp=cpOf(after);
+  let loss = humanColor==='w' ? (bCp-aCp) : (aCp-bCp);
+  loss=Math.max(0,loss);
+  const humanUci=move.from+move.to+(move.promotion||'');
+  const playedBest = before&&before.best&&before.best.slice(0,4)===humanUci.slice(0,4);
+  const c=classify(loss,playedBest);
+  const coach=document.getElementById('coach');
+  let msg='';
+  if(playedBest){ msg='You played the move Stockfish likes best. '; }
+  else{
+    const bestSan = before&&before.best ? sanFromUci(preFen,before.best) : null;
+    const lp=(loss/100).toFixed(1);
+    if(c.tag==='great'||c.tag==='good') msg='Solid.'+(bestSan?` Stockfish leaned toward <b>${bestSan}</b>.`:'');
+    else if(c.tag==='inacc')  msg=`Slightly loose — about <b>${lp}</b> of a pawn behind <b>${bestSan}</b>.`;
+    else if(c.tag==='mistake')msg=`This concedes roughly <b>${lp}</b> pawns. <b>${bestSan}</b> was stronger.`;
+    else msg=`Costly — around <b>${lp}</b> pawns. <b>${bestSan}</b> was much better here.`;
+  }
+  coach.innerHTML=`<span class="tag ${c.tag}">${c.label}</span><p class="msg">${msg}</p>`;
+}
+
+/* ===================== eval bar / status / hint ===================== */
+function refreshEvalBar(a){
+  const num=document.getElementById('evalNum'), bar=document.getElementById('evalWhite');
+  if(!a){ num.textContent='—'; bar.style.height='50%'; return; }
+  if(a.mateWhite!=null){
+    num.textContent=(a.mateWhite>0?'White':'Black')+' mates in '+Math.abs(a.mateWhite);
+    bar.style.height=(a.mateWhite>0?98:2)+'%'; return;
+  }
+  const cp=a.scoreWhite||0, cl=Math.max(-1000,Math.min(1000,cp));
+  const share=50+50*(cl/1000)*(1.6-0.6*Math.abs(cl)/1000);
+  bar.style.height=Math.max(2,Math.min(98,share))+'%';
+  const p=cp/100;
+  num.textContent=Math.abs(p)<0.2?'Even':((p>0?'White ':'Black ')+'+'+Math.abs(p).toFixed(1));
+}
+function updateStatus(){
+  const s=document.getElementById('status');
+  if(game.in_checkmate()){s.textContent=(game.turn()==='w'?'Black':'White')+' wins by checkmate';return;}
+  if(game.in_stalemate()){s.textContent='Draw — stalemate';return;}
+  if(game.in_threefold_repetition()){s.textContent='Draw — repetition';return;}
+  if(game.insufficient_material()){s.textContent='Draw — insufficient material';return;}
+  if(game.in_draw()){s.textContent='Draw';return;}
+  s.textContent=(game.turn()==='w'?'White':'Black')+' to move'+(game.in_check()?' — check':'');
+}
+function renderMoves(){
+  const el=document.getElementById('moves'), h=game.history();
+  if(h.length===0){el.innerHTML='<div class="empty">No moves yet.</div>';return;}
+  let html='';
+  for(let i=0;i<h.length;i+=2)
+    html+=`<div class="ply"><span class="no">${i/2+1}.</span><span>${h[i]||''}</span><span>${h[i+1]||''}</span></div>`;
+  el.innerHTML=html; el.scrollTop=el.scrollHeight;
+}
+function clearArrow(){const a=document.getElementById('arrows');if(a)a.remove();}
+function drawArrow(from,to){
+  clearArrow();
+  const f=disp(FILES.indexOf(from[0]),parseInt(from[1])), t=disp(FILES.indexOf(to[0]),parseInt(to[1]));
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.id='arrows'; svg.setAttribute('viewBox','0 0 8 8');
+  svg.innerHTML=`<defs><marker id="ah" markerWidth="4" markerHeight="4" refX="2.4" refY="2" orient="auto">
+    <path d="M0,0 L4,2 L0,4 Z" fill="var(--hint)"/></marker></defs>
+    <line x1="${f.col+0.5}" y1="${f.row+0.5}" x2="${t.col+0.5}" y2="${t.row+0.5}"
+      stroke="var(--hint)" stroke-width="0.26" stroke-linecap="round" marker-end="url(#ah)" opacity="0.92"/>`;
+  boardEl.appendChild(svg);
+}
+function setHintArrow(){
+  if(hintOn&&currentAnalysis&&currentAnalysis.best&&!game.game_over()&&game.turn()===humanColor){
+    const b=currentAnalysis.best; hintMove={from:b.slice(0,2),to:b.slice(2,4)}; drawArrow(hintMove.from,hintMove.to);
+  } else { hintMove=null; clearArrow(); }
+}
+
+/* ===================== settle / new game / controls ===================== */
+async function settle(){
+  // refresh analysis for the position the human now faces; drives eval bar + hint
+  if(game.game_over()){ updateStatus(); return; }
+  busy=true; setThinking('Analysing…');
+  const a=await analyze(game.fen());
+  currentAnalysis=a;
+  setThinking(''); busy=false;
+  refreshEvalBar(a); setHintArrow();
+}
+
+const hintBtn=document.getElementById('hintBtn');
+hintBtn.addEventListener('click',()=>{
+  hintOn=!hintOn;
+  hintBtn.classList.toggle('on',hintOn);
+  hintBtn.textContent=hintOn?'Hide best move':'Show best move';
+  if(!hintOn){hintMove=null;clearArrow();render();return;}
+  setHintArrow();
+  if(hintMove){
+    document.getElementById('coach').innerHTML=
+      `<span class="tag great">Hint</span><p class="msg">Stockfish suggests <b>${sanFromUci(game.fen(),currentAnalysis.best)}</b>. The arrow follows the position until you hide it.</p>`;
+  }
+});
+document.getElementById('undoBtn').addEventListener('click',async()=>{
+  if(busy||game.history().length===0) return;
+  game.undo();
+  if(game.history().length>0&&game.turn()!==humanColor) game.undo();
+  lastMove=null; selected=null; legalDests=[]; clearArrow();
+  document.getElementById('coach').innerHTML='<div class="placeholder">Took it back. Try a different idea.</div>';
+  render(); updateStatus(); renderMoves();
+  await settle();
+});
+document.getElementById('newBtn').addEventListener('click',newGame);
+document.getElementById('levelSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  level=+b.dataset.lvl; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+});
+document.getElementById('sideSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||busy)return;
+  humanColor=b.dataset.side; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+  newGame();
+});
+function setThinking(t){document.getElementById('thinking').textContent=t;}
+
+async function newGame(){
+  if(!engineReady) return;
+  game.reset(); engineSend('ucinewgame');
+  orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null;
+  document.getElementById('coach').innerHTML=
+    '<div class="placeholder">Make a move and I\'ll grade it against Stockfish\'s best line.</div>';
+  clearArrow(); render(); updateStatus(); renderMoves();
+  busy=true;
+  if(humanColor==='b'){
+    setThinking('Stockfish is thinking…');
+    const reply=await enginePlay(game.fen(),level);
+    const m=game.move({from:reply.best.slice(0,2),to:reply.best.slice(2,4),promotion:reply.best[4]});
+    if(m) lastMove={from:m.from,to:m.to};
+    render(); updateStatus(); renderMoves();
+  }
+  busy=false;
+  await settle();
+}
+
+/* ===================== boot ===================== */
+render();           // show the start position while the engine loads
+initEngine();
+</script>
+</body>
+</html>

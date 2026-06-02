@@ -22,6 +22,9 @@ const eslintConfig = defineConfig([
     // CommonJS tooling config — not part of the app source.
     "jest.config.js",
     "jest.setup.js",
+    // Vendored static assets (e.g. the Stockfish engine + chess.js in the
+    // /lab/chess app) — third-party minified code, not ours to lint.
+    "public/**",
   ]),
 ]);
 

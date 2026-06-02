@@ -22,12 +22,14 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  // 'self' (not 'none') so /lab/chess can frame its own static app.html.
+  // Cross-origin framing of the site is still blocked (clickjacking guard).
+  "frame-ancestors 'self'",
   "upgrade-insecure-requests",
 ].join("; ");
 
 const securityHeaders = [
-  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), interest-cohort=()" },
@@ -41,6 +43,13 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        // The hidden Stockfish lab is unlisted + soft-gated; keep it out of
+        // search indexes at the header level too (belt-and-suspenders with the
+        // noindex meta tag and robots.txt).
+        source: "/lab/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];
   },

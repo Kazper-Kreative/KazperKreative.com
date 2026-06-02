@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /inbox
 Disallow: /portfolio
+Disallow: /lab
 
 Sitemap: https://kazperkreative.com/sitemap.xml
