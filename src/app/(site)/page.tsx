@@ -241,26 +241,8 @@ export default function HomePage() {
               Full portfolio <span className="arrow">→</span>
             </Link>
           </div>
-          <div className="work-grid feat">
-            <Link className="work-item lg js-proj" data-proj="mechaverse" href="/work" data-reveal>
-              <div className="proj-art">
-                <span className="status prealpha">Pre-Alpha</span>
-                <img
-                  className="art-rounded" loading="lazy" decoding="async"
-                  src="/assets/mechaverse.jpg"
-                  alt="MechaVerse"
-                  style={{ aspectRatio: "16 / 10" }}
-                />
-              </div>
-              <div className="work-meta">
-                <div>
-                  <h4>MechaVerse</h4>
-                  <span className="dim">Kazper&apos;s Echo · Roblox</span>
-                </div>
-                <span className="tag">Studio</span>
-              </div>
-            </Link>
-            <Link className="work-item js-proj" data-proj="vengeance" href="/work" data-reveal data-delay="1">
+          <div className="work-grid two">
+            <Link className="work-item js-proj" data-proj="vengeance" href="/work" data-reveal>
               <div className="proj-art">
                 <span className="status dev">In Development</span>
                 <img

@@ -11,16 +11,6 @@ export const metadata: Metadata = {
 
 const WORKS = [
   {
-    statusClass: "prealpha",
-    status: "Pre-Alpha",
-    art: "/assets/mechaverse.jpg",
-    tags: [{ flag: false, label: "Roblox" }, { flag: false, label: "Mech" }, { flag: false, label: "Progression" }],
-    title: "MechaVerse",
-    desc: "Strap into a war-machine and earn your name. Pilot towering mechs, stake your claim, and climb the ranks of the intergalactic Confederation.",
-    meta: ["Roblox", "After the Unreal slate"],
-    link: { url: "https://www.roblox.com/games/7825844132", label: "View on Roblox" },
-  },
-  {
     statusClass: "dev",
     status: "In Development",
     art: "/assets/vengeance.jpg",
@@ -49,7 +39,6 @@ const PILLARS = [
 const DEVLOG = [
   { date: "2026 · 05", h: "Vengeance: wiring the rogue-AI threat system", p: "How enemies learn, swarm and adapt, building an AI that actually fights back." },
   { date: "2026 · 04", h: "Shadow of Beginnings: rebuilding the town", p: "First look at the gather-and-restore loop at the heart of the world." },
-  { date: "2026 · 03", h: "MechaVerse enters pre-alpha on Roblox", p: "The mechs are walking. Here's where the Confederation goes next." },
 ];
 
 export default function StudioPage() {
@@ -94,15 +83,15 @@ export default function StudioPage() {
                 In the works
               </span>
               <h2 data-reveal data-delay="1">
-                Three worlds, in motion.
+                Two worlds, in motion.
               </h2>
               <p className="lead" data-reveal data-delay="2">
-                Our current slate, across Roblox and Steam, from pre-alpha to
-                polish. Follow along as they take shape.
+                Our current slate, in active development for Steam. Follow along
+                as they take shape.
               </p>
             </div>
           </div>
-          <div className="proj-grid">
+          <div className="proj-grid two">
             {WORKS.map((w, i) => (
               <article className="card proj-card" data-reveal data-delay={(i % 3).toString()} key={w.title}>
                 <div className="proj-art">
@@ -124,11 +113,6 @@ export default function StudioPage() {
                       <span key={m}>{m}</span>
                     ))}
                   </div>
-                  {w.link && (
-                    <a className="card-link" href={w.link.url} target="_blank" rel="noopener">
-                      {w.link.label} <span className="arrow">→</span>
-                    </a>
-                  )}
                 </div>
               </article>
             ))}

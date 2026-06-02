@@ -20,18 +20,6 @@ interface Item {
 
 const ITEMS: Item[] = [
   {
-    proj: "mechaverse",
-    cat: ["studio"],
-    dev: true,
-    href: "#",
-    status: "Pre-Alpha",
-    statusClass: "prealpha",
-    title: "MechaVerse",
-    label: "Roblox · Mech",
-    badge: { flag: false, text: "Studio" },
-    art: "/assets/mechaverse.jpg",
-  },
-  {
     proj: "vengeance",
     cat: ["agency", "studio"],
     dev: true,

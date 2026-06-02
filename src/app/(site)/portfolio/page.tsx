@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 const CAPS = [
-  { n: "01", h: "Game Development", p: "Unreal Engine and Roblox builds, from first prototype to shipped product." },
+  { n: "01", h: "Game Development", p: "Unreal Engine builds, from first prototype to shipped product." },
   { n: "02", h: "Game Design", p: "Systems, levels, progression, and the moment-to-moment feel of play." },
   { n: "03", h: "Real-time 3D", p: "Environments, characters, and effects engineered to hold frame-rate." },
   { n: "04", h: "QA & Dev", p: "Structured testing and hands-on development for clients like Sensor Ops." },
@@ -16,7 +16,6 @@ const CAPS = [
 ];
 
 const WORK = [
-  { proj: "mechaverse", status: "Pre-Alpha", statusClass: "prealpha", art: "/assets/mechaverse.jpg", title: "MechaVerse", label: "Roblox · Mech", badge: { flag: false, text: "Studio" } },
   { proj: "vengeance", status: "In Development", statusClass: "dev", art: "/assets/vengeance.jpg", title: "Vengeance: Beyond the Night", label: "Steam · Action", badge: { flag: true, text: "Agency × Studio" } },
   { proj: "shadow", status: "In Development", statusClass: "dev", art: "/assets/sob.jpg", title: "Shadow of Beginnings", label: "Steam · Action RPG", badge: { flag: false, text: "Studio" } },
   { proj: "synx", status: "Ongoing", statusClass: "dev", clientLogo: "/assets/sensorops-logo.svg", title: "SynX", label: "Sensor Ops · QA + Dev", badge: { flag: false, text: "Agency" } },
@@ -141,9 +140,10 @@ export default function PortfolioPage() {
           </h2>
           <p className="lead" data-reveal data-delay="2">
             I started Kazper Kreative to build at the frontier of interactive
-            creation: an agency and a game studio under one roof. From piloting
-            mechs in MechaVerse to keeping Sensor Ops&apos; SynX flight-ready, I
-            move between making our own worlds and helping clients ship theirs.
+            creation: an agency and a game studio under one roof. From building
+            original real-time game worlds to keeping Sensor Ops&apos; SynX
+            flight-ready, I move between making our own things and helping
+            clients ship theirs.
           </p>
           <p className="dim" data-reveal data-delay="2" style={{ marginTop: 16, maxWidth: "70ch" }}>
             When I&apos;m not in the engine, I&apos;m growing the agent network

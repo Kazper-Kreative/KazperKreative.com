@@ -466,6 +466,8 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 
 .work-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
 .work-grid.feat{grid-template-columns:1.6fr 1fr 1fr}
+/* 2-up variant (desktop only; mobile rules below collapse to 1col) */
+@media (min-width:861px){.work-grid.two,.proj-grid.two{grid-template-columns:repeat(2,1fr)}}
 .work-item{display:flex;flex-direction:column;gap:14px}
 .work-meta{display:flex;justify-content:space-between;align-items:center;gap:16px}
 .work-meta h4{font-size:18px}

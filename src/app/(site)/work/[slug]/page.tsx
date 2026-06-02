@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PROJECTS, PROJECT_ORDER, type ProjectSlug } from "@/data/projects";
 
+// Only the slugs in PROJECT_ORDER are valid; anything else (e.g. a hidden
+// project) returns 404 instead of rendering on demand.
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return PROJECT_ORDER.map((slug) => ({ slug }));
 }

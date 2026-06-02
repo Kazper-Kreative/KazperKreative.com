@@ -248,8 +248,9 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
   },
 };
 
+// "mechaverse" is intentionally hidden for now (Roblox title). Its data is
+// retained above — re-add it to this array to bring it back across the site.
 export const PROJECT_ORDER: ProjectSlug[] = [
-  "mechaverse",
   "vengeance",
   "shadow",
   "synx",
