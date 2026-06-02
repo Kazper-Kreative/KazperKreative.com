@@ -47,3 +47,7 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Local Claude Code settings & stray assets
+.claude/
+mason.jpg
