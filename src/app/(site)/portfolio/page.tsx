@@ -16,8 +16,8 @@ const CAPS = [
 ];
 
 const WORK = [
-  { proj: "mechaverse", status: "Pre-Alpha", statusClass: "prealpha", art: "/assets/mechaverse.png", title: "MechaVerse", label: "Roblox · Mech", badge: { flag: false, text: "Studio" } },
-  { proj: "vengeance", status: "In Development", statusClass: "dev", art: "/assets/vengeance.png", title: "Vengeance: Beyond the Night", label: "Steam · Action", badge: { flag: true, text: "Agency × Studio" } },
+  { proj: "mechaverse", status: "Pre-Alpha", statusClass: "prealpha", art: "/assets/mechaverse.jpg", title: "MechaVerse", label: "Roblox · Mech", badge: { flag: false, text: "Studio" } },
+  { proj: "vengeance", status: "In Development", statusClass: "dev", art: "/assets/vengeance.jpg", title: "Vengeance: Beyond the Night", label: "Steam · Action", badge: { flag: true, text: "Agency × Studio" } },
   { proj: "shadow", status: "In Development", statusClass: "dev", art: "/assets/sob.jpg", title: "Shadow of Beginnings", label: "Steam · Action RPG", badge: { flag: false, text: "Studio" } },
   { proj: "synx", status: "Ongoing", statusClass: "dev", clientLogo: "/assets/sensorops-logo.svg", title: "SynX", label: "Sensor Ops · QA + Dev", badge: { flag: false, text: "Agency" } },
 ];
@@ -33,7 +33,7 @@ export default function PortfolioPage() {
           <div className="pf-hero">
             <div className="pf-photo" data-reveal>
               <div className="media-frame">
-                <img src="/assets/mason-hr.png" alt="Mason" style={{ aspectRatio: "1 / 1" }} />
+                <img src="/assets/mason-hr.jpg" alt="Mason" style={{ aspectRatio: "1 / 1" }} />
               </div>
             </div>
             <div data-reveal data-delay="1">
@@ -115,7 +115,7 @@ export default function PortfolioPage() {
                   {w.clientLogo ? (
                     <img className="client-logo" src={w.clientLogo} alt={w.title} />
                   ) : (
-                    <img className="art-rounded" src={w.art} alt={w.title} style={{ aspectRatio: "16 / 10" }} />
+                    <img className="art-rounded" loading="lazy" decoding="async" src={w.art} alt={w.title} style={{ aspectRatio: "16 / 10" }} />
                   )}
                 </div>
                 <div className="work-meta">

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Agency",
   description:
     "Real-time creative, engineered to a frontier standard. Unreal Engine development, game design, real-time 3D, cinematics, brand and web from Kazper Kreative.",
+  alternates: { canonical: "/agency" },
 };
 
 const CAPS = [

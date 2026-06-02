@@ -246,8 +246,8 @@ export default function HomePage() {
               <div className="proj-art">
                 <span className="status prealpha">Pre-Alpha</span>
                 <img
-                  className="art-rounded"
-                  src="/assets/mechaverse.png"
+                  className="art-rounded" loading="lazy" decoding="async"
+                  src="/assets/mechaverse.jpg"
                   alt="MechaVerse"
                   style={{ aspectRatio: "16 / 10" }}
                 />
@@ -264,8 +264,8 @@ export default function HomePage() {
               <div className="proj-art">
                 <span className="status dev">In Development</span>
                 <img
-                  className="art-rounded"
-                  src="/assets/vengeance.png"
+                  className="art-rounded" loading="lazy" decoding="async"
+                  src="/assets/vengeance.jpg"
                   alt="Vengeance: Beyond the Night"
                   style={{ aspectRatio: "4 / 3" }}
                 />
@@ -282,7 +282,7 @@ export default function HomePage() {
               <div className="proj-art">
                 <span className="status dev">In Development</span>
                 <img
-                  className="art-rounded"
+                  className="art-rounded" loading="lazy" decoding="async"
                   src="/assets/sob.jpg"
                   alt="Shadow of Beginnings"
                   style={{ aspectRatio: "4 / 3" }}

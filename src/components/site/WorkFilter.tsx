@@ -29,7 +29,7 @@ const ITEMS: Item[] = [
     title: "MechaVerse",
     label: "Roblox · Mech",
     badge: { flag: false, text: "Studio" },
-    art: "/assets/mechaverse.png",
+    art: "/assets/mechaverse.jpg",
   },
   {
     proj: "vengeance",
@@ -41,7 +41,7 @@ const ITEMS: Item[] = [
     title: "Vengeance: Beyond the Night",
     label: "Steam · Action",
     badge: { flag: true, text: "Agency × Studio" },
-    art: "/assets/vengeance.png",
+    art: "/assets/vengeance.jpg",
   },
   {
     proj: "shadow",
@@ -116,7 +116,7 @@ export default function WorkFilter() {
                 <img className="client-logo" src={it.clientLogo} alt={it.title} />
               ) : (
                 <img
-                  className="art-rounded"
+                  className="art-rounded" loading="lazy" decoding="async"
                   src={it.art}
                   alt={it.title}
                   style={{ aspectRatio: "4 / 3" }}

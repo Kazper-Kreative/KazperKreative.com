@@ -15,11 +15,16 @@ export async function generateMetadata({
   const { slug } = await params;
   const project = PROJECTS[slug as ProjectSlug];
   if (!project) return {};
+  const title = `${project.title} · Case Study`;
   return {
-    title: `${project.title} · Case Study`,
+    title,
     description: project.caseLead,
+    alternates: { canonical: `/work/${slug}` },
+    openGraph: { type: "article", title, description: project.caseLead },
   };
 }
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kazperkreative.com";
 
 export default async function CaseStudyPage({
   params,
@@ -29,6 +34,41 @@ export default async function CaseStudyPage({
   const { slug } = await params;
   const project = PROJECTS[slug as ProjectSlug];
   if (!project) notFound();
+
+  const pageUrl = `${siteUrl}/work/${slug}`;
+  const org = { "@type": "Organization", name: "Kazper Kreative", url: siteUrl };
+  const isGame = slug !== "synx";
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      isGame
+        ? {
+            "@type": "VideoGame",
+            name: project.title,
+            description: project.overview.lead,
+            genre: project.tags,
+            gamePlatform: project.facts.find((f) => f.k === "Platform")?.v,
+            author: org,
+            publisher: org,
+            url: pageUrl,
+          }
+        : {
+            "@type": "CreativeWork",
+            name: project.title,
+            description: project.overview.lead,
+            creator: org,
+            url: pageUrl,
+          },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+          { "@type": "ListItem", position: 2, name: "Work", item: `${siteUrl}/work` },
+          { "@type": "ListItem", position: 3, name: project.title, item: pageUrl },
+        ],
+      },
+    ],
+  };
 
   const heroActions = project.link ? (
     <>
@@ -45,6 +85,10 @@ export default async function CaseStudyPage({
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <section className="section cs-hero" style={{ paddingTop: "clamp(36px,6vw,72px)" }}>
         <div className="wrap">
           <Link href="/work" className="cs-back">

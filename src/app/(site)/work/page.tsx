@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Work",
   description:
     "Selected work from Kazper Kreative: builds from the agency and worlds from the studio, across Roblox and Steam.",
+  alternates: { canonical: "/work" },
 };
 
 export default function WorkPage() {

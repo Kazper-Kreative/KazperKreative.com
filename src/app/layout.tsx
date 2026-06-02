@@ -36,6 +36,7 @@ export const metadata: Metadata = {
   description:
     "Kazper Kreative is a creative agency and the home of Kazper's Echo, an Unreal Engine game studio. Cutting-edge real-time worlds, brands, and the network of agents who build them.",
   metadataBase: new URL(siteUrl),
+  alternates: { canonical: "/" },
   icons: { icon: "/assets/k-mark.png" },
   openGraph: {
     title: "Kazper Kreative · Agency × Game Studio",
@@ -48,6 +49,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@KazperKreative",
+    creator: "@KazperKreative",
     title: "Kazper Kreative · Agency × Game Studio",
     description:
       "A creative agency and the home of Kazper's Echo. We build worlds, brands, and the network behind them.",

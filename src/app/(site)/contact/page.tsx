@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: "Contact",
   description:
     "Tell us about your project: a game, a real-time build, a brand, a site. We'll come back with a way forward.",
+  alternates: { canonical: "/contact" },
 };
 
 export default function ContactPage() {

@@ -72,7 +72,7 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
     gridFlag: "Studio",
     meta: "Roblox · After the Unreal slate",
     desc: "Strap into a war-machine and earn your name. Pilot towering mechs, stake your claim, and climb the ranks of the intergalactic Confederation.",
-    art: "/assets/mechaverse.png",
+    art: "/assets/mechaverse.jpg",
     link: { url: "https://www.roblox.com/games/7825844132", label: "View on Roblox" },
     caseLead:
       "Pilot towering mechs, stake your claim, and climb the ranks of the intergalactic Confederation.",
@@ -119,7 +119,7 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
     gridFlag: "Agency × Studio",
     meta: "Steam · Windows · Target Jul 2026",
     desc: "One vigilante stands between the city and the rogue AI clawing through its night. Hunt it down, adapt, and hold the line until dawn.",
-    art: "/assets/vengeance.png",
+    art: "/assets/vengeance.jpg",
     caseLead:
       "One vigilante stands between the city and the rogue AI clawing through its night.",
     facts: [

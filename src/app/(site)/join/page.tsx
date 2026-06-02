@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "Join the Network",
   description:
     "Kazper Kreative runs on a network of agents: creators, engineers and artists matched to frontier work across the agency and the studio. Apply to the roster.",
+  alternates: { canonical: "/join" },
 };
 
 const DISCIPLINES = [

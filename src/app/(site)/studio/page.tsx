@@ -6,13 +6,14 @@ export const metadata: Metadata = {
   title: "Kazper's Echo · Game Studio",
   description:
     "Kazper's Echo is the in-house game studio of Kazper Kreative, building original worlds on Unreal Engine 5: MechaVerse, Vengeance: Beyond the Night, and Shadow of Beginnings.",
+  alternates: { canonical: "/studio" },
 };
 
 const WORKS = [
   {
     statusClass: "prealpha",
     status: "Pre-Alpha",
-    art: "/assets/mechaverse.png",
+    art: "/assets/mechaverse.jpg",
     tags: [{ flag: false, label: "Roblox" }, { flag: false, label: "Mech" }, { flag: false, label: "Progression" }],
     title: "MechaVerse",
     desc: "Strap into a war-machine and earn your name. Pilot towering mechs, stake your claim, and climb the ranks of the intergalactic Confederation.",
@@ -22,7 +23,7 @@ const WORKS = [
   {
     statusClass: "dev",
     status: "In Development",
-    art: "/assets/vengeance.png",
+    art: "/assets/vengeance.jpg",
     tags: [{ flag: true, label: "Agency × Studio" }, { flag: false, label: "Steam" }, { flag: false, label: "Action" }],
     title: "Vengeance: Beyond the Night",
     desc: "One vigilante stands between the city and the rogue AI clawing through its night. Hunt it down, adapt, and hold the line until dawn.",
@@ -106,7 +107,7 @@ export default function StudioPage() {
               <article className="card proj-card" data-reveal data-delay={(i % 3).toString()} key={w.title}>
                 <div className="proj-art">
                   <span className={`status ${w.statusClass}`}>{w.status}</span>
-                  <img className="art-rect" src={w.art} alt={w.title} style={{ aspectRatio: "16 / 10" }} />
+                  <img className="art-rect" loading="lazy" decoding="async" src={w.art} alt={w.title} style={{ aspectRatio: "16 / 10" }} />
                 </div>
                 <div className="proj-body">
                   <div className="proj-tags">
