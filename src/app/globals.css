@@ -411,9 +411,17 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 .form{display:grid;gap:16px;min-width:0}
 .field{display:flex;flex-direction:column;gap:7px;min-width:0}
 .field label{font-family:var(--font-mono);font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim)}
-.field input,.field select,.field textarea{width:100%;max-width:100%;min-width:0;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px;color:var(--text);font-family:inherit;font-size:15px}
+.field input,.field select,.field textarea{width:100%;max-width:100%;min-width:0;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:13px 15px;color:var(--text);font-family:inherit;font-size:15px;line-height:1.4;height:auto}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
 .field textarea{min-height:130px;resize:vertical}
+/* Normalise native selects so the two columns match each other + the inputs */
+.field select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  padding-right:40px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%239B9CB0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 16px center;background-size:12px 8px;
+}
+.field select option{background:var(--surface-2);color:var(--text)}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:0}
 
 /* Process steps */
