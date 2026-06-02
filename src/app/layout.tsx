@@ -1,47 +1,58 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Space_Grotesk, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
-import { ThemeProvider } from "@/components/utilities/ThemeProvider";
-import AuthProvider from "@/components/utilities/AuthProvider";
-import RoleSync from "@/components/utilities/RoleSync";
+import SiteInteractions from "@/components/site/SiteInteractions";
+import { ProjectModalProvider } from "@/components/site/ProjectModal";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const hankenGrotesk = Hanken_Grotesk({
+  variable: "--font-hanken-grotesk",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kazperkreative.com";
 
 export const metadata: Metadata = {
-  title: "Kazper Kreative LLC | Game development, QA & immersive UI",
+  title: {
+    default: "Kazper Kreative · Agency × Game Studio",
+    template: "%s · Kazper Kreative",
+  },
   description:
-    "Kazper Kreative builds Unreal Engine titles, QA pipelines, and immersive UI for studios in Ontario and beyond.",
+    "Kazper Kreative is a creative agency and the home of Kazper's Echo, an Unreal Engine game studio. Cutting-edge real-time worlds, brands, and the network of agents who build them.",
   metadataBase: new URL(siteUrl),
+  icons: { icon: "/assets/k-mark.png" },
   openGraph: {
-    title: "Kazper Kreative LLC",
+    title: "Kazper Kreative · Agency × Game Studio",
     description:
-      "Game development, QA engineering, and immersive UI — engineered end-to-end.",
+      "A creative agency and the home of Kazper's Echo. We build worlds, brands, and the network behind them.",
     url: siteUrl,
-    siteName: "Kazper Kreative LLC",
+    siteName: "Kazper Kreative",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kazper Kreative LLC",
+    title: "Kazper Kreative · Agency × Game Studio",
     description:
-      "Game development, QA engineering, and immersive UI — engineered end-to-end.",
+      "A creative agency and the home of Kazper's Echo. We build worlds, brands, and the network behind them.",
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 const jsonLd = {
@@ -50,43 +61,34 @@ const jsonLd = {
     {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,
-      name: "Kazper Kreative LLC",
+      name: "Kazper Kreative",
       url: siteUrl,
       description:
-        "Game development, QA engineering, and immersive UI agency based in Ontario, Canada.",
+        "A creative agency and the home of Kazper's Echo, an Unreal Engine game studio.",
       sameAs: [
-        "https://www.upwork.com/agencies/1990979485860235162/",
+        "https://x.com/KazperKreative",
+        "https://www.linkedin.com/company/kazper-kreative-llc",
+        "https://github.com/Kazper-Kreative",
+        "https://www.twitch.tv/kazperkreative",
+        "https://www.tiktok.com/@kazperthekreative",
       ],
     },
     {
       "@type": "Service",
-      "@id": `${siteUrl}/#service-game-dev`,
-      name: "Game development",
-      serviceType: "Game development",
+      "@id": `${siteUrl}/#service-unreal`,
+      name: "Unreal Engine development",
+      serviceType: "Real-time 3D & game development",
       provider: { "@id": `${siteUrl}/#organization` },
-      areaServed: { "@type": "Place", name: "Ontario, Canada" },
       description:
-        "End-to-end Unreal Engine game development, from prototype to ship.",
+        "Real-time apps, configurators, and interactive builds in Unreal Engine 5, from prototype to ship.",
     },
     {
-      "@type": "Service",
-      "@id": `${siteUrl}/#service-qa`,
-      name: "QA engineering",
-      serviceType: "Software quality assurance",
-      provider: { "@id": `${siteUrl}/#organization` },
-      areaServed: { "@type": "Place", name: "Ontario, Canada" },
+      "@type": "VideoGameSeries",
+      "@id": `${siteUrl}/#kazpers-echo`,
+      name: "Kazper's Echo",
+      publisher: { "@id": `${siteUrl}/#organization` },
       description:
-        "QA pipelines, automation, and performance analysis for games and web applications.",
-    },
-    {
-      "@type": "Service",
-      "@id": `${siteUrl}/#service-ui`,
-      name: "Immersive UI",
-      serviceType: "User interface design and engineering",
-      provider: { "@id": `${siteUrl}/#organization` },
-      areaServed: { "@type": "Place", name: "Ontario, Canada" },
-      description:
-        "Real-time, motion-rich interfaces for games, web applications, and dashboards.",
+        "Kazper Kreative's in-house game studio building original real-time worlds.",
     },
   ],
 };
@@ -97,27 +99,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-        suppressHydrationWarning
+        className={`${spaceGrotesk.variable} ${hankenGrotesk.variable} ${jetbrainsMono.variable}`}
       >
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            <RoleSync />
-            {children}
-            <Analytics />
-          </AuthProvider>
-        </ThemeProvider>
+        <ProjectModalProvider>
+          {children}
+        </ProjectModalProvider>
+        <SiteInteractions />
+        <Analytics />
       </body>
     </html>
   );

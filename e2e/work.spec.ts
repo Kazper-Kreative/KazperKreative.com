@@ -1,0 +1,35 @@
+import { test, expect } from "@playwright/test";
+
+test.describe("work", () => {
+  test("lists projects and filters them", async ({ page }) => {
+    await page.goto("/work");
+
+    const grid = page.locator("#workGrid");
+    await expect(grid.getByRole("heading", { name: "MechaVerse" })).toBeVisible();
+    await expect(grid.getByRole("heading", { name: "SynX" })).toBeVisible();
+
+    // Filtering to "Agency" hides studio-only MechaVerse, keeps SynX.
+    await page.getByRole("button", { name: "Agency" }).click();
+    await expect(grid.getByRole("heading", { name: "MechaVerse" })).toBeHidden();
+    await expect(grid.getByRole("heading", { name: "SynX" })).toBeVisible();
+  });
+
+  test("clicking a project opens the detail modal", async ({ page }) => {
+    await page.goto("/work");
+    await page.locator('.js-proj[data-proj="mechaverse"]').click();
+    const modal = page.locator(".pm-overlay");
+    await expect(modal).toBeVisible();
+    await expect(modal.getByRole("heading", { name: "MechaVerse" })).toBeVisible();
+    await expect(modal.getByRole("link", { name: /Read case study/i })).toHaveAttribute(
+      "href",
+      "/work/mechaverse"
+    );
+  });
+
+  test("case study page renders", async ({ page }) => {
+    await page.goto("/work/vengeance");
+    await expect(
+      page.getByRole("heading", { name: "Vengeance: Beyond the Night", level: 1 })
+    ).toBeVisible();
+  });
+});

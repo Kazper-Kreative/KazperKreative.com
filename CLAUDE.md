@@ -5,131 +5,147 @@ this file calls out conventions and gotchas Claude is likely to hit.
 
 ## What this site is
 
-The Kazper Kreative LLC marketing site. Premium agency: game dev, QA
-engineering, immersive UI, based in Ontario. The site itself is a
-lead-capture funnel (`/start`) plus brand/case-study surfaces. There's
-also a small Sanity-backed CRM (clients, jobs, applicants, messages)
-behind auth.
+The Kazper Kreative marketing site. **Two halves under one roof:** a
+creative **agency** (Unreal Engine, real-time 3D, brand, web) and
+**Kazper's Echo**, the in-house **game studio**. The site is brand +
+portfolio surfaces plus two lead capture paths (`/contact`, `/join`)
+and a private submissions **inbox** (`/inbox`).
 
-## Voice
+In mid-2026 the whole public site was **re-ported from a standalone
+static HTML/CSS/JS site** (`brand.css` + `site.js`) into this Next.js
+app, and the backend was **switched from Sanity/NextAuth/Resend to
+Supabase**. The old cinematic `/experience`, the Sanity CRM, and the
+`/start` funnel are **gone** — don't reintroduce them.
 
-The brand voice was rebooted in 2026 as part of a Tier 3 refactor. The
-old GEMINI.md described a "Dark Mode / Batman / mil-tech" aesthetic —
-that brief is **retired** on public surfaces.
+## Voice & brand
 
-- Public copy: plain premium-agency voice. Headlines describe what we
-  do (game development, QA, immersive UI). CTAs say what they do
-  ("Start a project", "View our work").
-- The only place the mil-tech / cinematic mood survives is
-  `/experience` — a skippable scroll-driven 3D intro with HUD,
-  scanline overlay, ambient audio drone, and `GhostScan` onboarding.
-- Internal Sanity enum values (`rank: STRIKE_READY`, `status: PENDING`)
-  can keep their old names; just don't render those raw labels in
-  public-facing UI.
+- Dual framing: **Kazper Kreative (agency) × Kazper's Echo (studio)**.
+  Confident, "frontier"-flavoured premium-agency copy.
+- Visual system is the **"Inferno" palette** (warm orange/magenta →
+  violet → cyan gradient) defined in `globals.css` `:root`. It's the
+  default and the canonical look.
+- The brand mark is the iridescent **K** at `public/assets/k-mark.png`
+  (favicon + nav + hero orb). NOTE: this is currently a placeholder
+  copy of `logo.jpg` — drop the real iridescent PNG at that exact path
+  to update everywhere at once.
 
 ## Stack
 
-Next.js 16 App Router (Turbopack), React 19, Tailwind v4 (CSS-first
-via `@theme inline` in `globals.css` — **there is no `tailwind.config.ts`**),
-Sanity v4, NextAuth v5 (still beta, pinned to `5.0.0-beta.31`), Resend,
-Three.js + R3F + Drei, Framer Motion, Zustand (with `persist`
-middleware), Jest + RTL for unit tests, Playwright for E2E.
+Next.js 16 App Router (Turbopack), React 19, Tailwind v4 (CSS-first —
+`@import "tailwindcss"` lives at the top of `globals.css`; **there is
+no `tailwind.config`**), **Supabase** (`@supabase/supabase-js`), Jest +
+RTL for unit tests, Playwright for E2E. Fonts via `next/font/google`
+(Space Grotesk display, Hanken Grotesk body, JetBrains Mono mono).
 
-## Where the cinematic UI lives
+**Removed and not coming back:** Sanity, next-sanity, NextAuth, Resend,
+Three.js / R3F / Drei, Framer Motion, Zustand, next-themes,
+lucide-react. If you reach for one of these, you're probably solving
+the wrong problem.
 
-Mounted **only on `/experience`** via `src/app/experience/layout.tsx`:
+## The design system
 
-- `AudioProvider` (audio context + drone)
-- `ScanlineOverlay`, `GlitchTransition`, CRT vignette
-  (`.cinematic-vignette` class)
-- `CinematicChrome` (bundles HUD, CommandPalette, QuickActions,
-  IdentityBadge, GhostScan onboarding)
-- `CinematicLanding` (scroll-driven 3D)
+`src/app/globals.css` **is** the design system — a hand-authored,
+class-based system ported from the static site's `brand.css`, plus
+page-specific sections (home, studio, work, join, contact, portfolio,
+inbox) under clear comment headers. It is **not** utility-first; pages
+compose semantic classes (`.btn`, `.card`, `.kicker`, `.cap`,
+`.cta-band`, `.proj-card`, `.cs-hero`, …). Edit CSS here, not inline,
+for anything reusable. Dark-only: `<html className="dark">` in
+`src/app/layout.tsx` (no theme toggle).
 
-`Navbar.tsx` is plain everywhere — just logo + 4 links + mobile menu.
-Do **not** put HUD/CommandPalette/IdentityBadge back into Navbar.
+## Routing & layout
 
-## Atomic design boundaries
+- `src/app/(site)/` is a route group wrapped by `SiteLayout`
+  (`SiteHeader` + `SiteFooter`): `/`, `/agency`, `/studio`, `/work`,
+  `/work/[slug]` (case studies), `/join`, `/contact`, `/portfolio`
+  (`noindex`).
+- `src/app/inbox/` is **standalone** (no site chrome), `noindex`.
+- `src/app/layout.tsx` (root) mounts `ProjectModalProvider` +
+  `SiteInteractions` + Vercel `Analytics`, sets fonts and metadata.
 
-`atoms/` should be small, presentational, hookless-ish.
-`organisms/` is where complex stateful components live. If you write
-something with a `<Canvas>`, a Zustand store call, or a non-trivial
-effect graph, it's an organism, not an atom. `TechnicalBackground`
-used to be in `atoms/`; it was moved to `organisms/` in Phase 5.
+## Interaction layer (`src/components/site/`)
 
-## Server vs client components
+The static site's `site.js` behaviours are ported to React:
 
-`HomeTemplate` and most page-level files are server components. Don't
-add `"use client"` to them without a reason. Components that use
-`useState`, `useEffect`, `useRouter`, etc., **must** start with
-`"use client"` — if a hook-using component lacks the directive but
-its parent has it, things work locally and silently break the moment
-an RSC tree above it goes "use client"-free (Phase 4 caught two of
-those: `ServiceCard` and `ContactForm`).
+- `SiteInteractions.tsx` — reveal-on-scroll (`[data-reveal]`/`.in` +
+  the reveal-fallback safety net) and hover tilt (`[data-tilt]`). It's
+  mounted once and **re-scans the DOM on every route change** via
+  `usePathname()`, so new pages get wired up. Pages opt in by putting
+  `data-reveal`/`data-delay`/`data-tilt` attributes directly in JSX —
+  no wrapper component.
+- `ProjectModal.tsx` — the shared project-detail modal. Any element
+  with `className="js-proj" data-proj="<slug>"` opens it via a
+  **delegated document click listener** (works for server-rendered and
+  client grids alike). Project data lives in **`src/data/projects.ts`**
+  (single source for grid + modal + case-study pages). `caseUrl`s are
+  `/work/<slug>`.
+- Forms (`ContactForm`, `ApplicationForm`, `NewsletterForm`) are client
+  islands that call `src/lib/supabase/submissions.ts` and flip to a
+  `.sent` state. `captureForm` keys fields by their `<label>` text.
 
-## Hydration
+## Supabase backend
 
-The codebase used to have 181 `suppressHydrationWarning` attributes
-papering over mismatches; they were nearly all cargo-cult. Only **two
-legitimate cases remain**: `<html>` and `<body>` in
-`src/app/layout.tsx` (the canonical `next-themes` pattern).
+- `src/lib/supabase/client.ts` — browser client. Reads
+  `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`, falling
+  back to the project's known public values so it works out of the box.
+  The anon key is **safe to expose** (RLS-gated).
+- `src/lib/supabase/submissions.ts` — TS port of the old `inbox.js`
+  (`inbox.save/fetchAll/setRead/remove/clear` + `signIn/signOut/
+  hasSession`). Has a **localStorage fallback** when Supabase isn't
+  configured.
+- Table: `submissions(id, created_at, type, fields jsonb, read)` with
+  RLS: anon can INSERT; authenticated (the owner) can read/update/
+  delete. All public forms write here; `type` is `Contact` |
+  `Application` | `Newsletter`.
+- **`/inbox` is the CRM.** Sign in with the Supabase email/password to
+  read submissions. (`INBOX_PIN` only applies in the localStorage
+  fallback.)
 
-Before adding a new `suppressHydrationWarning`: find the actual
-mismatch source. The most common culprits in this codebase are
-Zustand-`persist` reads (use a `mounted` gate) and components that
-generate random IDs at module-init time (the old
-`useUserRole.identityId` did `Math.random()` — fixed in Phase 1).
+## Conventions / gotchas
 
-## Lead funnel
+- **Plain `<img>` is intentional** — the design system relies on CSS
+  `aspect-ratio`/`object-fit`. `@next/next/no-img-element` is disabled
+  in `eslint.config.mjs`. Real art lives in `public/assets/`.
+- **Internal navigation uses `<Link>`**; external/`mailto`/hash links
+  stay `<a>`. (`no-html-link-for-pages` is enforced.)
+- The static site's authoring tools — the **Tweaks panel** and the
+  **`<image-slot>`** drag-drop web component — were intentionally
+  **dropped**. Gallery placeholders use the `.slot-ph` class.
+- Components that use hooks need `"use client"`. `SiteFooter` is a
+  server component; its newsletter is the `NewsletterForm` client
+  island.
 
-There is exactly one: `/start` → `/api/start` → Sanity `lead` doc +
-Resend email. `/discovery` and `/brief` 301-redirect to `/start`. Don't
-build a third funnel. CTAs across the site all point to `/start`.
+## Old URLs
 
-## Auth
-
-NextAuth v5 jwt-strategy. The `jwt` callback looks up the user's
-email in Sanity (`agent` or `client` doc) and stashes `role` +
-`sanityId` on the token. The session callback exposes them via
-`session.user.role` and `session.user.sanityId`. Module augmentation
-in `src/types/next-auth.d.ts` targets `@auth/core/jwt` (NOT
-`next-auth/jwt` — that's just a re-export and augmentation won't merge
-there).
-
-**Auth-gated pages** (`/dashboard`, `/workstation`) check `session`
-explicitly inside the page and `redirect('/unauthorized')` if missing.
-The middleware also runs but has matcher subtleties — defense in depth
-is correct here. Don't rip out the in-page check.
+`next.config.ts` 301-redirects retired routes: `/start`,`/discovery`,
+`/brief` → `/contact`; `/agents*` → `/join`; `/dashboard`,
+`/workstation`,`/experience` → `/`; `/projects/:slug*` → `/work`.
 
 ## Tests before commit
 
-Run both before pushing:
-
 ```bash
-npm run test          # Jest
-npm run test:e2e      # Playwright (needs chromium installed once)
+npm run test          # Jest (jsdom)
+npm run test:e2e      # Playwright (chromium installed once)
 ```
 
-If you change a string that a test asserts on, update the test in the
-same commit.
+E2E covers homepage CTAs/nav, the work filter + project modal, a case
+study page, contact submit (Supabase request is route-stubbed so no
+real row is written), and the redirects. If you change a string a test
+asserts on, update the test in the same commit.
 
 ## Windows + line endings
 
-The repo is CRLF on disk. `sed` on Git Bash flips files to LF and
-explodes the diff. For bulk text edits across many files use
+The repo is CRLF on disk. For bulk text edits across many files use
 PowerShell with `[System.IO.File]::ReadAllText` /
-`[System.IO.File]::WriteAllText` — those are byte-faithful. The Edit
-tool also preserves CRLF in this repo.
+`[System.IO.File]::WriteAllText` (byte-faithful). The Edit tool also
+preserves CRLF.
 
 ## Known follow-ups
 
-- Sentry + analytics deferred (Phase 6 decision). Bring them up when
-  the user has the accounts ready.
-- CSP is currently `Content-Security-Policy-Report-Only`. Watch
-  DevTools for violations over a release or two, then flip to
-  `Content-Security-Policy` to enforce.
-- `next-auth` is still beta-only. Watch for a stable v5 release on
-  npm dist-tags.
-- 80 Dependabot vulnerabilities on master (38 high, 36 moderate, 6
-  low) — mostly transitive from Sanity / Three.js. Triage as part of
-  observability work.
+- Replace the placeholder `public/assets/k-mark.png` with the real
+  iridescent K PNG.
+- CSP is still `Content-Security-Policy-Report-Only` (now scoped to
+  `*.supabase.co`). Watch DevTools, then flip to enforce.
+- Confirm the Supabase `submissions` table + RLS policies are
+  provisioned in the project (`lenbcecnvjaylhigtlfl`); the inbox
+  silently falls back to localStorage if not.

@@ -1,51 +1,35 @@
 import { MetadataRoute } from "next";
-import { client } from "@/sanity/lib/client";
+import { PROJECT_ORDER } from "@/data/projects";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kazperkreative.com";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const projectSlugs: { slug: string }[] = await client.fetch(
-    `*[_type == "project" && defined(slug.current)]{ "slug": slug.current }`
-  );
+export default function sitemap(): MetadataRoute.Sitemap {
+  const now = new Date();
 
-  const projectUrls = projectSlugs.map((p) => ({
-    url: `${siteUrl}/projects/${p.slug}`,
-    lastModified: new Date(),
+  const staticRoutes: { path: string; priority: number; freq: "weekly" | "monthly" }[] = [
+    { path: "", priority: 1, freq: "weekly" },
+    { path: "/agency", priority: 0.9, freq: "monthly" },
+    { path: "/studio", priority: 0.9, freq: "weekly" },
+    { path: "/work", priority: 0.8, freq: "weekly" },
+    { path: "/join", priority: 0.7, freq: "monthly" },
+    { path: "/contact", priority: 0.8, freq: "monthly" },
+  ];
+
+  const projectUrls = PROJECT_ORDER.map((slug) => ({
+    url: `${siteUrl}/work/${slug}`,
+    lastModified: now,
     changeFrequency: "monthly" as const,
     priority: 0.7,
   }));
 
+  // /portfolio and /inbox are intentionally excluded (noindex).
   return [
-    {
-      url: siteUrl,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-    {
-      url: `${siteUrl}/agents`,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${siteUrl}/agents/join`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${siteUrl}/start`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${siteUrl}/experience`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
+    ...staticRoutes.map((r) => ({
+      url: `${siteUrl}${r.path}`,
+      lastModified: now,
+      changeFrequency: r.freq,
+      priority: r.priority,
+    })),
     ...projectUrls,
   ];
 }
