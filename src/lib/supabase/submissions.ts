@@ -149,7 +149,9 @@ export function extractFields(form: HTMLFormElement): Record<string, string> {
     "input, select, textarea"
   ).forEach((el) => {
     if (el.type === "submit" || el.type === "button") return;
+    if (el.type === "hidden") return; // skip Turnstile token + other hidden inputs
     if (el.hasAttribute("data-hp")) return; // skip the honeypot field
+    if (el.getAttribute("name") === "cf-turnstile-response") return; // belt + suspenders
     const fieldWrap = el.closest(".field");
     const label = fieldWrap?.querySelector("label")?.textContent?.trim();
     const key = label || el.getAttribute("aria-label") || el.name || el.type;
