@@ -334,7 +334,9 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 @media (max-width: 860px){.proj-grid{grid-template-columns:1fr}}
 
 /* Generic media frame (replaces the static site's <image-slot>) */
-.media-frame{display:block;background:var(--surface);border:1px solid var(--line);overflow:hidden;position:relative}
+/* object-fit applies whether .media-frame is the <img> itself (case hero)
+   or a wrapper around a child <img> (portfolio photo). */
+.media-frame{display:block;background:var(--surface);border:1px solid var(--line);overflow:hidden;position:relative;object-fit:cover}
 .media-frame img{width:100%;height:100%;object-fit:cover;display:block}
 .media-frame.rounded{border-radius:16px}
 .media-frame.circle{border-radius:50%}
