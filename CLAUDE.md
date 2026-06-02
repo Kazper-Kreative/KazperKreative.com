@@ -101,6 +101,26 @@ The static site's `site.js` behaviours are ported to React:
   read submissions. (`INBOX_PIN` only applies in the localStorage
   fallback.)
 
+## Form submission pipeline
+
+Contact + application forms POST to **`src/app/api/submit/route.ts`**
+(not a direct client insert). The route: checks the honeypot →
+verifies the **Cloudflare Turnstile** token (`src/lib/turnstile.ts`) →
+inserts to Supabase → sends an **email notification** via Resend
+(`src/lib/email.ts`). Client helper is `submitForm()` in
+`submissions.ts`; on a network/5xx failure it falls back to a direct
+client save so leads aren't lost. The footer newsletter still saves
+directly client-side.
+
+Everything degrades gracefully on missing env:
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY` unset → widget doesn't render;
+  `TURNSTILE_SECRET_KEY` unset → server skips verification.
+- `RESEND_API_KEY`/`EMAIL_TO` unset → no email sent.
+
+The `<Turnstile>` widget needs the `challenges.cloudflare.com` CSP
+allowances already added to `next.config.ts` (script-src, frame-src,
+connect-src).
+
 ## Conventions / gotchas
 
 - **Plain `<img>` is intentional** — the design system relies on CSS

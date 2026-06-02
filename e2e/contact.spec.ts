@@ -1,10 +1,14 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("contact", () => {
-  // Stub the Supabase insert so the test never writes a real row.
+  // Stub the submit endpoint so the test never writes a real row.
   test.beforeEach(async ({ page }) => {
-    await page.route("**/rest/v1/submissions*", (route) =>
-      route.fulfill({ status: 201, contentType: "application/json", body: "[]" })
+    await page.route("**/api/submit", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      })
     );
   });
 

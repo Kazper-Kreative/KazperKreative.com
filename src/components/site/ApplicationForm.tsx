@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { captureForm, isHoneypotFilled } from "@/lib/supabase/submissions";
+import {
+  extractFields,
+  isHoneypotFilled,
+  submitForm,
+} from "@/lib/supabase/submissions";
+import Turnstile from "@/components/site/Turnstile";
 
 export default function ApplicationForm() {
   const [sent, setSent] = useState(false);
+  const [token, setToken] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (sent) {
     return (
@@ -24,15 +32,19 @@ export default function ApplicationForm() {
       style={{ padding: 30 }}
       data-reveal
       data-delay="1"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         const form = e.currentTarget;
         if (isHoneypotFilled(form)) {
           setSent(true);
           return;
         }
-        captureForm(form, "Application");
-        setSent(true);
+        setError("");
+        setSubmitting(true);
+        const res = await submitForm("Application", extractFields(form), token);
+        setSubmitting(false);
+        if (res.ok) setSent(true);
+        else setError(res.error || "Something went wrong. Please try again.");
       }}
     >
       <input
@@ -75,8 +87,20 @@ export default function ApplicationForm() {
         <label>What do you want to build?</label>
         <textarea placeholder="A few lines about your work and what you're after." />
       </div>
-      <button type="submit" className="btn btn-fill btn-lg" style={{ justifyContent: "center" }}>
-        Submit application <span className="arrow">→</span>
+      <Turnstile onVerify={setToken} />
+      {error && (
+        <p className="dim" style={{ color: "#ff6b6b", fontSize: 14 }}>
+          {error}
+        </p>
+      )}
+      <button
+        type="submit"
+        className="btn btn-fill btn-lg"
+        style={{ justifyContent: "center" }}
+        disabled={submitting}
+      >
+        {submitting ? "Submitting…" : "Submit application"}{" "}
+        <span className="arrow">→</span>
       </button>
     </form>
   );

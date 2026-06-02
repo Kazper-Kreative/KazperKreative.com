@@ -8,14 +8,17 @@ import type { NextConfig } from "next";
 // directive or it will be blocked.
 const contentSecurityPolicy = [
   "default-src 'self'",
-  // Next.js needs 'unsafe-inline' for its hydration bootstrap and JSON-LD.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+  // Next.js needs 'unsafe-inline' for its hydration bootstrap and JSON-LD;
+  // challenges.cloudflare.com serves the Turnstile widget script.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
   // 'unsafe-inline' covers the inline style attributes used across pages.
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",
   "img-src 'self' data: blob:",
-  // Supabase REST + Auth + Realtime (wss).
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  // Supabase REST + Auth + Realtime (wss); Cloudflare Turnstile telemetry.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com",
+  // Turnstile renders its challenge inside an iframe from this origin.
+  "frame-src 'self' https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

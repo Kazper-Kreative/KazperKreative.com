@@ -142,10 +142,8 @@ export const inbox = {
  * Mirrors the static site's KKsubmit: keys come from each field's <label>,
  * falling back to aria-label / name.
  */
-export function captureForm(
-  form: HTMLFormElement,
-  type: SubmissionType
-): Record<string, string> {
+/** Collect a form's named values, keyed by <label> text (skips honeypot). */
+export function extractFields(form: HTMLFormElement): Record<string, string> {
   const fields: Record<string, string> = {};
   form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
     "input, select, textarea"
@@ -157,6 +155,15 @@ export function captureForm(
     const key = label || el.getAttribute("aria-label") || el.name || el.type;
     if (el.value) fields[key] = el.value;
   });
+  return fields;
+}
+
+/** Extract + store directly (client-side). Used by the newsletter form + tests. */
+export function captureForm(
+  form: HTMLFormElement,
+  type: SubmissionType
+): Record<string, string> {
+  const fields = extractFields(form);
   void Promise.resolve(inbox.save({ type, fields })).catch(() => {});
   return fields;
 }
@@ -166,4 +173,42 @@ export function isHoneypotFilled(form: HTMLFormElement): boolean {
   return Array.from(form.querySelectorAll<HTMLInputElement>("[data-hp]")).some(
     (el) => !!el.value
   );
+}
+
+export interface SubmitResult {
+  ok: boolean;
+  error?: string;
+}
+
+/**
+ * Send a submission through the server route (/api/submit), which verifies
+ * the Turnstile token, stores it, and emails a notification. Falls back to a
+ * direct client-side save if the route is unreachable so leads aren't lost.
+ */
+export async function submitForm(
+  type: SubmissionType,
+  fields: Record<string, string>,
+  token: string
+): Promise<SubmitResult> {
+  try {
+    const res = await fetch("/api/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, fields, token }),
+    });
+    if (res.ok) return { ok: true };
+    if (res.status === 400) {
+      return { ok: false, error: "Verification failed — please try again." };
+    }
+    // 5xx / store error: fall back to a direct save so the lead isn't lost.
+    await inbox.save({ type, fields });
+    return { ok: true };
+  } catch {
+    try {
+      await inbox.save({ type, fields });
+    } catch {
+      /* ignore */
+    }
+    return { ok: true };
+  }
 }

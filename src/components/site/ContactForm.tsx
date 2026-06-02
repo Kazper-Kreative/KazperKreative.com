@@ -1,10 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { captureForm, isHoneypotFilled } from "@/lib/supabase/submissions";
+import {
+  extractFields,
+  isHoneypotFilled,
+  submitForm,
+} from "@/lib/supabase/submissions";
+import Turnstile from "@/components/site/Turnstile";
 
 export default function ContactForm() {
   const [sent, setSent] = useState(false);
+  const [token, setToken] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (sent) {
     return (
@@ -25,16 +33,19 @@ export default function ContactForm() {
       className="form card"
       style={{ padding: 32 }}
       data-reveal
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         const form = e.currentTarget;
-        // Bot filled the honeypot — show success but don't store anything.
         if (isHoneypotFilled(form)) {
           setSent(true);
           return;
         }
-        captureForm(form, "Contact");
-        setSent(true);
+        setError("");
+        setSubmitting(true);
+        const res = await submitForm("Contact", extractFields(form), token);
+        setSubmitting(false);
+        if (res.ok) setSent(true);
+        else setError(res.error || "Something went wrong. Please try again.");
       }}
     >
       <input
@@ -88,8 +99,19 @@ export default function ContactForm() {
         <label>About the project</label>
         <textarea required placeholder="What are you trying to build, and by when?" />
       </div>
-      <button type="submit" className="btn btn-fill btn-lg" style={{ justifyContent: "center" }}>
-        Send inquiry <span className="arrow">→</span>
+      <Turnstile onVerify={setToken} />
+      {error && (
+        <p className="dim" style={{ color: "#ff6b6b", fontSize: 14 }}>
+          {error}
+        </p>
+      )}
+      <button
+        type="submit"
+        className="btn btn-fill btn-lg"
+        style={{ justifyContent: "center" }}
+        disabled={submitting}
+      >
+        {submitting ? "Sending…" : "Send inquiry"} <span className="arrow">→</span>
       </button>
     </form>
   );
