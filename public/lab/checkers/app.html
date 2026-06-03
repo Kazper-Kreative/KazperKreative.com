@@ -50,7 +50,7 @@
         <div class="hr"></div>
         <div class="coach" id="coach"><div class="placeholder">Starting the engine. One moment…</div></div>
       </div>
-      <div class="panel controls">
+      <div class="panel controls" id="spControls">
         <div class="row"><label class="lbl">Opponent strength</label></div>
         <div class="seg" id="levelSeg">
           <button data-lvl="0" class="on">Beginner</button>
@@ -68,6 +68,20 @@
           <button class="btn" id="undoBtn">Take back</button>
         </div>
         <button class="btn primary" id="newBtn">New game</button>
+        <button class="btn" id="mpStartBtn">Play a friend · 1v1</button>
+      </div>
+      <div class="panel mp-panel" id="mpPanel" hidden>
+        <div class="mp-head"><span class="mp-dot" id="mpDot"></span><span id="mpRoleLabel">1v1 Match</span></div>
+        <p class="mp-status" id="mpStatus">Connecting…</p>
+        <div class="mp-invite">
+          <input id="mpLink" readonly aria-label="Invite link" />
+          <button class="btn" id="mpCopy">Copy</button>
+        </div>
+        <div class="btns">
+          <button class="btn" id="mpResign">Resign</button>
+          <button class="btn" id="mpRematch">Rematch</button>
+        </div>
+        <button class="btn" id="mpLeave">Leave match</button>
       </div>
       <div class="panel"><div class="moves" id="moves"><div class="empty">No moves yet.</div></div></div>
     </div>
@@ -126,6 +140,11 @@ let level=0, humanColor='w', orientation='w';
 let selected=null, selDests=[], lastMove=null, hintMove=null;
 let hintOn=false, busy=true, gameOver=false, noProgress=0;
 let currentAnalysis=null, legalMoves=[], history=[];
+/* multiplayer mode (read from the iframe URL set by the route) */
+const MP_PARAMS = new URLSearchParams(location.search);
+const MP = MP_PARAMS.get('mp')==='1';
+const ROOM = MP_PARAMS.get('room') || '';
+let mpColor='w', mpReady=false, mpRole=null, mpOver=false;
 const boardEl=document.getElementById('board');
 const fen = ()=>R.encode(state.b, state.turn);
 
@@ -183,6 +202,13 @@ async function doHumanMove(mv){
   history.push(R.notation(mv)); trackProgress(mv,wasMan);
   selected=null; selDests=[]; clearArrow(); render(); refreshStatus(); renderMoves();
   moveSfx(mv);
+
+  if(MP){
+    mpBroadcastMove(mv);
+    if(gameOver){ busy=true; endSfx(); mpOver=true; mpFinishText(); }
+    else { busy=true; mpRefreshTurn(); }
+    return;
+  }
 
   busy=true; setThinking('Reviewing your move…');
   const after=await analyze();
@@ -366,10 +392,105 @@ async function newGame(){
   await settle();
 }
 
+/* ===================== multiplayer (1v1) ===================== */
+function mpEl(id){ return document.getElementById(id); }
+function loadScripts(srcs, done){
+  let i=0; (function next(){ if(i>=srcs.length){ done(); return; }
+    const s=document.createElement('script'); s.src=srcs[i++]; s.onload=next; s.onerror=next; document.head.appendChild(s); })();
+}
+function mpGoto(room){
+  try{ const pp=window.parent.location.pathname; window.parent.location.href = pp + (room?('?room='+room):''); }
+  catch(e){ location.href = room?('/lab/checkers?room='+room):'/lab/checkers'; }
+}
+function mpSetDot(){ const d=mpEl('mpDot'); if(d) d.className='mp-dot'+(mpReady?' on':'')+(mpRole==='spectator'?' spec':''); }
+function mpSetStatusLine(){
+  const el=mpEl('mpStatus'); if(!el||mpOver) return;
+  if(mpRole==='spectator') el.textContent='Spectating this match.';
+  else if(!mpReady) el.textContent='Waiting for opponent to join…';
+  else if(gameOver) el.textContent='Game over.';
+  else el.textContent=(state.turn===mpColor)?'Your move.':"Opponent's move…";
+}
+function mpRefreshTurn(){
+  if(mpOver){ busy=true; return; }
+  if(mpRole==='spectator'||!mpReady||gameOver) busy=true;
+  else busy=(state.turn!==mpColor);
+  refreshLegal(); mpSetStatusLine();
+}
+function mpBroadcastMove(mv){ LabMP.sendMove(mv, history.length); }
+function applyRemoteMove(mv){
+  if(!MP||!mv) return;
+  const legal=R.genMoves(state).find(m=>R.sameMove(m,mv));
+  if(!legal){ LabMP.sendControl('sync-request'); return; }
+  const rMan=!R.isKing(state.b[legal.from]);
+  state=R.apply(state,legal); lastMove={from:legal.from,to:legal.to};
+  history.push(R.notation(legal)); trackProgress(legal,rMan);
+  selected=null; selDests=[]; clearArrow(); render(); refreshStatus(); renderMoves(); moveSfx(legal);
+  if(gameOver){ busy=true; endSfx(); mpOver=true; mpFinishText(); return; }
+  mpRefreshTurn();
+}
+function mpSendSync(){ LabMP.sendControl('sync',{ fen:fen(), history:history.slice(), np:noProgress }); }
+function mpApplySync(d){
+  if(!d||!d.fen) return;
+  state=R.decode(d.fen); history=d.history||[]; noProgress=d.np||0; gameOver=false;
+  selected=null; selDests=[]; lastMove=null; clearArrow(); render(); refreshStatus(); renderMoves(); mpRefreshTurn();
+}
+function mpFinishText(){ const t=mpEl('status'), s=mpEl('mpStatus'); if(t&&s) s.textContent=t.textContent; }
+function mpResign(){
+  if(mpOver||mpRole==='spectator') return; sfx('ui');
+  LabMP.sendControl('resign'); mpOver=true; busy=true; gameOver=true;
+  mpEl('status').textContent=(mpColor==='w'?'Black':'White')+' wins — you resigned';
+  mpEl('mpStatus').textContent='You resigned.';
+}
+function mpRematch(){ mpOver=false; newGameMP(); mpEl('coach').innerHTML='<div class="placeholder">Rematch — good luck.</div>'; }
+function mpOnControl(p){
+  if(!p||!p.t) return;
+  if(p.t==='sync') mpApplySync(p.data);
+  else if(p.t==='sync-request'){ if(mpColor==='w'&&!mpOver) mpSendSync(); }
+  else if(p.t==='resign'){ mpOver=true; busy=true; gameOver=true; sfx('win'); mpEl('status').textContent='Opponent resigned — you win'; mpEl('mpStatus').textContent='Opponent resigned — you win.'; }
+  else if(p.t==='rematch'){ mpRematch(); }
+}
+function newGameMP(){
+  state=R.decode(R.initFen()); gameOver=false; mpOver=false; noProgress=0;
+  selected=null; selDests=[]; lastMove=null; hintMove=null; history=[]; clearArrow();
+  orientation=mpColor; humanColor=mpColor; render(); refreshStatus(); renderMoves(); mpRefreshTurn();
+}
+function initMultiplayer(){
+  loadScripts(['/lab/_shared/supabase.js','/lab/_shared/lab-multiplayer.js'], ()=>{
+    const sp=mpEl('spControls'); if(sp) sp.hidden=true;
+    const panel=mpEl('mpPanel'); if(panel) panel.hidden=false;
+    const eb=document.querySelector('.evalbar'); if(eb) eb.style.display='none';
+    mpEl('evalNum').style.display='none';
+    mpEl('coach').innerHTML='<div class="placeholder">Live 1v1 — no engine analysis during a match.</div>';
+    mpEl('flag').innerHTML='Mode: <span class="engine-flag">1v1 multiplayer</span>';
+    const link=mpEl('mpLink'); if(link) link.value=LabMP.inviteUrl();
+    mpEl('mpCopy').addEventListener('click',()=>{ try{ navigator.clipboard.writeText(LabMP.inviteUrl()); mpEl('mpCopy').textContent='Copied'; setTimeout(()=>{mpEl('mpCopy').textContent='Copy';},1200);}catch(e){} sfx('ui'); });
+    mpEl('mpResign').addEventListener('click', mpResign);
+    mpEl('mpRematch').addEventListener('click', ()=>{ sfx('ui'); LabMP.sendControl('rematch'); mpRematch(); });
+    mpEl('mpLeave').addEventListener('click', ()=>{ sfx('ui'); try{ LabMP.leave(); }catch(e){} mpGoto(''); });
+    busy=true;
+    LabMP.join({ game:'checkers', room:ROOM, on:{
+      onStatus:(s)=>{ if(s==='error') mpEl('mpStatus').textContent='Connection problem — refresh to retry.'; },
+      onAssign:(role,opp)=>{
+        mpRole=role;
+        if(role==='w'||role==='b'){ mpColor=role; humanColor=role; orientation=role; }
+        mpReady=opp;
+        mpEl('mpRoleLabel').textContent = role==='spectator' ? 'Spectating' : ('You are '+(role==='w'?'White':'Black'));
+        mpSetDot(); render(); mpRefreshTurn();
+      },
+      onOpponent:(opp)=>{ mpReady=opp; mpSetDot(); if(opp&&mpColor==='w'&&history.length>0&&!mpOver) mpSendSync(); mpRefreshTurn(); },
+      onMove:(p)=>{ applyRemoteMove(p.move); },
+      onControl:(p)=>{ mpOnControl(p); },
+    }});
+    newGameMP();
+  });
+}
+
 /* ===================== boot ===================== */
 if(window.LabAudio) LabAudio.mountControls(document.getElementById('audioCtl'));
+const mpStartBtn=document.getElementById('mpStartBtn');
+if(mpStartBtn) mpStartBtn.addEventListener('click',()=>{ sfx('ui'); mpGoto(Math.random().toString(36).slice(2,8)); });
 render();
-initEngine();
+if(MP){ initMultiplayer(); } else { initEngine(); }
 </script>
 </body>
 </html>
