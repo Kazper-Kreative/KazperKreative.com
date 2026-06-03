@@ -1,0 +1,375 @@
+<!doctype html>
+<!--
+  The Crossing — English draughts (American checkers), Kazper Kreative "Lab".
+  Self-built alpha-beta engine (public/lab/checkers/engine.js, in a Web Worker)
+  drives BOTH the opponent (weaker tiers) and the coach (full strength: eval
+  bar, move grading, best-move hints). Rules: public/lab/checkers/rules.js,
+  shared by this page and the worker. Shared ghostly theme + procedural audio
+  from /lab/_shared. Framed by the auth-gated /lab/checkers route.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>The Crossing — Checkers</title>
+<link rel="stylesheet" href="/lab/_shared/lab-theme.css">
+<script src="/lab/checkers/rules.js"></script>
+<script src="/lab/_shared/lab-audio.js"></script>
+<style>
+  /* checkers-specific: glowing orb pieces */
+  .sq .pc{position:relative;width:72%;height:72%;border-radius:50%;z-index:2;pointer-events:none;transition:filter .2s,transform .2s}
+  .sq .pc.w{background:radial-gradient(circle at 36% 30%,#ffffff,#bfeaff 42%,#4aa6c8 100%);
+    box-shadow:0 0 16px rgba(120,240,255,.6),inset 0 -6px 12px rgba(0,0,0,.35),inset 0 4px 8px rgba(255,255,255,.4)}
+  .sq .pc.b{background:radial-gradient(circle at 36% 30%,#e8caff,#b931ff 44%,#3a0a55 100%);
+    box-shadow:0 0 16px rgba(185,49,255,.6),inset 0 -6px 12px rgba(0,0,0,.4),inset 0 4px 8px rgba(255,255,255,.25)}
+  .sq .pc.king::after{content:"♛";position:absolute;inset:0;display:grid;place-items:center;
+    font-size:58%;color:rgba(255,255,255,.92);text-shadow:0 0 9px rgba(255,255,255,.65)}
+  .sq.sel .pc{filter:drop-shadow(0 0 10px rgba(255,122,69,.9));transform:scale(1.04)}
+  .sq .coord.on-d{opacity:.3}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Crossing</h1>
+    <span class="sub">Checkers · Draughts engine</span>
+  </header>
+  <div class="layout">
+    <div>
+      <div class="board-area">
+        <div class="evalbar" title="Engine evaluation"><div class="white" id="evalWhite"></div><div class="mid"></div></div>
+        <div class="board-box"><div class="board" id="board"></div></div>
+      </div>
+      <div class="thinking" id="thinking"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <p class="status" id="status">Loading engine…</p>
+        <div class="evalnum" id="evalNum">—</div>
+        <div class="hr"></div>
+        <div class="coach" id="coach"><div class="placeholder">Starting the engine. One moment…</div></div>
+      </div>
+      <div class="panel controls">
+        <div class="row"><label class="lbl">Opponent strength</label></div>
+        <div class="seg" id="levelSeg">
+          <button data-lvl="0" class="on">Beginner</button>
+          <button data-lvl="1">Casual</button>
+          <button data-lvl="2">Strong</button>
+          <button data-lvl="3">Master</button>
+        </div>
+        <div class="row"><label class="lbl">Play as</label>
+          <div class="seg" id="sideSeg" style="max-width:150px">
+            <button data-side="w" class="on">White</button><button data-side="b">Black</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn" id="hintBtn">Show best move</button>
+          <button class="btn" id="undoBtn">Take back</button>
+        </div>
+        <button class="btn primary" id="newBtn">New game</button>
+      </div>
+      <div class="panel"><div class="moves" id="moves"><div class="empty">No moves yet.</div></div></div>
+    </div>
+  </div>
+  <footer>
+    <span id="flag">Engine: starting…</span>
+    <span class="audio-ctl" id="audioCtl"></span>
+  </footer>
+</div>
+
+<script>
+const R = window.CheckersRules;
+const MATE = 100000;
+
+/* ===================== audio helper ===================== */
+function sfx(name){ try{ window.LabAudio && window.LabAudio[name] && window.LabAudio[name](); }catch(e){} }
+function moveSfx(m){ if(!m)return; sfx(m.caps.length?'capture':'move'); if(m.promo) sfx('promote'); }
+
+/* ===================== engine worker ===================== */
+let engine=null, engineReady=false, pending=null;
+function initEngine(){
+  try{
+    engine=new Worker('/lab/checkers/engine.js');
+    engine.onmessage=(e)=>{
+      const m=e.data;
+      if(m.type==='ready'){ engineReady=true; onEngineReady(); }
+      else if(m.type==='result'){ const p=pending; pending=null; if(p)p(m); }
+    };
+    engine.onerror=()=>{
+      document.getElementById('coach').innerHTML='<div class="placeholder">Could not start the engine. Make sure the page is served over http(s).</div>';
+      document.getElementById('flag').textContent='Engine: failed to load';
+    };
+  }catch(err){ document.getElementById('flag').textContent='Engine: failed to load'; }
+}
+function ask(cmd, timeMs, randomness){
+  return new Promise(res=>{ pending=res; engine.postMessage({cmd, fen:fen(), timeMs, randomness:randomness||0}); });
+}
+const ANALYZE_MS=600;
+const LEVELS=[
+  {name:'Beginner', timeMs:120,  randomness:150},
+  {name:'Casual',   timeMs:280,  randomness:60},
+  {name:'Strong',   timeMs:600,  randomness:15},
+  {name:'Master',   timeMs:1150, randomness:0},
+];
+const analyze   = ()=>ask('analyze', ANALYZE_MS, 0);
+const enginePlay= (lvl)=>{ const L=LEVELS[lvl]; return ask('play', L.timeMs, L.randomness); };
+
+function onEngineReady(){
+  document.getElementById('flag').innerHTML='Engine: <span class="engine-flag">The Crossing engine ready</span>';
+  newGame();
+}
+
+/* ===================== state ===================== */
+let state = R.decode(R.initFen());
+let level=0, humanColor='w', orientation='w';
+let selected=null, selDests=[], lastMove=null, hintMove=null;
+let hintOn=false, busy=true, gameOver=false, noProgress=0;
+let currentAnalysis=null, legalMoves=[], history=[];
+const boardEl=document.getElementById('board');
+const fen = ()=>R.encode(state.b, state.turn);
+
+/* ===================== rendering ===================== */
+function disp(i){ const r=i>>3,c=i&7; return orientation==='w' ? {row:r,col:c} : {row:7-r,col:7-c}; }
+function render(){
+  boardEl.innerHTML='';
+  for(let dr=0;dr<8;dr++)for(let dc=0;dc<8;dc++){
+    let br,bc; if(orientation==='w'){br=dr;bc=dc;}else{br=7-dr;bc=7-dc;}
+    const i=br*8+bc, isDark=((br+bc)&1)===1;
+    const cell=document.createElement('div');
+    cell.className='sq '+(isDark?'d':'l'); cell.dataset.i=i;
+    if(isDark){
+      const code=state.b[i];
+      if(code){const p=document.createElement('div');p.className='pc '+(R.isWhite(code)?'w':'b')+(R.isKing(code)?' king':'');cell.appendChild(p);}
+      if(lastMove&&(i===lastMove.from||i===lastMove.to)) cell.classList.add('last');
+      if(selected===i) cell.classList.add('sel');
+      if(selDests.indexOf(i)>=0){const d=document.createElement('div');d.className=code?'ring':'dot';cell.appendChild(d);}
+      const n=document.createElement('span');n.className='coord r on-d';n.textContent=R.numberOf(i);cell.appendChild(n);
+      cell.addEventListener('click',()=>onSquare(i));
+    }
+    boardEl.appendChild(cell);
+  }
+  if(hintOn&&hintMove&&state.turn===humanColor&&!gameOver) drawArrow(hintMove.from,hintMove.to);
+}
+
+/* ===================== interaction ===================== */
+function onSquare(i){
+  if(busy||gameOver||state.turn!==humanColor) return;
+  const code=state.b[i];
+  if(code && R.colorOf(code)===humanColor){
+    const dests=legalMoves.filter(m=>m.from===i);
+    if(dests.length){ selected=i; selDests=dests.map(m=>m.to); render(); sfx('select'); }
+    else { selected=null; selDests=[]; render(); }
+    return;
+  }
+  if(selected!=null && selDests.indexOf(i)>=0){
+    const mv=legalMoves.find(m=>m.from===selected && m.to===i);
+    if(mv) doHumanMove(mv);
+    return;
+  }
+  selected=null; selDests=[]; render();
+}
+
+function trackProgress(move, wasMan){
+  if(move.caps.length || move.promo || wasMan) noProgress=0; else noProgress++;
+}
+
+async function doHumanMove(mv){
+  if(busy) return;
+  const before=currentAnalysis;
+  const wasMan=!R.isKing(state.b[mv.from]);
+  state=R.apply(state,mv);
+  lastMove={from:mv.from,to:mv.to};
+  history.push(R.notation(mv)); trackProgress(mv,wasMan);
+  selected=null; selDests=[]; clearArrow(); render(); refreshStatus(); renderMoves();
+  moveSfx(mv);
+
+  busy=true; setThinking('Reviewing your move…');
+  const after=await analyze();
+  coachGrade(mv,before,after);
+  refreshEvalBar(after);
+  if(gameOver){ currentAnalysis=after; busy=false; setThinking(''); endSfx(); return; }
+
+  setThinking('The engine is thinking…');
+  const reply=await enginePlay(level);
+  if(reply.best){
+    const rMan=!R.isKing(state.b[reply.best.from]);
+    state=R.apply(state,reply.best);
+    lastMove={from:reply.best.from,to:reply.best.to};
+    history.push(R.notation(reply.best)); trackProgress(reply.best,rMan);
+    moveSfx(reply.best);
+  }
+  render(); refreshStatus(); renderMoves();
+  if(gameOver) endSfx();
+  busy=false;
+  await settle();
+}
+
+function endSfx(){
+  const moves=R.genMoves(state);
+  if(moves.length===0){ (state.turn!==humanColor)?sfx('win'):sfx('lose'); }
+  else sfx('ui');
+}
+
+/* ===================== coaching ===================== */
+function cpOf(a){ return a&&a.scoreWhite!=null ? a.scoreWhite : 0; }
+function classify(loss,best){
+  if(best) return {tag:'best',label:'Best move'};
+  if(loss<25)  return {tag:'great',label:'Excellent'};
+  if(loss<70)  return {tag:'good',label:'Good'};
+  if(loss<150) return {tag:'inacc',label:'Inaccuracy'};
+  if(loss<350) return {tag:'mistake',label:'Mistake'};
+  return {tag:'blunder',label:'Blunder'};
+}
+function coachGrade(move,before,after){
+  const bCp=cpOf(before), aCp=cpOf(after);
+  let loss = humanColor==='w' ? (bCp-aCp) : (aCp-bCp);
+  loss=Math.max(0,loss);
+  const playedBest = before&&before.best&&R.sameMove(move,before.best);
+  const c=classify(loss,playedBest);
+  const best = before&&before.pv ? before.pv : null;
+  let msg;
+  if(playedBest){ msg='You found the move the engine likes best.'; }
+  else{
+    const lp=(loss/100).toFixed(1);
+    if(c.tag==='great'||c.tag==='good') msg='Solid.'+(best?` The engine leaned toward <b>${best}</b>.`:'');
+    else if(c.tag==='inacc')  msg=`Slightly loose — about <b>${lp}</b> behind <b>${best}</b>.`;
+    else if(c.tag==='mistake')msg=`This drops roughly <b>${lp}</b>. <b>${best}</b> was stronger.`;
+    else msg=`Costly — around <b>${lp}</b>. <b>${best}</b> was much better here.`;
+  }
+  document.getElementById('coach').innerHTML=`<span class="tag ${c.tag}">${c.label}</span><p class="msg">${msg}</p>`;
+}
+
+/* ===================== eval bar / status / moves ===================== */
+function refreshEvalBar(a){
+  const num=document.getElementById('evalNum'), bar=document.getElementById('evalWhite');
+  if(!a||a.scoreWhite==null){ num.textContent='—'; bar.style.height='50%'; return; }
+  const sw=a.scoreWhite;
+  if(Math.abs(sw)>=MATE-2000){ num.textContent=(sw>0?'White':'Black')+' winning'; bar.style.height=(sw>0?98:2)+'%'; return; }
+  const cl=Math.max(-1000,Math.min(1000,sw));
+  const share=50+50*(cl/1000)*(1.6-0.6*Math.abs(cl)/1000);
+  bar.style.height=Math.max(2,Math.min(98,share))+'%';
+  const p=sw/100;
+  num.textContent=Math.abs(p)<0.3?'Even':((p>0?'White ':'Black ')+'+'+Math.abs(p).toFixed(1));
+}
+function refreshStatus(){
+  const s=document.getElementById('status');
+  const moves=R.genMoves(state);
+  if(moves.length===0){ s.textContent=(state.turn==='w'?'Black':'White')+' wins'; gameOver=true; return; }
+  if(noProgress>=80){ s.textContent='Draw — no progress'; gameOver=true; return; }
+  const cap=moves[0].caps.length>0;
+  s.textContent=(state.turn==='w'?'White':'Black')+' to move'+(cap?' — capture available':'');
+}
+function renderMoves(){
+  const el=document.getElementById('moves');
+  if(history.length===0){ el.innerHTML='<div class="empty">No moves yet.</div>'; return; }
+  let html='';
+  for(let i=0;i<history.length;i+=2)
+    html+=`<div class="ply"><span class="no">${i/2+1}.</span><span>${history[i]||''}</span><span>${history[i+1]||''}</span></div>`;
+  el.innerHTML=html; el.scrollTop=el.scrollHeight;
+}
+
+/* ===================== hint arrow ===================== */
+function clearArrow(){const a=document.getElementById('arrows');if(a)a.remove();}
+function drawArrow(fromI,toI){
+  clearArrow();
+  const f=disp(fromI), t=disp(toI);
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.id='arrows'; svg.setAttribute('viewBox','0 0 8 8');
+  svg.innerHTML=`<defs><marker id="ah" markerWidth="4" markerHeight="4" refX="2.4" refY="2" orient="auto">
+    <path d="M0,0 L4,2 L0,4 Z" fill="var(--hint)"/></marker></defs>
+    <line class="hint-line" x1="${f.col+0.5}" y1="${f.row+0.5}" x2="${t.col+0.5}" y2="${t.row+0.5}"
+      stroke="var(--hint)" stroke-width="0.26" stroke-linecap="round" marker-end="url(#ah)" opacity="0.92"/>`;
+  boardEl.appendChild(svg);
+}
+function setHintArrow(){
+  if(hintOn&&currentAnalysis&&currentAnalysis.best&&!gameOver&&state.turn===humanColor){
+    hintMove={from:currentAnalysis.best.from,to:currentAnalysis.best.to}; drawArrow(hintMove.from,hintMove.to);
+  } else { hintMove=null; clearArrow(); }
+}
+
+/* ===================== settle / new game / controls ===================== */
+function refreshLegal(){ legalMoves = (state.turn===humanColor && !gameOver) ? R.genMoves(state) : []; }
+async function settle(){
+  if(gameOver){ refreshStatus(); return; }
+  busy=true; setThinking('Analysing…');
+  const a=await analyze(); currentAnalysis=a;
+  setThinking(''); busy=false;
+  refreshEvalBar(a); refreshLegal(); setHintArrow();
+}
+function setThinking(t){document.getElementById('thinking').textContent=t;}
+
+document.getElementById('hintBtn').addEventListener('click',()=>{
+  sfx('ui');
+  hintOn=!hintOn;
+  const btn=document.getElementById('hintBtn');
+  btn.classList.toggle('on',hintOn);
+  btn.textContent=hintOn?'Hide best move':'Show best move';
+  if(!hintOn){hintMove=null;clearArrow();render();return;}
+  setHintArrow();
+  if(hintMove&&currentAnalysis){
+    document.getElementById('coach').innerHTML=
+      `<span class="tag great">Hint</span><p class="msg">The engine suggests <b>${currentAnalysis.pv}</b>. The arrow follows the position until you hide it.</p>`;
+  }
+});
+document.getElementById('undoBtn').addEventListener('click',async()=>{
+  if(busy||history.length<2) return;
+  sfx('ui');
+  // rebuild from the start, dropping the last full pair (your move + reply)
+  history=history.slice(0, Math.max(0, history.length-2));
+  rebuildFromHistory();
+  lastMove=null; selected=null; selDests=[]; clearArrow();
+  document.getElementById('coach').innerHTML='<div class="placeholder">Took it back. Try a different idea.</div>';
+  render(); refreshStatus(); renderMoves();
+  await settle();
+});
+function rebuildFromHistory(){
+  // replay notation by matching against generated moves (handles multi-jumps)
+  const saved=history.slice();
+  state=R.decode(R.initFen()); gameOver=false; noProgress=0;
+  for(const note of saved){
+    const m=R.genMoves(state).find(mv=>R.notation(mv)===note);
+    if(!m) break;
+    const wasMan=!R.isKing(state.b[m.from]);
+    state=R.apply(state,m); trackProgress(m,wasMan);
+  }
+}
+document.getElementById('newBtn').addEventListener('click',()=>{ sfx('ui'); newGame(); });
+document.getElementById('levelSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  sfx('ui');
+  level=+b.dataset.lvl; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+});
+document.getElementById('sideSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||busy)return;
+  sfx('ui');
+  humanColor=b.dataset.side; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+  newGame();
+});
+
+async function newGame(){
+  if(!engineReady) return;
+  state=R.decode(R.initFen());
+  orientation=humanColor; selected=null; selDests=[]; lastMove=null; hintMove=null;
+  history=[]; noProgress=0; gameOver=false;
+  document.getElementById('coach').innerHTML=
+    '<div class="placeholder">Make a move and I\'ll grade it against the engine\'s best line.</div>';
+  clearArrow(); render(); refreshStatus(); renderMoves();
+  busy=true;
+  if(humanColor==='b'){
+    setThinking('The engine is thinking…');
+    const reply=await enginePlay(level);
+    if(reply.best){ const rMan=!R.isKing(state.b[reply.best.from]); state=R.apply(state,reply.best); lastMove={from:reply.best.from,to:reply.best.to}; history.push(R.notation(reply.best)); trackProgress(reply.best,rMan); moveSfx(reply.best); }
+    render(); refreshStatus(); renderMoves();
+  }
+  busy=false;
+  await settle();
+}
+
+/* ===================== boot ===================== */
+if(window.LabAudio) LabAudio.mountControls(document.getElementById('audioCtl'));
+render();
+initEngine();
+</script>
+</body>
+</html>

@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { inbox } from "@/lib/supabase/submissions";
 
-// Same soft gate as /inbox: with Supabase configured, sign in with the owner
-// account; otherwise a local passcode. The session is shared with the inbox,
-// so unlocking either one unlocks the other in this browser.
+// Soft gate for the whole /lab subtree (shared by the hub and every tool).
+// Same mechanism as /inbox: with Supabase configured, sign in with the owner
+// account; otherwise a local passcode. The session/sessionStorage key is
+// shared with the inbox, so unlocking either unlocks the other in this browser.
 const GATE_PIN = "2604";
+const LAB_BAR_H = 56;
 
-export default function LabChessClient() {
+export default function LabGate({ children }: { children: React.ReactNode }) {
   const configured = inbox.configured();
   const [unlocked, setUnlocked] = useState(false);
   const [shake, setShake] = useState(false);
@@ -50,14 +52,12 @@ export default function LabChessClient() {
       } catch {
         fail("Could not sign in. Check your connection.");
       }
+    } else if (pinRef.current?.value === GATE_PIN) {
+      sessionStorage.setItem("kk_inbox_ok", "1");
+      setUnlocked(true);
     } else {
-      if (pinRef.current?.value === GATE_PIN) {
-        sessionStorage.setItem("kk_inbox_ok", "1");
-        setUnlocked(true);
-      } else {
-        fail("Wrong passcode.");
-        if (pinRef.current) pinRef.current.value = "";
-      }
+      fail("Wrong passcode.");
+      if (pinRef.current) pinRef.current.value = "";
     }
   };
 
@@ -79,11 +79,11 @@ export default function LabChessClient() {
       <div className={`lock${shake ? " err" : ""}`} id="lock">
         <div className="lock-card">
           <img src="/assets/k-mark.png" alt="Kazper Kreative" />
-          <h3>The Study</h3>
+          <h3>The Lab</h3>
           <p className="dim" style={{ fontSize: 14, marginTop: 6 }}>
             {configured
-              ? "Sign in with your account to enter the lab."
-              : "Enter your passcode to enter the lab."}
+              ? "Sign in with your account to enter the Lab."
+              : "Enter your passcode to enter the Lab."}
           </p>
           <div
             onKeyDown={(e) => {
@@ -115,7 +115,7 @@ export default function LabChessClient() {
           </button>
           <p className="lock-err">{err}</p>
           <p className="mode-tag">
-            {configured ? "Private lab · Stockfish 18" : "This-browser only · connect Supabase for the shared gate"}
+            {configured ? "Private lab · early access" : "This-browser only · connect Supabase for the shared gate"}
           </p>
         </div>
       </div>
@@ -123,37 +123,45 @@ export default function LabChessClient() {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "var(--ink)" }}>
-      <div
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", ["--lab-bar" as string]: `${LAB_BAR_H}px` }}>
+      <header
         style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 30,
+          height: LAB_BAR_H,
+          flex: "0 0 auto",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           gap: 12,
-          padding: "10px 16px",
+          padding: "0 clamp(16px,4vw,28px)",
           borderBottom: "1px solid var(--line)",
-          flex: "0 0 auto",
+          background: "color-mix(in srgb, var(--ink) 78%, transparent)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
         }}
       >
         <Link
-          href="/"
+          href="/lab"
           className="brand"
-          style={{ display: "inline-flex", alignItems: "center", gap: 10, fontWeight: 600 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 10, fontWeight: 600, color: "var(--text)" }}
         >
           <img src="/assets/k-mark.png" alt="" style={{ width: 26, height: 26, borderRadius: 6 }} />
           <span>
-            Kazper Kreative <span className="dim" style={{ fontWeight: 400 }}>· The Study</span>
+            Kazper Kreative <span className="dim" style={{ fontWeight: 400 }}>· The Lab</span>
           </span>
         </Link>
-        <button className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => void lock()}>
-          Lock
-        </button>
-      </div>
-      <iframe
-        src="/lab/chess/app.html"
-        title="The Study — Stockfish chess trainer"
-        style={{ flex: "1 1 auto", width: "100%", border: 0 }}
-      />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Link className="btn btn-ghost" href="/" style={{ padding: "8px 14px", fontSize: 13 }}>
+            Exit to site
+          </Link>
+          <button className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => void lock()}>
+            Lock
+          </button>
+        </div>
+      </header>
+      <main style={{ flex: "1 1 auto", minHeight: 0 }}>{children}</main>
     </div>
   );
 }
