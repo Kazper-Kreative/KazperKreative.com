@@ -1,0 +1,160 @@
+<!doctype html>
+<!-- Solitude · Klondike Solitaire — Kazper Kreative Lab arcade. Click-to-move. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Solitude — Solitaire</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+<style>
+  .sol-board{display:flex;flex-direction:column;gap:14px;min-width:340px}
+  .sol-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2.2%}
+  .slot{position:relative;border-radius:8px;aspect-ratio:5/7;border:1px dashed rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:min(5vw,22px)}
+  .col{position:relative;min-height:90px}
+  .card{position:relative;border-radius:8px;aspect-ratio:5/7;cursor:pointer;font-family:'Space Grotesk',system-ui,sans-serif;
+    box-shadow:0 4px 12px rgba(0,0,0,.4);overflow:hidden;user-select:none;-webkit-user-select:none}
+  .col .card{position:absolute;left:0;right:0}
+  .card.up{background:linear-gradient(180deg,#1b1b2b,#11111c);border:1px solid rgba(255,255,255,.12)}
+  .card.down{background:linear-gradient(135deg,#2a1840,#141026);border:1px solid rgba(185,49,255,.3);
+    box-shadow:0 4px 12px rgba(0,0,0,.4),inset 0 0 18px rgba(123,63,242,.25)}
+  .card .corner{position:absolute;top:4px;left:5px;font-weight:700;line-height:1;font-size:min(4.2vw,17px)}
+  .card .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:min(7vw,30px);opacity:.5}
+  .card.red{color:#ff5fa0} .card.blk{color:#5fdce6}
+  .card.sel{outline:2px solid var(--accent);outline-offset:-2px;box-shadow:0 0 18px rgba(255,122,69,.5)}
+  .card.down .corner,.card.down .mid{display:none}
+  #fnd .slot, #stockSlot, #wasteSlot{width:100%}
+  .topgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:2.2%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Solitude</h1><span class="sub">Klondike Solitaire</span></header>
+  <div class="arcade wide">
+    <div class="hud">
+      <div class="hud-stat accent"><span class="k">Moves</span><span class="v" id="moves">0</span></div>
+      <div class="hud-stat"><span class="k">Stock</span><span class="v" id="stockN">24</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">New deal</button>
+    </div>
+    <div class="stage" id="stage" style="background:transparent;box-shadow:none;overflow:visible">
+      <div class="sol-board" id="board">
+        <div class="topgrid">
+          <div class="slot" id="stockSlot" data-pile="stock"></div>
+          <div class="slot" id="wasteSlot" data-pile="waste"></div>
+          <div></div>
+          <div class="slot" data-pile="f0">♠</div>
+          <div class="slot" data-pile="f1">♥</div>
+          <div class="slot" data-pile="f2">♦</div>
+          <div class="slot" data-pile="f3">♣</div>
+        </div>
+        <div class="sol-row" id="tableau"></div>
+      </div>
+    </div>
+    <p class="hint-text">Tap a card, then tap where it goes. Tap the stock to deal.</p>
+  </div>
+  <footer><span class="dim" style="font-size:12px">Build the four suits, ace to king.</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const SUIT=['♠','♥','♦','♣']; const RANK=['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const isRed=(s)=>s===1||s===2;
+let stock,waste,fnd,tab,sel,moves;
+
+function deal(){
+  const deck=[]; for(let s=0;s<4;s++)for(let r=1;r<=13;r++) deck.push({r,s,up:false});
+  for(let i=deck.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [deck[i],deck[j]]=[deck[j],deck[i]]; }
+  tab=[[],[],[],[],[],[],[]]; for(let c=0;c<7;c++){ for(let k=0;k<=c;k++){ const card=deck.pop(); card.up=(k===c); tab[c].push(card); } }
+  stock=deck; stock.forEach(c=>c.up=false); waste=[]; fnd=[[],[],[],[]]; sel=null; moves=0;
+  render();
+}
+function pile(name){ if(name==='waste')return waste; if(name==='stock')return stock; if(name[0]==='f')return fnd[+name[1]]; if(name[0]==='t')return tab[+name[1]]; return null; }
+function color(c){ return isRed(c.s)?'red':'blk'; }
+
+function cardEl(c, loc, idx, top){
+  const d=document.createElement('div');
+  d.className='card '+(c.up?('up '+color(c)):'down');
+  d.dataset.pile=loc; d.dataset.idx=idx;
+  if(sel && sel.pile===loc && idx>=sel.idx) d.classList.add('sel');
+  if(c.up){ d.innerHTML=`<span class="corner">${RANK[c.r]}${SUIT[c.s]}</span><span class="mid">${SUIT[c.s]}</span>`; }
+  return d;
+}
+function render(){
+  el('moves').textContent=moves; el('stockN').textContent=stock.length;
+  // stock
+  const ss=el('stockSlot'); ss.innerHTML = stock.length? '<div class="card down" style="position:absolute;inset:0"></div>' : '↻';
+  // waste
+  const ws=el('wasteSlot'); ws.innerHTML=''; if(waste.length){ const c=waste[waste.length-1]; ws.appendChild(cardEl(c,'waste',waste.length-1)); }
+  // foundations
+  for(let f=0;f<4;f++){ const sl=document.querySelector(`[data-pile="f${f}"]`); const arr=fnd[f];
+    sl.innerHTML = arr.length ? '' : SUIT[f]; if(arr.length){ const c=arr[arr.length-1]; sl.appendChild(cardEl(c,'f'+f,arr.length-1)); } }
+  // tableau
+  const tEl=el('tableau'); tEl.innerHTML='';
+  for(let c=0;c<7;c++){ const col=document.createElement('div'); col.className='col'; col.dataset.pile='t'+c;
+    if(!tab[c].length){ const s=document.createElement('div'); s.className='slot'; s.dataset.pile='t'+c; col.appendChild(s); }
+    const off = tab[c].length>0 ? Math.min(28, 300/Math.max(tab[c].length,1)) : 0;
+    tab[c].forEach((card,i)=>{ const ce=cardEl(card,'t'+c,i); ce.style.position='absolute'; ce.style.top=(i*off)+'px'; col.appendChild(ce); });
+    col.style.height = (tab[c].length ? (tab[c].length*off + 76) : 90)+'px';
+    tEl.appendChild(col);
+  }
+  if(fnd.reduce((a,f)=>a+f.length,0)===52) win();
+}
+function topCard(name){ const p=pile(name); return p&&p.length?p[p.length-1]:null; }
+function validRun(cards){ for(let i=0;i<cards.length-1;i++){ if(!cards[i].up||!cards[i+1].up)return false; if(cards[i+1].r!==cards[i].r-1)return false; if(isRed(cards[i].s)===isRed(cards[i+1].s))return false; } return cards.every(c=>c.up); }
+
+function drawStock(){
+  if(stock.length){ const c=stock.pop(); c.up=true; waste.push(c); A.sfx('move'); }
+  else if(waste.length){ while(waste.length){ const c=waste.pop(); c.up=false; stock.push(c); } A.sfx('ui'); }
+  sel=null; moves++; render();
+}
+function canToFoundation(card, f){ const arr=fnd[f]; if(!arr.length) return card.r===1; const t=arr[arr.length-1]; return t.s===card.s && card.r===t.r+1; }
+function canToTableau(bottom, destName){ const t=topCard(destName); if(!t) return bottom.r===13; return t.up && isRed(t.s)!==isRed(bottom.s) && t.r===bottom.r+1; }
+
+function tryMove(from, toName){
+  const fp=pile(from.pile); const moving=fp.slice(from.idx);
+  if(!moving.length) return false;
+  if(toName[0]==='f'){ if(moving.length!==1) return false; if(!canToFoundation(moving[0], +toName[1])) return false; }
+  else if(toName[0]==='t'){ if(!validRun(moving)) return false; if(!canToTableau(moving[0], toName)) return false; }
+  else return false;
+  // execute
+  fp.splice(from.idx);
+  pile(toName).push(...moving);
+  if(from.pile[0]==='t'){ const col=tab[+from.pile[1]]; if(col.length && !col[col.length-1].up){ col[col.length-1].up=true; A.sfx('point'); } }
+  moves++; A.sfx('move'); return true;
+}
+function selectable(loc){
+  if(loc.pile==='stock') return false;
+  const p=pile(loc.pile); if(!p||!p.length) return false;
+  if(loc.pile==='waste') return loc.idx===p.length-1;
+  if(loc.pile[0]==='f') return loc.idx===p.length-1;
+  return p[loc.idx] && p[loc.idx].up; // tableau face-up
+}
+function onClick(loc){
+  if(loc.pile==='stock'){ drawStock(); return; }
+  if(!sel){ if(selectable(loc)){ sel=loc; render(); } return; }
+  if(sel.pile===loc.pile){ // clicked same column: try send single top to foundation? else deselect/reselect
+    if(selectable(loc) && loc.idx!==sel.idx){ sel=loc; render(); return; }
+    sel=null; render(); return;
+  }
+  if(tryMove(sel, loc.pile)){ sel=null; render(); return; }
+  // failed → reselect if possible
+  sel = selectable(loc) ? loc : null; render();
+}
+function win(){ A.sfx('win'); A.overlay(el('stage'),{tag:'Solved',tagClass:'great',title:'You cleared it', sub:'in '+moves+' moves', btn:'New deal', onBtn:deal}); }
+
+el('board').addEventListener('click',(e)=>{
+  const t=e.target.closest('[data-pile]'); if(!t) return;
+  const p=t.dataset.pile;
+  onClick({ pile:p, idx: t.dataset.idx!=null ? +t.dataset.idx : Math.max(0, pileLen(p)-1) });
+});
+function pileLen(name){ const p=pile(name); return p?p.length:0; }
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); deal(); });
+
+deal();
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>

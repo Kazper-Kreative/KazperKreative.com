@@ -1,0 +1,137 @@
+<!doctype html>
+<!-- Enclosure · Dots & Boxes — Kazper Kreative Lab arcade. vs Bot or 1v1. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Enclosure — Dots & Boxes</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Enclosure</h1><span class="sub">Dots &amp; Boxes</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat"><span class="k" id="k0">You</span><span class="v" id="s0">0</span></div>
+      <div class="hud-stat"><span class="k" id="k1">Bot</span><span class="v" id="s1">0</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">New</button>
+    </div>
+    <div class="stage" id="stage" style="background:transparent;box-shadow:none">
+      <canvas class="game-canvas" id="cv" width="420" height="420" style="background:transparent"></canvas>
+    </div>
+    <p class="status" id="status" style="margin-top:14px;text-align:center"></p>
+    <div class="panel mp-panel" id="mpPanel" hidden style="margin-top:14px"></div>
+    <button class="btn" id="mpStart" style="width:100%;margin-top:12px">Play a friend · 1v1</button>
+  </div>
+  <footer><span class="dim" style="font-size:12px">Close the most boxes.</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const MP=A.mp.active();
+const cv=el('cv'), ctx=cv.getContext('2d'), B=5, MAR=42, STEP=(cv.width-2*MAR)/B;
+const C1='#33e5d6', C2='#b931ff';
+let H,V,owner,turn,scores,over,locked;
+let mySeat=1, ready=false, mpPanel=null;
+
+function blank(){
+  H=Array.from({length:B+1},()=>Array(B).fill(0));
+  V=Array.from({length:B},()=>Array(B+1).fill(0));
+  owner=Array.from({length:B},()=>Array(B).fill(0));
+  turn=1; scores={1:0,2:0}; over=false; locked=false;
+}
+function boxSides(r,c){ return H[r][c]+H[r+1][c]+V[r][c]+V[r][c+1]; }
+function edgesOfBox(r,c){ return [['h',r,c],['h',r+1,c],['v',r,c],['v',r,c+1]]; }
+function adjBoxes(t,r,c){ const o=[]; if(t==='h'){ if(r>0)o.push([r-1,c]); if(r<B)o.push([r,c]); } else { if(c>0)o.push([r,c-1]); if(c<B)o.push([r,c]); } return o; }
+function claimed(t,r,c){ return t==='h'?H[r][c]:V[r][c]; }
+function setEdge(t,r,c){ if(t==='h')H[r][c]=1; else V[r][c]=1; }
+
+function apply(t,r,c, player){
+  setEdge(t,r,c); A.sfx('move');
+  let made=0;
+  for(const [br,bc] of adjBoxes(t,r,c)){ if(!owner[br][bc] && boxSides(br,bc)===4){ owner[br][bc]=player; scores[player]++; made++; A.sfx('point'); } }
+  el('s0').textContent=scores[MP?mySeat:1]; el('s1').textContent=scores[MP?(mySeat===1?2:1):2];
+  if(scores[1]+scores[2]===B*B){ over=true; finish(); return made; }
+  if(made===0){ turn = turn===1?2:1; }
+  setStatus();
+  return made;
+}
+function finish(){ const w = scores[1]===scores[2] ? 0 : (scores[1]>scores[2]?1:2);
+  const youWon = w && (MP? w===mySeat : w===1);
+  const txt = !w ? 'Tie game.' : (youWon?'You win!':(MP?'Opponent wins.':'Bot wins.'));
+  setStatus(txt); A.sfx(w&&youWon?'win':(w?'lose':'ui')); if(mpPanel)mpPanel.setStatus(txt); }
+function setStatus(t){ const s=el('status'); if(t){s.textContent=t;return;} if(over)return;
+  if(MP){ if(!ready){s.textContent='Waiting for opponent…';return;} s.textContent=(turn===mySeat)?'Your line':"Opponent's line"; }
+  else s.textContent=turn===1?'Draw a line':'Bot thinking…'; }
+
+/* ---- bot ---- */
+function allEdges(){ const e=[]; for(let r=0;r<=B;r++)for(let c=0;c<B;c++) if(!H[r][c])e.push(['h',r,c]); for(let r=0;r<B;r++)for(let c=0;c<=B;c++) if(!V[r][c])e.push(['v',r,c]); return e; }
+function completes(t,r,c){ let n=0; for(const[br,bc]of adjBoxes(t,r,c)) if(boxSides(br,bc)===3)n++; return n; }
+function isSafe(t,r,c){ // claiming wouldn't make any adjacent box reach 3 sides
+  for(const[br,bc]of adjBoxes(t,r,c)) if(boxSides(br,bc)===2) return false; return true; }
+function botPlayOnce(){
+  const edges=allEdges(); if(!edges.length)return;
+  let pick = edges.find(e=>completes(...e)>0);
+  if(!pick){ const safe=edges.filter(e=>isSafe(...e)); pick = safe.length? safe[(Math.random()*safe.length)|0] : edges[(Math.random()*edges.length)|0]; }
+  const made=apply(pick[0],pick[1],pick[2],2);
+  if(!over && turn===2){ setTimeout(botPlayOnce, 420); } else locked=false;
+}
+
+/* ---- input ---- */
+function nearestEdge(x,y){ let best=null,bd=1e9;
+  for(let r=0;r<=B;r++)for(let c=0;c<B;c++){ if(H[r][c])continue; const mx=MAR+(c+0.5)*STEP, my=MAR+r*STEP; const d=Math.hypot(x-mx,y-my); if(d<bd){bd=d;best=['h',r,c];} }
+  for(let r=0;r<B;r++)for(let c=0;c<=B;c++){ if(V[r][c])continue; const mx=MAR+c*STEP, my=MAR+(r+0.5)*STEP; const d=Math.hypot(x-mx,y-my); if(d<bd){bd=d;best=['v',r,c];} }
+  return bd<STEP*0.5 ? best : null;
+}
+cv.addEventListener('pointerdown',(e)=>{
+  if(over||locked) return;
+  const rect=cv.getBoundingClientRect(), sc=cv.width/rect.width;
+  const x=(e.clientX-rect.left)*sc, y=(e.clientY-rect.top)*sc;
+  const edge=nearestEdge(x,y); if(!edge)return;
+  if(MP){ if(!ready||turn!==mySeat)return; A.mp.send({t:edge[0],r:edge[1],c:edge[2]}, 0); apply(edge[0],edge[1],edge[2],mySeat); }
+  else { if(turn!==1)return; const made=apply(edge[0],edge[1],edge[2],1); if(!over && turn===2){ locked=true; setTimeout(botPlayOnce,420); } }
+});
+
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  // claimed boxes
+  for(let r=0;r<B;r++)for(let c=0;c<B;c++) if(owner[r][c]){ ctx.fillStyle=owner[r][c]===1?'rgba(51,229,214,.16)':'rgba(185,49,255,.18)'; ctx.fillRect(MAR+c*STEP+3,MAR+r*STEP+3,STEP-6,STEP-6); }
+  // edges
+  function seg(x1,y1,x2,y2,on){ ctx.strokeStyle = on?'rgba(255,255,255,.85)':'rgba(150,140,210,.18)'; ctx.lineWidth=on?4:3; ctx.lineCap='round';
+    if(on){ctx.shadowBlur=10;ctx.shadowColor='rgba(255,122,69,.6)';} ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.shadowBlur=0; }
+  for(let r=0;r<=B;r++)for(let c=0;c<B;c++){ const x=MAR+c*STEP,y=MAR+r*STEP; seg(x,y,x+STEP,y,H[r][c]); }
+  for(let r=0;r<B;r++)for(let c=0;c<=B;c++){ const x=MAR+c*STEP,y=MAR+r*STEP; seg(x,y,x,y+STEP,V[r][c]); }
+  // dots
+  ctx.fillStyle='#cfd0ff'; for(let r=0;r<=B;r++)for(let c=0;c<=B;c++){ ctx.beginPath(); ctx.arc(MAR+c*STEP,MAR+r*STEP,3.5,0,7); ctx.fill(); }
+}
+
+function reset(){ blank(); el('s0').textContent=0; el('s1').textContent=0; setStatus(); }
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); if(MP)A.mp.control('rematch'); reset(); });
+el('mpStart').addEventListener('click',()=>{ A.sfx('ui'); A.mp.startUrl('enclosure'); });
+
+function initMP(){
+  el('mpStart').style.display='none'; el('k0').textContent='You'; el('k1').textContent='Them';
+  const panel=el('mpPanel'); panel.hidden=false;
+  mpPanel=A.mp.panel(panel,{slug:'enclosure',
+    onResign:()=>{ if(over)return; over=true; A.mp.control('resign'); setStatus('You resigned'); mpPanel.setStatus('You resigned.'); },
+    onRematch:()=>{ A.mp.control('rematch'); reset(); } });
+  A.mp.join({ game:'enclosure', on:{
+    status:(s)=>{ if(s==='error') mpPanel.setStatus('Connection problem — refresh.'); },
+    seat:(role,opp)=>{ if(role==='w'||role==='b') mySeat=role==='w'?1:2; ready=opp; mpPanel.setRole(role==='spectator'?'Spectating':('You are '+(mySeat===1?'Cyan':'Violet'))); mpPanel.setDot(ready,role==='spectator'); el('s0').textContent=scores[mySeat]; el('s1').textContent=scores[mySeat===1?2:1]; setStatus(); if(opp&&mySeat===1&&(scores[1]+scores[2])>0) syncOut(); },
+    opponent:(opp)=>{ ready=opp; mpPanel.setDot(ready); setStatus(); if(opp&&mySeat===1&&(scores[1]+scores[2])>0) syncOut(); },
+    move:(p)=>{ if(!p||!p.move)return; if(turn===mySeat)return; const m=p.move; if(!claimed(m.t,m.r,m.c)) apply(m.t,m.r,m.c, mySeat===1?2:1); },
+    control:(p)=>{ if(!p)return; if(p.t==='rematch')reset(); else if(p.t==='resign'){ over=true; A.sfx('win'); setStatus('Opponent resigned — you win'); mpPanel.setStatus('Opponent resigned — you win.'); } else if(p.t==='sync'&&p.data){ H=p.data.H; V=p.data.V; owner=p.data.owner; turn=p.data.turn; scores=p.data.scores; over=!!p.data.over; el('s0').textContent=scores[mySeat]; el('s1').textContent=scores[mySeat===1?2:1]; setStatus(); } },
+  }});
+}
+function syncOut(){ A.mp.control('sync',{H,V,owner,turn,scores,over}); }
+
+reset();
+if(MP) initMP(); else setStatus();
+A.loop(()=>draw());
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>
