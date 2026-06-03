@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 // Gate + lab chrome come from src/app/lab/layout.tsx. The trainer is a
-// self-contained static app framed same-origin (see public/lab/checkers/app.html).
+// self-contained static app framed same-origin (see public/lab-assets/checkers/app.html).
 // A `?room=<id>` param flips it into 1v1 multiplayer via `?mp=1&room=<id>`.
 export default async function LabCheckersPage({
   searchParams,
@@ -16,8 +16,8 @@ export default async function LabCheckersPage({
   const sp = await searchParams;
   const room = typeof sp.room === "string" ? sp.room : "";
   const src = room
-    ? `/lab/checkers/app.html?mp=1&room=${encodeURIComponent(room)}`
-    : "/lab/checkers/app.html";
+    ? `/lab-assets/checkers/app.html?mp=1&room=${encodeURIComponent(room)}`
+    : "/lab-assets/checkers/app.html";
   return (
     <iframe
       src={src}

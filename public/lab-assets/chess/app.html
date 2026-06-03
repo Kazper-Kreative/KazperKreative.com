@@ -1,8 +1,8 @@
 <!doctype html>
 <!--
   The Study — Stockfish edition (Kazper Kreative "Lab" build).
-  Re-skinned to the shared ghostly Lab theme (/lab/_shared/lab-theme.css) with
-  procedural audio (/lab/_shared/lab-audio.js). Real Stockfish 18 (lite single-
+  Re-skinned to the shared ghostly Lab theme (/lab-assets/_shared/lab-theme.css) with
+  procedural audio (/lab-assets/_shared/lab-audio.js). Real Stockfish 18 (lite single-
   threaded WASM) drives BOTH the opponent (strength-capped via UCI "Skill Level")
   and the coach (full-strength eval bar / move grading / hints). Rules/board:
   chess.js (vendored). Engine talks UCI over a Web Worker. Framed by the
@@ -14,9 +14,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>The Study — Stockfish</title>
-<link rel="stylesheet" href="/lab/_shared/lab-theme.css">
-<script src="/lab/chess/chess.min.js"></script>
-<script src="/lab/_shared/lab-audio.js"></script>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/chess/chess.min.js"></script>
+<script src="/lab-assets/_shared/lab-audio.js"></script>
 <style>
   /* chess-specific: spectral glyph pieces */
   .sq .pc{font-size:min(8.4vw,58px);line-height:1;z-index:2;pointer-events:none;transition:filter .2s}
@@ -186,7 +186,7 @@ const enginePlay= (fen,lvl)=>{ const L=LEVELS[lvl]; return runTask(()=>uciSearch
 
 function initEngine(){
   try{
-    engine=new Worker('/lab/chess/stockfish-18-lite-single.js');
+    engine=new Worker('/lab-assets/chess/stockfish-18-lite-single.js');
     engine.addEventListener('message', onEngineLine);
     engine.addEventListener('error', e=>{
       document.getElementById('coach').innerHTML =
@@ -521,7 +521,7 @@ function newGameMP(){
   orientation=mpColor; render(); updateStatus(); renderMoves(); mpRefreshTurn();
 }
 function initMultiplayer(){
-  loadScripts(['/lab/_shared/supabase.js','/lab/_shared/lab-multiplayer.js'], ()=>{
+  loadScripts(['/lab-assets/_shared/supabase.js','/lab-assets/_shared/lab-multiplayer.js'], ()=>{
     const sp=mpEl('spControls'); if(sp) sp.style.display='none';
     const panel=mpEl('mpPanel'); if(panel) panel.hidden=false;
     const eb=document.querySelector('.evalbar'); if(eb) eb.style.display='none';

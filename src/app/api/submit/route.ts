@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSupabase } from "@/lib/supabase/client";
+import { createSupabaseServerAnon } from "@/lib/supabase/server";
 import { verifyTurnstile } from "@/lib/turnstile";
 import { sendSubmissionEmail } from "@/lib/email";
 import { isValidEmail } from "@/lib/validation";
@@ -41,12 +41,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "verification_failed" }, { status: 400 });
   }
 
-  const supabase = getSupabase();
-  if (supabase) {
-    const { error } = await supabase.from("submissions").insert({ type, fields });
-    if (error) {
-      return NextResponse.json({ error: "store_failed" }, { status: 500 });
-    }
+  const supabase = createSupabaseServerAnon();
+  const { error } = await supabase.from("submissions").insert({ type, fields });
+  if (error) {
+    return NextResponse.json({ error: "store_failed" }, { status: 500 });
   }
 
   // Best-effort notification; never blocks the response.

@@ -7,9 +7,9 @@
    =========================================================================== */
 
 @font-face{font-family:'Space Grotesk';font-style:normal;font-weight:500 700;font-display:swap;
-  src:url(/lab/_shared/fonts/space-grotesk-latin.woff2) format('woff2')}
+  src:url(/lab-assets/_shared/fonts/space-grotesk-latin.woff2) format('woff2')}
 @font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:400 600;font-display:swap;
-  src:url(/lab/_shared/fonts/hanken-grotesk-latin.woff2) format('woff2')}
+  src:url(/lab-assets/_shared/fonts/hanken-grotesk-latin.woff2) format('woff2')}
 
 :root{
   --bg:#07070C;

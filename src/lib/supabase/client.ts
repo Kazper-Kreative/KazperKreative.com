@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Public anon key — safe to expose; access is gated by Row Level Security.
 // Reads from env first, falling back to the project's known public values so
@@ -23,11 +24,14 @@ export function isSupabaseConfigured(): boolean {
   );
 }
 
-/** Lazily-created browser Supabase client (or null when unconfigured). */
+/** Lazily-created browser Supabase client (cookie-backed via @supabase/ssr so
+ *  the server can read the session). Browser-only — returns null on the server
+ *  (server code uses src/lib/supabase/server.ts instead). */
 export function getSupabase(): SupabaseClient | null {
   if (!isSupabaseConfigured()) return null;
+  if (typeof window === "undefined") return null;
   if (!_client) {
-    _client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    _client = createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   return _client;
 }

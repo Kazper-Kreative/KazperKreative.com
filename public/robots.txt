@@ -3,5 +3,6 @@ Allow: /
 Disallow: /inbox
 Disallow: /portfolio
 Disallow: /lab
+Disallow: /lab-assets
 
 Sitemap: https://kazperkreative.com/sitemap.xml

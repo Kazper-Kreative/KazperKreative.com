@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// NOTE: no [data-reveal] here — the hub renders only after LabGate unlocks
-// (no route change), so SiteInteractions never re-scans it. Keep it visible.
+// NOTE: kept fully visible (no [data-reveal]) — the hub renders inside the
+// gated lab layout; simplest to not depend on scroll-reveal timing here.
 
 const TOOLS = [
   {

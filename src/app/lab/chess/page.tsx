@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 // Gate + lab chrome come from src/app/lab/layout.tsx. The trainer itself is a
-// self-contained static app framed same-origin (see public/lab/chess/app.html).
+// self-contained static app framed same-origin (see public/lab-assets/chess/app.html).
 // A `?room=<id>` param flips it into 1v1 multiplayer via `?mp=1&room=<id>`.
 export default async function LabChessPage({
   searchParams,
@@ -16,8 +16,8 @@ export default async function LabChessPage({
   const sp = await searchParams;
   const room = typeof sp.room === "string" ? sp.room : "";
   const src = room
-    ? `/lab/chess/app.html?mp=1&room=${encodeURIComponent(room)}`
-    : "/lab/chess/app.html";
+    ? `/lab-assets/chess/app.html?mp=1&room=${encodeURIComponent(room)}`
+    : "/lab-assets/chess/app.html";
   return (
     <iframe
       src={src}

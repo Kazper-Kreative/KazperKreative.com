@@ -45,10 +45,15 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
-        // The hidden Stockfish lab is unlisted + soft-gated; keep it out of
+        // The Lab (pages + game-asset bundle) is members-only; keep it out of
         // search indexes at the header level too (belt-and-suspenders with the
-        // noindex meta tag and robots.txt).
+        // noindex meta tag and robots.txt). /lab-assets is also hard-gated in
+        // middleware (401 without entitlement).
         source: "/lab/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
+        source: "/lab-assets/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
     ];

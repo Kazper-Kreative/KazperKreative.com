@@ -1,9 +1,9 @@
 <!doctype html>
 <!--
   The Crossing — English draughts (American checkers), Kazper Kreative "Lab".
-  Self-built alpha-beta engine (public/lab/checkers/engine.js, in a Web Worker)
+  Self-built alpha-beta engine (public/lab-assets/checkers/engine.js, in a Web Worker)
   drives BOTH the opponent (weaker tiers) and the coach (full strength: eval
-  bar, move grading, best-move hints). Rules: public/lab/checkers/rules.js,
+  bar, move grading, best-move hints). Rules: public/lab-assets/checkers/rules.js,
   shared by this page and the worker. Shared ghostly theme + procedural audio
   from /lab/_shared. Framed by the auth-gated /lab/checkers route.
 -->
@@ -13,9 +13,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>The Crossing — Checkers</title>
-<link rel="stylesheet" href="/lab/_shared/lab-theme.css">
-<script src="/lab/checkers/rules.js"></script>
-<script src="/lab/_shared/lab-audio.js"></script>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/checkers/rules.js"></script>
+<script src="/lab-assets/_shared/lab-audio.js"></script>
 <style>
   /* checkers-specific: glowing orb pieces */
   .sq .pc{position:relative;width:72%;height:72%;border-radius:50%;z-index:2;pointer-events:none;transition:filter .2s,transform .2s}
@@ -104,7 +104,7 @@ function moveSfx(m){ if(!m)return; sfx(m.caps.length?'capture':'move'); if(m.pro
 let engine=null, engineReady=false, pending=null;
 function initEngine(){
   try{
-    engine=new Worker('/lab/checkers/engine.js');
+    engine=new Worker('/lab-assets/checkers/engine.js');
     engine.onmessage=(e)=>{
       const m=e.data;
       if(m.type==='ready'){ engineReady=true; onEngineReady(); }
@@ -455,7 +455,7 @@ function newGameMP(){
   orientation=mpColor; humanColor=mpColor; render(); refreshStatus(); renderMoves(); mpRefreshTurn();
 }
 function initMultiplayer(){
-  loadScripts(['/lab/_shared/supabase.js','/lab/_shared/lab-multiplayer.js'], ()=>{
+  loadScripts(['/lab-assets/_shared/supabase.js','/lab-assets/_shared/lab-multiplayer.js'], ()=>{
     const sp=mpEl('spControls'); if(sp) sp.style.display='none';
     const panel=mpEl('mpPanel'); if(panel) panel.hidden=false;
     const eb=document.querySelector('.evalbar'); if(eb) eb.style.display='none';

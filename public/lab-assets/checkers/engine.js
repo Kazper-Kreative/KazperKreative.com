@@ -11,7 +11,7 @@
    Move objects are the plain {from,to,caps,path,promo} from CheckersRules and
    pass through structured clone unchanged.
    =========================================================================== */
-importScripts("/lab/checkers/rules.js");
+importScripts("/lab-assets/checkers/rules.js");
 const R = self.CheckersRules;
 const MATE = 100000;
 const now = () => performance.now();
