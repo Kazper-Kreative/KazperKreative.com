@@ -522,7 +522,7 @@ function newGameMP(){
 }
 function initMultiplayer(){
   loadScripts(['/lab/_shared/supabase.js','/lab/_shared/lab-multiplayer.js'], ()=>{
-    const sp=mpEl('spControls'); if(sp) sp.hidden=true;
+    const sp=mpEl('spControls'); if(sp) sp.style.display='none';
     const panel=mpEl('mpPanel'); if(panel) panel.hidden=false;
     const eb=document.querySelector('.evalbar'); if(eb) eb.style.display='none';
     mpEl('evalNum').style.display='none';
