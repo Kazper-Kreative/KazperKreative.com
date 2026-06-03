@@ -13,6 +13,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/work", priority: 0.8, freq: "weekly" },
     { path: "/join", priority: 0.7, freq: "monthly" },
     { path: "/contact", priority: 0.8, freq: "monthly" },
+    { path: "/hub", priority: 0.5, freq: "monthly" },
   ];
 
   const projectUrls = PROJECT_ORDER.map((slug) => ({
