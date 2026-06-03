@@ -58,7 +58,7 @@ export default function ContactForm() {
         className="hp-field"
         data-hp
       />
-      <div className="row-2">
+      <div className="field-row">
         <div className="field">
           <label>Name</label>
           <input type="text" required placeholder="Your name" />
@@ -78,7 +78,7 @@ export default function ContactForm() {
         <label>Company / Studio</label>
         <input type="text" placeholder="Optional" />
       </div>
-      <div className="row-2">
+      <div className="field-row">
         <div className="field">
           <label>Project type</label>
           <select required defaultValue="">

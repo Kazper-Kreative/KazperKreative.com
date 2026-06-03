@@ -39,6 +39,9 @@ export default function Turnstile({
       widgetId.current = window.turnstile.render(ref.current, {
         sitekey: SITE_KEY,
         theme: "dark",
+        // The normal widget is a fixed 300px box that overflows narrow form
+        // cards on phones; the compact widget (~150px) fits any screen.
+        size: window.innerWidth < 480 ? "compact" : "normal",
         callback: (t: string) => onVerify(t),
         "error-callback": () => onVerify(""),
         "expired-callback": () => onVerify(""),
@@ -79,5 +82,5 @@ export default function Turnstile({
   }, [onVerify]);
 
   if (!SITE_KEY) return null;
-  return <div ref={ref} style={{ marginTop: 4 }} />;
+  return <div ref={ref} style={{ marginTop: 4, maxWidth: "100%", overflow: "hidden" }} />;
 }

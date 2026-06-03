@@ -57,7 +57,7 @@ export default function ApplicationForm() {
         className="hp-field"
         data-hp
       />
-      <div className="row-2">
+      <div className="field-row">
         <div className="field">
           <label>Name</label>
           <input type="text" required placeholder="Your name" />
