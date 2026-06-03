@@ -123,45 +123,25 @@ export default function LabGate({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", ["--lab-bar" as string]: `${LAB_BAR_H}px` }}>
-      <header
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 30,
-          height: LAB_BAR_H,
-          flex: "0 0 auto",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          padding: "0 clamp(16px,4vw,28px)",
-          borderBottom: "1px solid var(--line)",
-          background: "color-mix(in srgb, var(--ink) 78%, transparent)",
-          backdropFilter: "blur(10px)",
-          WebkitBackdropFilter: "blur(10px)",
-        }}
-      >
-        <Link
-          href="/lab"
-          className="brand"
-          style={{ display: "inline-flex", alignItems: "center", gap: 10, fontWeight: 600, color: "var(--text)" }}
-        >
-          <img src="/assets/k-mark.png" alt="" style={{ width: 26, height: 26, borderRadius: 6 }} />
-          <span>
+    <div className="lab-shell" style={{ ["--lab-bar" as string]: `${LAB_BAR_H}px` }}>
+      <header className="lab-bar">
+        <Link href="/lab" className="brand">
+          <img src="/assets/k-mark.png" alt="" />
+          <span className="lab-brand-full">
             Kazper Kreative <span className="dim" style={{ fontWeight: 400 }}>· The Lab</span>
           </span>
+          <span className="lab-brand-short">The Lab</span>
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Link className="btn btn-ghost" href="/" style={{ padding: "8px 14px", fontSize: 13 }}>
-            Exit to site
+        <div className="lab-bar-actions">
+          <Link className="btn btn-ghost lab-bar-btn" href="/">
+            Exit
           </Link>
-          <button className="btn btn-ghost" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => void lock()}>
+          <button className="btn btn-ghost lab-bar-btn" onClick={() => void lock()}>
             Lock
           </button>
         </div>
       </header>
-      <main style={{ flex: "1 1 auto", minHeight: 0 }}>{children}</main>
+      <main className="lab-main">{children}</main>
     </div>
   );
 }

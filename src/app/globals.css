@@ -609,3 +609,21 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 .hub-foot{margin-top:30px;font-size:12.5px}
 .hub-foot a{color:var(--text-dim)}
 .hub-foot a:hover{color:var(--text)}
+
+/* ---- /lab shell (gate chrome) ---- */
+.lab-shell{min-height:100dvh;display:flex;flex-direction:column}
+.lab-bar{position:sticky;top:0;z-index:30;flex:0 0 auto;height:var(--lab-bar,56px);display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 clamp(14px,4vw,28px);border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--ink) 80%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.lab-bar .brand{display:inline-flex;align-items:center;gap:10px;font-weight:600;color:var(--text);min-width:0}
+.lab-bar .brand img{width:26px;height:26px;border-radius:6px;flex:0 0 auto}
+.lab-brand-full{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lab-brand-short{display:none}
+.lab-bar-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.lab-bar-btn{padding:8px 14px;font-size:13px}
+.lab-main{flex:1 1 auto;min-height:0}
+@media (max-width:520px){
+  .lab-brand-full{display:none}
+  .lab-brand-short{display:inline}
+}
+@media (max-width:380px){
+  .lab-bar-btn{padding:7px 10px;font-size:12px}
+}
