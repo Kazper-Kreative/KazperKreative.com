@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- Phosphor · Maze — Kazper Kreative Lab arcade. Navigate; your trail lights up. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Phosphor — Maze</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Phosphor</h1><span class="sub">Maze</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat accent"><span class="k">Time</span><span class="v" id="time">0.0</span></div>
+      <div class="hud-stat"><span class="k">Best</span><span class="v" id="best">—</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">New maze</button>
+    </div>
+    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="420" height="420"></canvas></div>
+    <p class="hint-text">Arrows / WASD · or swipe. Light the way to the exit.</p>
+  </div>
+  <footer><span class="dim" style="font-size:12px">Phosphor</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const cv=el('cv'), ctx=cv.getContext('2d'), N=15, CELL=cv.width/N;
+let cells, px, py, started, t0, done, raf;
+const bt=A.hs.getTime('phosphor'); el('best').textContent = bt!=null ? (bt/1000).toFixed(1) : '—';
+
+function gen(){
+  cells=[]; for(let r=0;r<N;r++){ cells.push([]); for(let c=0;c<N;c++) cells[r].push({N:1,E:1,S:1,W:1,v:0,lit:0}); }
+  const stack=[[0,0]]; cells[0][0].v=1; const opp={N:'S',S:'N',E:'W',W:'E'}; const d={N:[-1,0],S:[1,0],E:[0,1],W:[0,-1]};
+  while(stack.length){ const [r,c]=stack[stack.length-1];
+    const nb=Object.keys(d).filter(k=>{ const nr=r+d[k][0],nc=c+d[k][1]; return nr>=0&&nr<N&&nc>=0&&nc<N&&!cells[nr][nc].v; });
+    if(!nb.length){ stack.pop(); continue; }
+    const k=nb[(Math.random()*nb.length)|0]; const nr=r+d[k][0],nc=c+d[k][1];
+    cells[r][c][k]=0; cells[nr][nc][opp[k]]=0; cells[nr][nc].v=1; stack.push([nr,nc]);
+  }
+  px=0; py=0; started=false; done=false; cells[0][0].lit=1; el('time').textContent='0.0';
+}
+function move(dir){
+  if(done) return;
+  const map={up:'N',down:'S',left:'W',right:'E'}, k=map[dir]; if(!k)return;
+  if(cells[py][px][k]) { return; }
+  if(!started){ started=true; t0=Date.now(); }
+  const d={N:[-1,0],S:[1,0],E:[0,1],W:[0,-1]}[k]; py+=d[0]; px+=d[1]; cells[py][px].lit=1; A.sfx('move');
+  if(px===N-1&&py===N-1){ win(); }
+}
+function win(){
+  done=true; const ms=Date.now()-t0; A.sfx('win');
+  const best=A.hs.setTime('phosphor', ms); el('best').textContent=(best/1000).toFixed(1);
+  A.overlay(el('stage'),{tag:'Escaped',tagClass:'great',title:(ms/1000).toFixed(1)+'s', sub: ms<=best?'New best!':'Best '+(best/1000).toFixed(1)+'s', btn:'New maze', onBtn:()=>{ gen(); } });
+}
+function draw(){
+  if(started&&!done) el('time').textContent=((Date.now()-t0)/1000).toFixed(1);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(8,8,18,.7)'; ctx.fillRect(0,0,cv.width,cv.height);
+  // lit cells (phosphor trail)
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(cells[r][c].lit){ ctx.fillStyle='rgba(51,229,214,.14)'; ctx.fillRect(c*CELL,r*CELL,CELL,CELL); }
+  // exit
+  ctx.fillStyle='rgba(255,122,69,.25)'; ctx.fillRect((N-1)*CELL,(N-1)*CELL,CELL,CELL);
+  // walls
+  ctx.strokeStyle='rgba(150,140,210,.55)'; ctx.lineWidth=2; ctx.lineCap='round';
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){ const x=c*CELL,y=r*CELL,k=cells[r][c];
+    if(k.N){line(x,y,x+CELL,y);} if(k.W){line(x,y,x,y+CELL);}
+    if(k.E&&c===N-1){line(x+CELL,y,x+CELL,y+CELL);} if(k.S&&r===N-1){line(x,y+CELL,x+CELL,y+CELL);} }
+  // player orb
+  ctx.shadowBlur=18; ctx.shadowColor='rgba(120,240,255,.9)'; ctx.fillStyle='#eafcff';
+  ctx.beginPath(); ctx.arc(px*CELL+CELL/2, py*CELL+CELL/2, CELL*0.3, 0,7); ctx.fill(); ctx.shadowBlur=0;
+}
+function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+
+A.keys((d)=>move(d));
+A.swipe(cv,(d)=>{ if(d!=='tap') move(d); });
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); gen(); });
+
+gen();
+A.loop(()=>draw());
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<!-- Bullseye · Darts (501) — Kazper Kreative Lab arcade. vs Bot or 1v1. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Bullseye — Darts</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Bullseye</h1><span class="sub">Darts · 501</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat accent"><span class="k" id="k0">You</span><span class="v" id="s0">501</span></div>
+      <div class="hud-stat"><span class="k" id="k1">Bot</span><span class="v" id="s1">501</span></div>
+      <div class="hud-stat"><span class="k">Darts</span><span class="v" id="darts">3</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">New</button>
+    </div>
+    <div class="stage" id="stage" style="background:transparent;box-shadow:none">
+      <canvas class="game-canvas" id="cv" width="380" height="380" style="border-radius:50%;background:transparent"></canvas>
+    </div>
+    <p class="status" id="status" style="margin-top:14px;text-align:center">Tap the board to throw.</p>
+    <div class="panel mp-panel" id="mpPanel" hidden style="margin-top:14px"></div>
+    <button class="btn" id="mpStart" style="width:100%;margin-top:12px">Play a friend · 1v1</button>
+  </div>
+  <footer><span class="dim" style="font-size:12px">First to exactly 0 wins.</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const MP=A.mp.active();
+const cv=el('cv'), ctx=cv.getContext('2d'), W=cv.width, CX=W/2, CY=W/2, R=W/2-6;
+const ORDER=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+const rr={bull:0.09, eye:0.038, tin:0.55, tout:0.62, din:0.94, dout:1.0};
+let score=[501,501], cur=0, dartsLeft=3, turnStart=501, over=false, marks=[], busy=false;
+let mySeat=0, ready=false, mpPanel=null;
+
+function hit(x,y){
+  const dx=x-CX, dy=y-CY, d=Math.hypot(dx,dy)/R;
+  if(d>1) return {pts:0,label:'Miss'};
+  if(d<rr.eye) return {pts:50,label:'Bull'};
+  if(d<rr.bull) return {pts:25,label:'25'};
+  let a=Math.atan2(dx,-dy)*180/Math.PI; if(a<0)a+=360;
+  const base=ORDER[Math.floor(((a+9)%360)/18)];
+  if(d>=rr.din) return {pts:base*2,label:'D'+base};
+  if(d>=rr.tin&&d<=rr.tout) return {pts:base*3,label:'T'+base};
+  return {pts:base,label:''+base};
+}
+function setStatus(t){ el('status').textContent=t; }
+function refresh(){ el('s0').textContent=score[MP?mySeat:0]; el('s1').textContent=score[MP?(1-mySeat):1]; el('darts').textContent=dartsLeft; }
+
+function applyThrow(x,y, scatter){
+  const sx=x+(Math.random()-.5)*scatter, sy=y+(Math.random()-.5)*scatter;
+  const h=hit(sx,sy); marks.push({x:sx,y:sy});
+  const rem=score[cur]-h.pts;
+  if(rem<0||rem===1){ // bust
+    A.sfx('lose'); score[cur]=turnStart; dartsLeft=0; setStatus('Bust! ('+h.label+') — turn lost'); }
+  else { score[cur]=rem; dartsLeft--; A.sfx(h.pts>=40?'point':'move'); setStatus(h.label+' for '+h.pts);
+    if(rem===0){ over=true; A.sfx('win'); win(cur); refresh(); return; } }
+  refresh();
+  if(dartsLeft<=0){ endTurn(); }
+}
+function win(p){ const youWon = MP? p===mySeat : p===0; setStatus((youWon?'You':(MP?'Opponent':'Bot'))+' checked out — game!'); if(mpPanel)mpPanel.setStatus(youWon?'You win!':'Opponent wins.'); }
+function endTurn(){
+  setTimeout(()=>{ cur=1-cur; dartsLeft=3; turnStart=score[cur]; marks=[]; refresh();
+    if(MP){ mpBroadcast(); setStatus(cur===mySeat?'Your turn — throw.':"Opponent's turn…"); }
+    else { setStatus(cur===0?'Your turn — throw.':'Bot is up…'); if(cur===1) botTurn(); }
+  }, 700);
+}
+function throwAt(x,y, scatter){ if(over||dartsLeft<=0)return; applyThrow(x,y,scatter); if(MP&&!over) mpBroadcast(); }
+
+/* crosshair oscillation */
+let t=0, chx=CX, chy=CY;
+function tick(dt){ t+=dt; chx=CX+Math.sin(t*1.7)*R*0.72; chy=CY+Math.sin(t*1.15+1)*R*0.72; draw(); }
+
+cv.addEventListener('pointerdown',()=>{
+  if(over) return;
+  if(MP){ if(!ready||cur!==mySeat)return; throwAt(chx,chy, R*0.10); }
+  else { if(cur!==0)return; throwAt(chx,chy, R*0.10); }
+});
+function botTurn(){
+  if(over||cur!==1)return; busy=true;
+  const fire=()=>{ if(over||cur!==1||dartsLeft<=0){busy=false;return;}
+    // aim: <=40 → go for it (aim a value), else treble-20 region
+    let tx=CX, ty=CY-R*((rr.tin+rr.tout)/2); // T20 (top)
+    if(score[1]<=40){ tx=CX; ty=CY; } // bull-ish to close
+    applyThrow(tx,ty, R*0.13);
+    if(!over && dartsLeft>0) setTimeout(fire, 650); else busy=false;
+  };
+  setTimeout(fire, 650);
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,W);
+  for(let i=0;i<20;i++){ const a0=(i*18-9-90)*Math.PI/180, a1=((i+1)*18-9-90)*Math.PI/180;
+    // single (alt dark/violet), treble + double rings (accent/cyan)
+    ringSeg(a0,a1, rr.bull, rr.din, i%2? 'rgba(30,28,52,.85)':'rgba(16,16,30,.9)');
+    ringSeg(a0,a1, rr.tin, rr.tout, i%2?'#7b3ff2':'#b931ff');
+    ringSeg(a0,a1, rr.din, rr.dout, i%2?'#ff7a45':'#ff2e84');
+  }
+  // bull
+  ctx.fillStyle='#33e5d6'; ctx.beginPath(); ctx.arc(CX,CY,R*rr.bull,0,7); ctx.fill();
+  ctx.fillStyle='#ff2e84'; ctx.beginPath(); ctx.arc(CX,CY,R*rr.eye,0,7); ctx.fill();
+  // numbers
+  ctx.fillStyle='rgba(236,237,244,.82)'; ctx.font='600 11px "Space Grotesk",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(let i=0;i<20;i++){ const a=(i*18-90)*Math.PI/180; const rx=CX+Math.cos(a)*(R*0.86), ry=CY+Math.sin(a)*(R*0.86); ctx.fillText(ORDER[i],rx,ry); }
+  // marks (thrown darts)
+  for(const m of marks){ ctx.fillStyle='#eafcff'; ctx.shadowBlur=10; ctx.shadowColor='rgba(120,240,255,.9)'; ctx.beginPath(); ctx.arc(m.x,m.y,4,0,7); ctx.fill(); ctx.shadowBlur=0; }
+  // crosshair (only when it's your throw + interactive)
+  const myThrow = over? false : (MP? (ready&&cur===mySeat) : cur===0);
+  if(myThrow){ ctx.strokeStyle='rgba(255,122,69,.95)'; ctx.lineWidth=2; ctx.shadowBlur=12; ctx.shadowColor='rgba(255,122,69,.8)';
+    ctx.beginPath(); ctx.arc(chx,chy,9,0,7); ctx.moveTo(chx-14,chy); ctx.lineTo(chx+14,chy); ctx.moveTo(chx,chy-14); ctx.lineTo(chx,chy+14); ctx.stroke(); ctx.shadowBlur=0; }
+}
+function ringSeg(a0,a1,ri,ro,color){ ctx.fillStyle=color; ctx.beginPath(); ctx.arc(CX,CY,R*ro,a0,a1); ctx.arc(CX,CY,R*ri,a1,a0,true); ctx.closePath(); ctx.fill(); }
+
+function reset(){ score=[501,501]; cur=0; dartsLeft=3; turnStart=501; over=false; marks=[]; busy=false; refresh(); setStatus(MP?(ready?(cur===mySeat?'Your turn — throw.':"Opponent's turn…"):'Waiting for opponent…'):'Your turn — throw.'); if(MP)mpBroadcast(); }
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); if(MP)A.mp.control('rematch'); reset(); });
+el('mpStart').addEventListener('click',()=>{ A.sfx('ui'); A.mp.startUrl('bullseye'); });
+
+/* MP: thrower is authoritative, broadcasts full snapshot */
+function mpBroadcast(){ A.mp.control('state',{score,cur,dartsLeft,turnStart,over,marks}); }
+function initMP(){
+  el('mpStart').style.display='none'; el('k0').textContent='You'; el('k1').textContent='Them';
+  const panel=el('mpPanel'); panel.hidden=false;
+  mpPanel=A.mp.panel(panel,{slug:'bullseye',
+    onResign:()=>{ if(over)return; over=true; A.mp.control('resign'); setStatus('You resigned'); mpPanel.setStatus('You resigned.'); },
+    onRematch:()=>{ A.mp.control('rematch'); reset(); } });
+  A.mp.join({ game:'bullseye', on:{
+    status:(s)=>{ if(s==='error') mpPanel.setStatus('Connection problem — refresh.'); },
+    seat:(role,opp)=>{ if(role==='w'||role==='b') mySeat = role==='w'?0:1; ready=opp; mpPanel.setRole(role==='spectator'?'Spectating':('You are P'+(mySeat+1))); mpPanel.setDot(ready, role==='spectator'); refresh(); setStatus(ready?(cur===mySeat?'Your turn — throw.':"Opponent's turn…"):'Waiting for opponent…'); if(opp&&mySeat===0) mpBroadcast(); },
+    opponent:(opp)=>{ ready=opp; mpPanel.setDot(ready); if(opp&&mySeat===0) mpBroadcast(); },
+    control:(p)=>{ if(!p)return;
+      if(p.t==='state'&&p.data){ score=p.data.score.slice(); cur=p.data.cur; dartsLeft=p.data.dartsLeft; turnStart=p.data.turnStart; over=!!p.data.over; marks=p.data.marks||[]; refresh(); if(over){ win(cur===mySeat?1-mySeat:mySeat); } else setStatus(cur===mySeat?'Your turn — throw.':"Opponent's turn…"); }
+      else if(p.t==='rematch') reset();
+      else if(p.t==='resign'){ over=true; A.sfx('win'); setStatus('Opponent resigned — you win'); mpPanel.setStatus('Opponent resigned — you win.'); }
+    },
+  }});
+}
+
+reset();
+if(MP) initMP();
+A.loop((dt)=> tick(Math.min(dt,0.05)));
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>
