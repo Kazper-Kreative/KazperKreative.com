@@ -125,6 +125,8 @@ window.LabAudio = (function () {
   function lose()   { [330, 277, 196].forEach((f, i) => tone({ freq: f, dur: 1.0, gain: 0.11, when: i * 0.15, sendReverb: 0.7 })); }
   function ui()     { tone({ freq: 660, dur: 0.12, gain: 0.05, sendReverb: 0.2 }); }
   function promote(){ [523, 659, 784, 1047].forEach((f, i) => tone({ freq: f, dur: 0.7, gain: 0.10, when: i * 0.07, sendReverb: 0.6 })); }
+  function point()  { tone({ freq: 1046, dur: 0.14, gain: 0.07, sendReverb: 0.3 }); tone({ freq: 1568, dur: 0.1, gain: 0.04, when: 0.04, sendReverb: 0.35 }); }
+  function crash()  { noise({ dur: 0.3, gain: 0.16, type: "lowpass", freq: 700, q: 1, sendReverb: 0.4 }); tone({ freq: 150, type: "sawtooth", dur: 0.34, gain: 0.12, slideTo: 60, sendReverb: 0.35 }); }
 
   /* ---- controls ---- */
   function setMuted(m) {
@@ -171,7 +173,7 @@ window.LabAudio = (function () {
   _load();
   return {
     init, ambientStart, ambientStop,
-    select, move, capture, check, win, lose, ui, promote,
+    select, move, capture, check, win, lose, ui, promote, point, crash,
     setMuted, toggleMute, isMuted, setVolume, getVolume, mountControls,
   };
 })();

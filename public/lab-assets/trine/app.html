@@ -1,0 +1,156 @@
+<!doctype html>
+<!-- Trine · Tic-Tac-Toe — Kazper Kreative Lab arcade. vs Bot (minimax) or 1v1. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Trine — Tic-Tac-Toe</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+<style>
+  #board{grid-template-columns:repeat(3,1fr);max-width:420px;margin:0 auto}
+  #board .cell{font-size:0}
+  .mk{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;font-size:min(17vw,76px);line-height:1}
+  .mk.x{color:#eafcff;text-shadow:0 0 16px rgba(120,240,255,.85)}
+  .mk.o{color:#e8caff;text-shadow:0 0 18px rgba(185,49,255,.9)}
+  .cell.win{background:rgba(255,122,69,.22)!important;box-shadow:inset 0 0 0 2px var(--accent),0 0 24px rgba(255,122,69,.35)}
+  .cell.dead{cursor:default}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Trine</h1><span class="sub">Tic-Tac-Toe</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat"><span class="k" id="k0">You</span><span class="v" id="s0">0</span></div>
+      <div class="hud-stat"><span class="k" id="k1">Bot</span><span class="v" id="s1">0</span></div>
+      <div class="hud-stat"><span class="k">Draw</span><span class="v" id="sd">0</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">New</button>
+    </div>
+    <div class="seg" id="diffSeg" style="margin-bottom:14px">
+      <button data-d="0" class="on">Casual</button>
+      <button data-d="1">Perfect</button>
+    </div>
+    <div class="stage" style="background:transparent;box-shadow:none">
+      <div class="cells" id="board"></div>
+    </div>
+    <p class="status" id="status" style="margin-top:14px;text-align:center"></p>
+    <div class="panel mp-panel" id="mpPanel" hidden style="margin-top:14px"></div>
+    <button class="btn" id="mpStart" style="width:100%;margin-top:12px">Play a friend · 1v1</button>
+  </div>
+  <footer><span class="dim" style="font-size:12px" id="flag">Three in a row.</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const MP=A.mp.active();
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+let board=Array(9).fill(''), turn='X', over=false, diff=0;
+let score={X:0,O:0,D:0};
+// MP state
+let myMark='X', ready=false, mpPanel=null;
+
+const boardEl=el('board');
+function build(){ boardEl.innerHTML=''; for(let i=0;i<9;i++){ const c=document.createElement('div'); c.className='cell'; c.dataset.i=i; c.addEventListener('click',()=>onCell(i)); boardEl.appendChild(c);} }
+function render(winLine){
+  for(let i=0;i<9;i++){ const c=boardEl.children[i]; c.classList.toggle('dead', !!board[i]||over);
+    c.innerHTML = board[i] ? `<span class="mk ${board[i].toLowerCase()}">${board[i]==='X'?'✕':'◯'}</span>` : '';
+    c.classList.toggle('win', !!winLine && winLine.indexOf(i)>=0); }
+}
+function winner(b){ for(const l of LINES){ const[a,c,d]=l; if(b[a]&&b[a]===b[c]&&b[a]===b[d]) return {who:b[a],line:l}; } if(b.every(x=>x)) return {who:'draw',line:null}; return null; }
+
+function setStatus(){
+  const s=el('status'); const w=winner(board);
+  if(w){ if(w.who==='draw') s.textContent='Draw.'; else s.textContent=(MP?(w.who===myMark?'You win':'Opponent wins'):(w.who==='X'?'You win':'Bot wins')); return; }
+  if(MP){ if(!ready){ s.textContent='Waiting for opponent…'; return; } s.textContent = (turn===myMark)?'Your move':"Opponent's move"; }
+  else s.textContent = (turn==='X')?'Your move':'Bot thinking…';
+}
+function finish(w){
+  over=true; render(w.line);
+  if(w.who==='draw'){ score.D++; A.sfx('ui'); } else {
+    const youWon = MP ? (w.who===myMark) : (w.who==='X');
+    if(youWon){ score.X++; A.sfx('win'); } else { score.O++; A.sfx('lose'); }
+  }
+  el('s0').textContent=score.X; el('s1').textContent=score.O; el('sd').textContent=score.D;
+  setStatus();
+  if(mpPanel) mpPanel.setStatus(w.who==='draw'?'Draw.':(w.who===myMark?'You win!':'Opponent wins.'));
+}
+function place(i, mark){
+  board[i]=mark; A.sfx(mark==='X'?'select':'move');
+  const w=winner(board);
+  if(w){ finish(w); return true; }
+  turn = mark==='X'?'O':'X'; render(); setStatus(); return false;
+}
+
+/* ---- vs Bot ---- */
+function minimax(b, player){
+  const w=winner(b);
+  if(w){ if(w.who==='O') return {score:10}; if(w.who==='X') return {score:-10}; return {score:0}; }
+  let best = player==='O' ? {score:-99} : {score:99};
+  for(let i=0;i<9;i++) if(!b[i]){ b[i]=player; const r=minimax(b, player==='O'?'X':'O'); b[i]='';
+    if(player==='O'? r.score>best.score : r.score<best.score) best={i,score:r.score}; }
+  return best;
+}
+function botMove(){
+  if(over) return;
+  let i;
+  const empties=board.map((v,ix)=>v?-1:ix).filter(x=>x>=0);
+  if(diff===0 && Math.random()<0.5) i=empties[Math.floor(Math.random()*empties.length)];
+  else i=minimax(board.slice(),'O').i;
+  if(i==null) i=empties[0];
+  place(i,'O');
+}
+
+function onCell(i){
+  if(over||board[i]) return;
+  if(MP){
+    if(!ready||turn!==myMark) return;
+    const done=place(i, myMark);
+    A.mp.send({i, mark:myMark}, board.filter(Boolean).length);
+    if(done && winner(board)) A.mp.control('over');
+    return;
+  }
+  if(turn!=='X') return;
+  if(place(i,'X')) return;
+  setTimeout(botMove, 280);
+}
+
+function reset(){
+  board=Array(9).fill(''); over=false; turn='X';
+  build(); render(); setStatus();
+  if(!MP && myMark!=='X'){} // n/a in bot mode
+  // in MP, X always starts; in bot mode human (X) starts
+}
+
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); if(MP){ A.mp.control('rematch'); } reset(); });
+el('diffSeg').addEventListener('click',(e)=>{ const b=e.target.closest('button'); if(!b)return; A.sfx('ui'); diff=+b.dataset.d; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); });
+el('mpStart').addEventListener('click',()=>{ A.sfx('ui'); A.mp.startUrl('trine'); });
+
+/* ---- MP wiring ---- */
+function initMP(){
+  el('diffSeg').style.display='none';
+  el('mpStart').style.display='none';
+  el('k0').textContent='You'; el('k1').textContent='Them';
+  el('flag').innerHTML='Mode: <span class="engine-flag" style="color:var(--cyan)">1v1 online</span>';
+  const panel=el('mpPanel'); panel.hidden=false;
+  mpPanel = A.mp.panel(panel, { slug:'trine',
+    onResign:()=>{ if(over)return; over=true; A.mp.control('resign'); mpPanel.setStatus('You resigned.'); el('status').textContent='You resigned'; },
+    onRematch:()=>{ A.mp.control('rematch'); reset(); },
+  });
+  A.mp.join({ game:'trine', on:{
+    status:(s)=>{ if(s==='error') mpPanel.setStatus('Connection problem — refresh.'); },
+    seat:(role,opp)=>{ if(role==='w'||role==='b'){ myMark = role==='w'?'X':'O'; } ready=opp; mpPanel.setRole(role==='spectator'?'Spectating':('You are '+myMark)); mpPanel.setDot(ready, role==='spectator'); setStatus(); if(opp && myMark==='X' && board.some(Boolean)) A.mp.control('sync',{board,turn,over}); },
+    opponent:(opp)=>{ ready=opp; mpPanel.setDot(ready); setStatus(); if(opp && myMark==='X' && board.some(Boolean)) A.mp.control('sync',{board,turn,over}); },
+    move:(p)=>{ if(!p||!p.move)return; const {i,mark}=p.move; if(board[i]||mark===myMark) return; place(i,mark); },
+    control:(p)=>{ if(!p)return; if(p.t==='rematch'){ reset(); } else if(p.t==='resign'){ over=true; A.sfx('win'); mpPanel.setStatus('Opponent resigned — you win.'); el('status').textContent='Opponent resigned — you win'; } else if(p.t==='sync'&&p.data){ board=p.data.board.slice(); turn=p.data.turn; over=!!p.data.over; render(over?(winner(board)||{}).line:null); setStatus(); } },
+  }});
+}
+
+build(); render();
+if(MP) initMP(); else setStatus();
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>

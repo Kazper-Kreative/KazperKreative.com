@@ -1,0 +1,143 @@
+<!doctype html>
+<!-- Cascade · Connect Four — Kazper Kreative Lab arcade. vs Bot (alpha-beta) or 1v1. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Cascade — Connect Four</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Cascade</h1><span class="sub">Connect Four</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat"><span class="k" id="k0">You</span><span class="v" id="s0">0</span></div>
+      <div class="hud-stat"><span class="k" id="k1">Bot</span><span class="v" id="s1">0</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">New</button>
+    </div>
+    <div class="seg" id="diffSeg" style="margin-bottom:14px">
+      <button data-d="2" class="on">Easy</button>
+      <button data-d="6">Strong</button>
+    </div>
+    <div class="stage" id="stage" style="background:transparent;box-shadow:none">
+      <canvas class="game-canvas" id="cv" width="448" height="384" style="border-radius:16px"></canvas>
+    </div>
+    <p class="status" id="status" style="margin-top:14px;text-align:center"></p>
+    <div class="panel mp-panel" id="mpPanel" hidden style="margin-top:14px"></div>
+    <button class="btn" id="mpStart" style="width:100%;margin-top:12px">Play a friend · 1v1</button>
+  </div>
+  <footer><span class="dim" style="font-size:12px">Cascade</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const MP=A.mp.active();
+const cv=el('cv'), ctx=cv.getContext('2d'), COLS=7, ROWS=6, CELL=cv.width/COLS;
+const COL1='#33e5d6', COL2='#b931ff'; // P1 cyan, P2 violet
+let grid, turn, over, winCells, falling, locked, depth=2;
+let score={1:0,2:0};
+let myColor=1, ready=false, mpPanel=null;
+
+function blank(){ return Array.from({length:ROWS},()=>Array(COLS).fill(0)); }
+function dropRow(g,c){ for(let r=ROWS-1;r>=0;r--) if(g[r][c]===0) return r; return -1; }
+function valid(g){ const o=[]; for(let c=0;c<COLS;c++) if(g[0][c]===0)o.push(c); return o; }
+function winAt(g){ const D=[[0,1],[1,0],[1,1],[1,-1]];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ const p=g[r][c]; if(!p)continue;
+    for(const[dr,dc]of D){ const cells=[[r,c]]; let ok=true; for(let k=1;k<4;k++){ const nr=r+dr*k,nc=c+dc*k; if(nr<0||nr>=ROWS||nc<0||nc>=COLS||g[nr][nc]!==p){ok=false;break;} cells.push([nr,nc]); } if(ok)return{p,cells}; } } return null; }
+function full(g){ return valid(g).length===0; }
+
+/* bot: player 2 maximizes */
+function evalB(g){ const D=[[0,1],[1,0],[1,1],[1,-1]]; let s=0;
+  for(let r=0;r<ROWS;r++) if(g[r][3]===2)s+=3; else if(g[r][3]===1)s-=3;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)for(const[dr,dc]of D){ const cells=[]; let ok=true;
+    for(let k=0;k<4;k++){ const nr=r+dr*k,nc=c+dc*k; if(nr<0||nr>=ROWS||nc<0||nc>=COLS){ok=false;break;} cells.push([nr,nc]); }
+    if(!ok)continue; let m=0,o=0,e=0; for(const[rr,cc]of cells){ const v=g[rr][cc]; if(v===2)m++; else if(v===1)o++; else e++; }
+    if(m&&o)continue; if(m===3&&e===1)s+=8; else if(m===2&&e===2)s+=3; else if(o===3&&e===1)s-=11; else if(o===2&&e===2)s-=3; }
+  return s; }
+function mm(g,d,al,be,max){ const w=winAt(g); if(w) return w.p===2?1e6+d:-1e6-d; const cols=valid(g); if(!d||!cols.length) return evalB(g);
+  cols.sort((a,b)=>Math.abs(3-a)-Math.abs(3-b));
+  if(max){ let v=-Infinity; for(const c of cols){ const gg=g.map(r=>r.slice()); gg[dropRow(gg,c)][c]=2; v=Math.max(v,mm(gg,d-1,al,be,false)); al=Math.max(al,v); if(al>=be)break; } return v; }
+  else { let v=Infinity; for(const c of cols){ const gg=g.map(r=>r.slice()); gg[dropRow(gg,c)][c]=1; v=Math.min(v,mm(gg,d-1,al,be,true)); be=Math.min(be,v); if(al>=be)break; } return v; } }
+function botPick(){ const cols=valid(grid).sort((a,b)=>Math.abs(3-a)-Math.abs(3-b)); let bc=cols[0],bv=-Infinity;
+  if(depth<=2 && Math.random()<0.25) return cols[Math.floor(Math.random()*cols.length)];
+  for(const c of cols){ const gg=grid.map(r=>r.slice()); gg[dropRow(gg,c)][c]=2; const v=mm(gg,depth-1,-Infinity,Infinity,false); if(v>bv){bv=v;bc=c;} } return bc; }
+
+/* falling animation */
+function startFall(c,color){ const r=dropRow(grid,c); if(r<0)return false; falling={c,r,color,y:-0.7,v:0}; locked=true; A.sfx('move'); return true; }
+function land(){ const f=falling; grid[f.r][f.c]=f.color; falling=null;
+  const w=winAt(grid);
+  if(w){ over=true; winCells=w.cells; A.sfx('win'); score[w.color===undefined?w.p:w.p]++; refreshScore(); finishMsg(w.p); locked=false; return; }
+  if(full(grid)){ over=true; A.sfx('ui'); finishMsg(0); locked=false; return; }
+  turn = turn===1?2:1; locked=false; setStatus();
+  if(!MP && turn===2 && !over){ locked=true; setTimeout(()=>{ startFall(botPick(),2); }, 320); }
+}
+function refreshScore(){ el('s0').textContent=score[MP?myColor:1]; el('s1').textContent=score[MP?(myColor===1?2:1):2]; }
+function finishMsg(p){
+  const youWon = p && (MP ? p===myColor : p===1);
+  const txt = !p ? 'Board full — draw.' : (youWon?'You win!':(MP?'Opponent wins.':'Bot wins.'));
+  el('status').textContent=txt;
+  if(mpPanel) mpPanel.setStatus(txt);
+}
+function setStatus(){ if(over)return; const s=el('status');
+  if(MP){ if(!ready){s.textContent='Waiting for opponent…';return;} s.textContent=(turn===myColor)?'Your move':"Opponent's move"; }
+  else s.textContent = turn===1?'Drop a token':'Bot thinking…';
+}
+
+/* render */
+function disc(cx,cy,r,color,glow){ ctx.shadowBlur=glow?20:12; ctx.shadowColor=color+'cc';
+  const g=ctx.createRadialGradient(cx-r*0.3,cy-r*0.3,r*0.2,cx,cy,r); g.addColorStop(0,'#fff'); g.addColorStop(.35,color); g.addColorStop(1, shade(color));
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill(); ctx.shadowBlur=0; }
+function shade(c){ return c===COL1?'#1b6f78':'#4a1a6e'; }
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(20,18,40,.55)'; ctx.beginPath(); ctx.roundRect(0,0,cv.width,cv.height,16); ctx.fill();
+  const rad=CELL*0.40;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){ const cx=c*CELL+CELL/2, cy=r*CELL+CELL/2; const v=grid[r][c];
+    if(v){ disc(cx,cy,rad, v===1?COL1:COL2, false); }
+    else { ctx.fillStyle='rgba(5,5,12,.6)'; ctx.beginPath(); ctx.arc(cx,cy,rad,0,7); ctx.fill(); } }
+  if(falling){ const cx=falling.c*CELL+CELL/2, cy=falling.y*CELL+CELL/2; disc(cx,cy,rad, falling.color===1?COL1:COL2, true); }
+  if(over&&winCells){ const k=(Date.now()%900)/900; ctx.strokeStyle=`rgba(255,255,255,${0.5+0.5*Math.sin(k*6.28)})`; ctx.lineWidth=3;
+    for(const[r,c]of winCells){ ctx.beginPath(); ctx.arc(c*CELL+CELL/2,r*CELL+CELL/2,rad+3,0,7); ctx.stroke(); } }
+}
+
+function human(c){
+  if(locked||over) return;
+  if(MP){ if(!ready||turn!==myColor)return; if(dropRow(grid,c)<0)return; A.mp.send({c}, 1); startFall(c,myColor); }
+  else { if(turn!==1||dropRow(grid,c)<0)return; startFall(c,1); }
+}
+function colFromX(x){ const rect=cv.getBoundingClientRect(); return Math.max(0,Math.min(COLS-1, Math.floor((x-rect.left)/(rect.width/COLS)))); }
+cv.addEventListener('pointerdown',(e)=> human(colFromX(e.clientX)) );
+
+function reset(){ grid=blank(); turn=1; over=false; winCells=null; falling=null; locked=false; setStatus();
+  if(!MP && myColor===1 && turn===2){} }
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); if(MP)A.mp.control('rematch'); reset(); });
+el('diffSeg').addEventListener('click',(e)=>{ const b=e.target.closest('button'); if(!b)return; A.sfx('ui'); depth=+b.dataset.d; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); });
+el('mpStart').addEventListener('click',()=>{ A.sfx('ui'); A.mp.startUrl('cascade'); });
+
+function initMP(){
+  el('diffSeg').style.display='none'; el('mpStart').style.display='none';
+  el('k0').textContent='You'; el('k1').textContent='Them';
+  const panel=el('mpPanel'); panel.hidden=false;
+  mpPanel=A.mp.panel(panel,{slug:'cascade',
+    onResign:()=>{ if(over)return; over=true; A.mp.control('resign'); el('status').textContent='You resigned'; mpPanel.setStatus('You resigned.'); },
+    onRematch:()=>{ A.mp.control('rematch'); reset(); } });
+  A.mp.join({ game:'cascade', on:{
+    status:(s)=>{ if(s==='error') mpPanel.setStatus('Connection problem — refresh.'); },
+    seat:(role,opp)=>{ if(role==='w'||role==='b') myColor = role==='w'?1:2; ready=opp; mpPanel.setRole(role==='spectator'?'Spectating':('You are '+(myColor===1?'Cyan':'Violet'))); mpPanel.setDot(ready, role==='spectator'); setStatus(); refreshScore(); if(opp&&myColor===1&&grid.some(r=>r.some(Boolean))) A.mp.control('sync',{grid,turn,over}); },
+    opponent:(opp)=>{ ready=opp; mpPanel.setDot(ready); setStatus(); if(opp&&myColor===1&&grid.some(r=>r.some(Boolean))) A.mp.control('sync',{grid,turn,over}); },
+    move:(p)=>{ if(!p||!p.move)return; const c=p.move.c; if(turn===myColor)return; if(dropRow(grid,c)>=0) startFall(c, myColor===1?2:1); },
+    control:(p)=>{ if(!p)return; if(p.t==='rematch')reset(); else if(p.t==='resign'){ over=true; A.sfx('win'); el('status').textContent='Opponent resigned — you win'; mpPanel.setStatus('Opponent resigned — you win.'); } else if(p.t==='sync'&&p.data){ grid=p.data.grid.map(r=>r.slice()); turn=p.data.turn; over=!!p.data.over; setStatus(); } },
+  }});
+}
+
+reset();
+if(MP) initMP(); else setStatus();
+A.loop(()=>{ if(falling){ falling.v+=0.05; falling.y+=falling.v; if(falling.y>=falling.r){ falling.y=falling.r; land(); } } draw(); });
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>

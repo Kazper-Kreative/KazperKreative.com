@@ -1,0 +1,77 @@
+<!doctype html>
+<!-- Updraft · Flappy — Kazper Kreative Lab arcade. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Updraft — Flappy</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Updraft</h1><span class="sub">Flappy</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat accent"><span class="k">Score</span><span class="v" id="score">0</span></div>
+      <div class="hud-stat"><span class="k">Best</span><span class="v" id="best">0</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">Restart</button>
+    </div>
+    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="440" height="560"></canvas></div>
+    <p class="hint-text">Tap, click, or press space to rise. Thread the gaps.</p>
+  </div>
+  <footer><span class="dim" style="font-size:12px">Updraft</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const cv=el('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+const R=15, GX=110, GRAV=1500, FLAP=-430, GAP=170, PW=66, SPD=170, SPAWN=1.5;
+let y,vy,pipes,score,state,timer,best=A.hs.get('updraft');
+el('best').textContent=best;
+
+function reset(){ y=H*0.42; vy=0; pipes=[]; score=0; timer=0; state='ready'; el('score').textContent=0; draw(); }
+function flap(){ if(state==='over')return; if(state==='ready'){ state='play'; } vy=FLAP; A.sfx('point'); }
+function spawn(){ const m=70; const gy=m+Math.random()*(H-GAP-2*m); pipes.push({x:W, gy, scored:false}); }
+function over(){ state='over'; A.sfx('crash'); best=A.hs.set('updraft',score); el('best').textContent=best;
+  A.overlay(el('stage'),{tag:'Down',tagClass:'bad',title:'Score '+score, sub: score>=best?'New best!':'Best '+best, btn:'Fly again', onBtn:reset}); }
+function update(dt){
+  if(state!=='play') return;
+  vy+=GRAV*dt; y+=vy*dt;
+  timer+=dt; if(timer>=SPAWN){ timer=0; spawn(); }
+  for(const p of pipes){ p.x-=SPD*dt;
+    if(!p.scored && p.x+PW<GX){ p.scored=true; score++; el('score').textContent=score; A.sfx('point'); } }
+  pipes=pipes.filter(p=>p.x+PW>-10);
+  if(y-R<0||y+R>H) return over();
+  for(const p of pipes){ if(GX+R>p.x && GX-R<p.x+PW){ if(y-R<p.gy || y+R>p.gy+GAP) return over(); } }
+}
+function pipe(p){
+  const grd=ctx.createLinearGradient(p.x,0,p.x+PW,0);
+  grd.addColorStop(0,'rgba(123,63,242,.85)'); grd.addColorStop(1,'rgba(185,49,255,.85)');
+  ctx.fillStyle=grd; ctx.shadowBlur=16; ctx.shadowColor='rgba(185,49,255,.5)';
+  ctx.beginPath(); ctx.roundRect(p.x,0,PW,p.gy,8); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(p.x,p.gy+GAP,PW,H-p.gy-GAP,8); ctx.fill(); ctx.shadowBlur=0;
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'rgba(20,12,30,.7)'); bg.addColorStop(1,'rgba(8,8,18,.8)');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  pipes.forEach(pipe);
+  // orb
+  ctx.shadowBlur=22; ctx.shadowColor='rgba(120,240,255,.9)';
+  ctx.fillStyle='#eafcff'; ctx.beginPath(); ctx.arc(GX,y,R,0,7); ctx.fill(); ctx.shadowBlur=0;
+  if(state==='ready'){ ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font='600 16px "Space Grotesk",sans-serif'; ctx.textAlign='center'; ctx.fillText('Tap / space to rise', W/2, H/2); }
+}
+function input(e){ if(e&&e.type==='keydown'&&e.key!==' '&&e.key!=='Spacebar')return; if(e&&e.preventDefault)e.preventDefault(); flap(); }
+cv.addEventListener('pointerdown', ()=>flap());
+window.addEventListener('keydown',(e)=>{ if(e.key===' '||e.key==='Spacebar'){ e.preventDefault(); flap(); } });
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); reset(); });
+
+reset();
+A.loop((dt)=>{ update(Math.min(dt,0.033)); draw(); });
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>

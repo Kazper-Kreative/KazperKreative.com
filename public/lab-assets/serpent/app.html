@@ -1,0 +1,86 @@
+<!doctype html>
+<!-- Serpent · Snake — Kazper Kreative Lab arcade. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Serpent — Snake</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Serpent</h1><span class="sub">Snake</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat accent"><span class="k">Score</span><span class="v" id="score">0</span></div>
+      <div class="hud-stat"><span class="k">Best</span><span class="v" id="best">0</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">Restart</button>
+    </div>
+    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="420" height="420"></canvas></div>
+    <p class="hint-text">Arrows / WASD · or swipe. Eat the lights, don't bite yourself.</p>
+  </div>
+  <footer><span class="dim" style="font-size:12px">Serpent</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const cv=el('cv'), ctx=cv.getContext('2d');
+const G=21, CELL=cv.width/G;
+let snake, dir, nextDir, food, score, speed, acc, state, best=A.hs.get('serpent');
+el('best').textContent=best;
+
+function reset(){
+  snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}]; dir={x:1,y:0}; nextDir=dir;
+  score=0; speed=7; acc=0; state='ready'; placeFood(); el('score').textContent=0; draw();
+}
+function placeFood(){ do{ food={x:(Math.random()*G)|0,y:(Math.random()*G)|0}; }while(snake.some(s=>s.x===food.x&&s.y===food.y)); }
+function setDir(d){
+  if(state==='over') return;
+  if(d==='up'&&dir.y!==1) nextDir={x:0,y:-1};
+  else if(d==='down'&&dir.y!==-1) nextDir={x:0,y:1};
+  else if(d==='left'&&dir.x!==1) nextDir={x:-1,y:0};
+  else if(d==='right'&&dir.x!==-1) nextDir={x:1,y:0};
+  else return;
+  if(state==='ready') state='play';
+}
+function step(){
+  dir=nextDir;
+  const head={x:snake[0].x+dir.x, y:snake[0].y+dir.y};
+  if(head.x<0||head.y<0||head.x>=G||head.y>=G||snake.some(s=>s.x===head.x&&s.y===head.y)){ return gameOver(); }
+  snake.unshift(head);
+  if(head.x===food.x&&head.y===food.y){ score++; el('score').textContent=score; A.sfx('point'); speed=Math.min(16, speed+0.4); placeFood(); }
+  else snake.pop();
+}
+function gameOver(){
+  state='over'; A.sfx('crash');
+  best=A.hs.set('serpent', score); el('best').textContent=best;
+  A.overlay(el('stage'), { tag:'Game over', tagClass:'bad', title:'Score '+score, sub: score>=best?'New best!':'Best '+best, btn:'Play again', onBtn:reset });
+}
+function rc(c,r){ ctx.fillStyle=c; ctx.beginPath(); ctx.roundRect(r.x*CELL+1.5, r.y*CELL+1.5, CELL-3, CELL-3, 5); ctx.fill(); }
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.fillStyle='rgba(8,8,18,.7)'; ctx.fillRect(0,0,cv.width,cv.height);
+  // faint grid
+  ctx.strokeStyle='rgba(255,255,255,.03)'; ctx.lineWidth=1;
+  for(let i=1;i<G;i++){ ctx.beginPath(); ctx.moveTo(i*CELL,0); ctx.lineTo(i*CELL,cv.height); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,i*CELL); ctx.lineTo(cv.width,i*CELL); ctx.stroke(); }
+  // food
+  ctx.shadowBlur=18; ctx.shadowColor='rgba(255,122,69,.9)'; rc('#ff7a45', food); ctx.shadowBlur=0;
+  // snake
+  for(let i=snake.length-1;i>=0;i--){ const t=1-i/snake.length; const cyan=`rgba(${80+120*t|0},${200+40*t|0},255,1)`;
+    ctx.shadowBlur=i===0?16:8; ctx.shadowColor='rgba(120,240,255,.7)'; rc(i===0?'#eafcff':cyan, snake[i]); }
+  ctx.shadowBlur=0;
+  if(state==='ready'){ ctx.fillStyle='rgba(255,255,255,.85)'; ctx.font='600 16px "Space Grotesk",sans-serif'; ctx.textAlign='center'; ctx.fillText('Swipe or press an arrow to start', cv.width/2, cv.height/2); }
+}
+A.keys((d)=> setDir(d));
+A.swipe(cv, (d)=>{ if(d==='tap'){ if(state==='ready') state='play'; } else setDir(d); });
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); reset(); });
+
+reset();
+A.loop((dt)=>{ if(state==='play'){ acc+=dt; const interval=1/speed; while(acc>=interval){ acc-=interval; step(); if(state==='over')break; } } draw(); });
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!doctype html>
+<!-- Sapper · Minesweeper — Kazper Kreative Lab arcade. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sapper — Minesweeper</title>
+<link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
+<script src="/lab-assets/_shared/lab-audio.js"></script>
+<script src="/lab-assets/_shared/lab-arcade.js"></script>
+<style>
+  #board{gap:4px;max-width:460px;margin:0 auto}
+  #board .cell{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;font-size:min(5.6vw,22px)}
+  .cell.up{background:linear-gradient(180deg,rgba(40,40,60,.7),rgba(22,22,34,.7));box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+  .cell.down{background:rgba(8,8,18,.5)}
+  .cell.mine{background:rgba(255,90,78,.3)}
+  .cell .n1{color:#7fd0ff}.cell .n2{color:#5fcf7a}.cell .n3{color:#ff7a45}.cell .n4{color:#b931ff}
+  .cell .n5{color:#ff5a4e}.cell .n6{color:#33e5d6}.cell .n7{color:#e8caff}.cell .n8{color:#9b9cb0}
+  .cell.flag{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Sapper</h1><span class="sub">Minesweeper</span></header>
+  <div class="arcade">
+    <div class="hud">
+      <div class="hud-stat"><span class="k">Mines</span><span class="v" id="mines">0</span></div>
+      <div class="hud-stat accent"><span class="k">Time</span><span class="v" id="time">0</span></div>
+      <span class="hud-spacer"></span>
+      <button class="btn" id="newBtn">New</button>
+    </div>
+    <div class="seg" id="sizeSeg" style="margin-bottom:14px">
+      <button data-s="0" class="on">Cozy</button>
+      <button data-s="1">Tense</button>
+      <button data-s="2">Dread</button>
+    </div>
+    <div class="stage" id="stage" style="background:transparent;box-shadow:none"><div class="cells" id="board"></div></div>
+    <p class="hint-text">Tap to reveal · long-press (or right-click) to flag.</p>
+  </div>
+  <footer><span class="dim" style="font-size:12px">Sapper</span><span class="audio-ctl" id="audioCtl"></span></footer>
+</div>
+<script>
+const A=window.LabArcade, el=(id)=>document.getElementById(id);
+const SIZES=[{n:9,m:10},{n:12,m:26},{n:14,m:40}];
+let N,M,grid,revealed,flagged,first,over,won,flags,t0,timer,sizeIdx=0;
+const boardEl=el('board');
+
+function reset(){
+  const s=SIZES[sizeIdx]; N=s.n; M=s.m; first=true; over=false; won=false; flags=0;
+  grid=[]; revealed=[]; flagged=[];
+  for(let i=0;i<N*N;i++){ grid.push(0); revealed.push(false); flagged.push(false); }
+  el('mines').textContent=M; el('time').textContent=0;
+  clearInterval(timer); timer=null;
+  boardEl.style.gridTemplateColumns=`repeat(${N},1fr)`;
+  boardEl.innerHTML='';
+  for(let i=0;i<N*N;i++){ const c=document.createElement('div'); c.className='cell up'; c.dataset.i=i; boardEl.appendChild(c); }
+  render(); bindOverlayClear();
+}
+function bindOverlayClear(){ const ov=el('stage').querySelector('.overlay'); if(ov) ov.classList.remove('show'); }
+function idx(r,c){ return r*N+c; }
+function neighbors(i){ const r=(i/N)|0,c=i%N,out=[]; for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){ if(!dr&&!dc)continue; const nr=r+dr,nc=c+dc; if(nr>=0&&nr<N&&nc>=0&&nc<N) out.push(idx(nr,nc)); } return out; }
+function plant(safe){
+  const banned=new Set([safe, ...neighbors(safe)]);
+  let placed=0;
+  while(placed<M){ const p=(Math.random()*N*N)|0; if(grid[p]===-1||banned.has(p))continue; grid[p]=-1; placed++; }
+  for(let i=0;i<N*N;i++){ if(grid[i]===-1)continue; grid[i]=neighbors(i).filter(n=>grid[n]===-1).length; }
+}
+function startTimer(){ t0=Date.now(); timer=setInterval(()=>{ el('time').textContent=Math.floor((Date.now()-t0)/1000); },250); }
+function reveal(i){
+  if(over||revealed[i]||flagged[i]) return;
+  if(first){ plant(i); first=false; startTimer(); }
+  revealed[i]=true;
+  if(grid[i]===-1){ return lose(i); }
+  if(grid[i]===0){ neighbors(i).forEach(n=>{ if(!revealed[n]&&!flagged[n]) reveal(n); }); }
+}
+function flag(i){ if(over||revealed[i])return; flagged[i]=!flagged[i]; flags+=flagged[i]?1:-1; el('mines').textContent=M-flags; A.sfx('ui'); render(); }
+function lose(mineI){
+  over=true; clearInterval(timer); A.sfx('crash');
+  for(let i=0;i<N*N;i++) if(grid[i]===-1) revealed[i]=true;
+  render(mineI);
+  A.overlay(el('stage'),{tag:'Boom',tagClass:'bad',title:'You hit a mine', btn:'New game', onBtn:reset});
+}
+function checkWin(){
+  for(let i=0;i<N*N;i++){ if(grid[i]!==-1 && !revealed[i]) return; }
+  over=true; won=true; clearInterval(timer); A.sfx('win');
+  A.overlay(el('stage'),{tag:'Cleared',tagClass:'great',title:'Field swept', sub:'in '+el('time').textContent+'s', btn:'Again', onBtn:reset});
+}
+function render(boomI){
+  for(let i=0;i<N*N;i++){ const c=boardEl.children[i];
+    if(revealed[i]){
+      c.className='cell down';
+      if(grid[i]===-1){ c.classList.add('mine'); c.textContent='✸'; if(i===boomI) c.style.background='rgba(255,90,78,.55)'; }
+      else if(grid[i]>0){ c.innerHTML=`<span class="n${grid[i]}">${grid[i]}</span>`; }
+      else c.textContent='';
+    } else { c.className='cell up'+(flagged[i]?' flag':''); c.textContent=flagged[i]?'⚑':''; }
+  }
+}
+// input: tap reveal, long-press / right-click flag
+let lpTimer=null, lpFired=false;
+boardEl.addEventListener('contextmenu',(e)=>{ e.preventDefault(); const c=e.target.closest('.cell'); if(c) flag(+c.dataset.i); });
+boardEl.addEventListener('pointerdown',(e)=>{ const c=e.target.closest('.cell'); if(!c)return; lpFired=false; lpTimer=setTimeout(()=>{ lpFired=true; flag(+c.dataset.i); }, 380); });
+boardEl.addEventListener('pointerup',(e)=>{ clearTimeout(lpTimer); const c=e.target.closest('.cell'); if(!c||lpFired)return; const i=+c.dataset.i; if(flagged[i])return; reveal(i); A.sfx('point'); render(); if(!over) checkWin(); });
+boardEl.addEventListener('pointerleave',()=>clearTimeout(lpTimer));
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); reset(); });
+el('sizeSeg').addEventListener('click',(e)=>{ const b=e.target.closest('button'); if(!b)return; A.sfx('ui'); sizeIdx=+b.dataset.s; [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b)); reset(); });
+
+reset();
+if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
+</script>
+</body>
+</html>
