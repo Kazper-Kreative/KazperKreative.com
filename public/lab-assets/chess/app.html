@@ -565,8 +565,14 @@ function renderMoves(){
   for(let i=0;i<h.length;i+=2)
     html+=`<div class="ply"><span class="no">${i/2+1}.</span>${san(i)}${san(i+1)}</div>`;
   el.innerHTML=html;
+  // keep the active ply visible by scrolling ONLY the move-list box — never
+  // scrollIntoView(), which would scroll the whole page (on mobile the list is
+  // below the board, so every move would jump the view down to it).
   const act=el.querySelector('.san.active');
-  if(act) act.scrollIntoView({block:'nearest'}); else el.scrollTop=el.scrollHeight;
+  if(act){
+    const r=act.getBoundingClientRect(), cr=el.getBoundingClientRect();
+    el.scrollTop += (r.top-cr.top) - (el.clientHeight-r.height)/2;
+  } else el.scrollTop=el.scrollHeight;
 }
 /* jump to the position after `idx` half-moves (idx>=liveLen → back to live) */
 function gotoPly(idx){
