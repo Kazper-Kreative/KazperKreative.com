@@ -45,6 +45,34 @@
   .overlay-card .tag.win{color:var(--good)} .overlay-card .tag.lose{color:var(--bad)} .overlay-card .tag.draw{color:var(--warn)}
   .overlay-card .btns{display:flex;gap:9px;margin-top:16px}
   @media(prefers-reduced-motion:reduce){.moving-pc{transition:none}}
+  /* best-move arrow: shaft pulses, head matches */
+  .hint-head{animation:hintpulse 1.8s ease-in-out infinite}
+  /* move-list replay: clickable plies + transport bar */
+  .moves-head{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+  .moves-head .navbtn{background:rgba(8,8,18,.6);border:1px solid var(--panel-edge);color:var(--ink-dim);
+    border-radius:8px;min-width:34px;height:32px;cursor:pointer;font-size:14px;line-height:1;transition:.15s;
+    display:grid;place-items:center}
+  .moves-head .navbtn:hover{color:var(--ink);border-color:var(--accent)}
+  .moves-head .navbtn:disabled{opacity:.35;cursor:default;border-color:var(--panel-edge);color:var(--ink-faint)}
+  .moves-head .rev-label{flex:1;text-align:center;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:12px;color:var(--ink-faint);letter-spacing:.04em}
+  .moves-head.reviewing .rev-label{color:var(--accent)}
+  .moves .san{display:inline-block;padding:1px 6px;border-radius:5px;cursor:pointer;transition:background .12s,color .12s}
+  .moves .san:hover{background:rgba(255,255,255,.07);color:var(--ink)}
+  .moves .san.active{background:rgba(255,122,69,.22);color:var(--accent)}
+  /* mobile: tighter spacing + bigger touch targets */
+  @media(max-width:760px){
+    body{padding:16px 12px 40px}
+    header{margin-bottom:12px}
+    .layout{gap:16px}
+    .board-area{gap:8px}
+    .evalbar{width:14px;border-radius:7px}
+    .panel{padding:13px 13px 15px}
+    .seg button{padding:11px 6px;font-size:13px}
+    .btns .btn{min-width:0;padding:13px 10px}
+    .moves{max-height:34vh}
+    .sq .pc{font-size:min(11vw,60px)}
+  }
 </style>
 </head>
 <body>
@@ -113,7 +141,16 @@
         </div>
         <button class="btn" id="mpLeave">Leave match</button>
       </div>
-      <div class="panel"><div class="moves" id="moves"><div class="empty">No moves yet.</div></div></div>
+      <div class="panel">
+        <div class="moves-head" id="movesHead">
+          <button class="navbtn" id="navStart" title="First move" aria-label="First move">⏮</button>
+          <button class="navbtn" id="navPrev" title="Back" aria-label="Back">‹</button>
+          <span class="rev-label" id="revLabel">Live</span>
+          <button class="navbtn" id="navNext" title="Forward" aria-label="Forward">›</button>
+          <button class="navbtn" id="navLive" title="Latest" aria-label="Latest">⏭</button>
+        </div>
+        <div class="moves" id="moves"><div class="empty">No moves yet.</div></div>
+      </div>
     </div>
   </div>
   <footer>
@@ -240,31 +277,50 @@ function onEngineReady(){
 const boardEl=document.getElementById('board');
 function sqName(f,r){ return FILES[f]+r; }
 function disp(file,rank){ return orientation==='w' ? {row:8-rank,col:file} : {row:rank-1,col:7-file}; }
+/* ----- move-list replay state ----- */
+let reviewIndex=null;                 // null = live; else # of half-moves to display
+function liveLen(){ return game.history().length; }
+function isReviewing(){ return reviewIndex!=null && reviewIndex<liveLen(); }
+function viewGame(){
+  if(!isReviewing()) return game;
+  const c=new Chess(); const h=game.history({verbose:true});
+  for(let i=0;i<reviewIndex;i++){ const m=h[i]; c.move({from:m.from,to:m.to,promotion:m.promotion}); }
+  return c;
+}
+function reviewLastMove(){
+  if(!isReviewing()||reviewIndex<=0) return null;
+  const m=game.history({verbose:true})[reviewIndex-1];
+  return m?{from:m.from,to:m.to}:null;
+}
+
 function render(){
   boardEl.innerHTML='';
   const eb=document.querySelector('.evalbar'); if(eb) eb.classList.toggle('flip',orientation==='b');
-  const checkSq=inCheckSquare();
+  const view=viewGame(), reviewing=isReviewing();
+  const checkSq=inCheckSquare(view);
+  const lm = reviewing ? reviewLastMove() : lastMove;
   for(let row=0;row<8;row++)for(let col=0;col<8;col++){
     let file,rank;
     if(orientation==='w'){file=col;rank=8-row;} else {file=7-col;rank=row+1;}
     const name=sqName(file,rank), isLight=(file+rank)%2!==0;
     const cell=document.createElement('div');
     cell.className='sq '+(isLight?'l':'d'); cell.dataset.sq=name;
-    const pc=game.get(name);
+    const pc=view.get(name);
     if(pc){const s=document.createElement('span');s.className='pc '+pc.color;s.textContent=GLYPH[pc.type];cell.appendChild(s);}
-    if(lastMove&&(name===lastMove.from||name===lastMove.to)) cell.classList.add('last');
-    if(selected===name) cell.classList.add('sel');
+    if(lm&&(name===lm.from||name===lm.to)) cell.classList.add('last');
+    if(!reviewing&&selected===name) cell.classList.add('sel');
     if(checkSq===name) cell.classList.add('check');
-    if(legalDests.includes(name)){const d=document.createElement('div');d.className=pc?'ring':'dot';cell.appendChild(d);}
+    if(!reviewing&&legalDests.includes(name)){const d=document.createElement('div');d.className=pc?'ring':'dot';cell.appendChild(d);}
     if(col===0){const c=document.createElement('span');c.className='coord r '+(isLight?'on-l':'on-d');c.textContent=rank;cell.appendChild(c);}
     if(row===7){const c=document.createElement('span');c.className='coord f '+(isLight?'on-l':'on-d');c.textContent=FILES[file];cell.appendChild(c);}
     boardEl.appendChild(cell);
   }
-  if(hintOn&&hintMove&&game.turn()===humanColor&&!game.game_over()) drawArrow(hintMove.from,hintMove.to);
+  if(!reviewing&&hintOn&&hintMove&&game.turn()===humanColor&&!game.game_over()) drawArrow(hintMove.from,hintMove.to);
 }
-function inCheckSquare(){
-  if(!game.in_check()) return null;
-  const t=game.turn(), b=game.board();
+function inCheckSquare(g){
+  g=g||game;
+  if(!g.in_check()) return null;
+  const t=g.turn(), b=g.board();
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){const pc=b[r][c];if(pc&&pc.type==='k'&&pc.color===t)return FILES[c]+(8-r);}
   return null;
 }
@@ -273,7 +329,7 @@ function inCheckSquare(){
 const DRAG_THRESHOLD=6;
 let down=null, dragging=false, ghostEl=null;
 
-function inputAllowed(){ return !busy && !game.game_over() && game.turn()===humanColor; }
+function inputAllowed(){ return !busy && !game.game_over() && game.turn()===humanColor && !isReviewing(); }
 
 /* pixel geometry for the 8x8 grid, honouring board orientation */
 function squareFromPoint(cx,cy){
@@ -420,6 +476,7 @@ async function doHumanMove(mv){
   const reply=await enginePlay(game.fen(),level);
   const m=game.move({from:reply.best.slice(0,2),to:reply.best.slice(2,4),promotion:reply.best[4]});
   if(m){ lastMove={from:m.from,to:m.to}; }
+  reviewIndex=null;
   render(); updateStatus(); renderMoves();
   if(m){ animateSlide(m.from,m.to); moveSfx(m); if(game.in_check()&&!game.game_over()) sfx('check'); }
   if(game.game_over()){ endSfx(); showGameOver(); }
@@ -498,25 +555,74 @@ function updateStatus(){
 }
 function renderMoves(){
   const el=document.getElementById('moves'), h=game.history();
+  updateReviewBar();
   if(h.length===0){el.innerHTML='<div class="empty">No moves yet.</div>';return;}
+  const active = isReviewing() ? reviewIndex : h.length;   // 1-based half-move index
+  const san=(i)=> h[i]!=null
+    ? `<span class="san${active===i+1?' active':''}" data-ply="${i+1}">${h[i]}</span>`
+    : '<span></span>';
   let html='';
   for(let i=0;i<h.length;i+=2)
-    html+=`<div class="ply"><span class="no">${i/2+1}.</span><span>${h[i]||''}</span><span>${h[i+1]||''}</span></div>`;
-  el.innerHTML=html; el.scrollTop=el.scrollHeight;
+    html+=`<div class="ply"><span class="no">${i/2+1}.</span>${san(i)}${san(i+1)}</div>`;
+  el.innerHTML=html;
+  const act=el.querySelector('.san.active');
+  if(act) act.scrollIntoView({block:'nearest'}); else el.scrollTop=el.scrollHeight;
 }
+/* jump to the position after `idx` half-moves (idx>=liveLen → back to live) */
+function gotoPly(idx){
+  const len=liveLen();
+  reviewIndex = (idx>=len) ? null : Math.max(0,idx);
+  selected=null; legalDests=[]; clearArrow();
+  render(); renderMoves();
+}
+function updateReviewBar(){
+  const rev=isReviewing(), len=liveLen();
+  const label=document.getElementById('revLabel'); if(label) label.textContent = rev ? ('Move '+reviewIndex+' / '+len) : 'Live';
+  const head=document.getElementById('movesHead'); if(head) head.classList.toggle('reviewing',rev);
+  const cur = rev ? reviewIndex : len;
+  const dis=(id,v)=>{const b=document.getElementById(id);if(b)b.disabled=v;};
+  dis('navStart',cur<=0); dis('navPrev',cur<=0); dis('navNext',!rev); dis('navLive',!rev);
+}
+const SVGNS='http://www.w3.org/2000/svg';
 function clearArrow(){const a=document.getElementById('arrows');if(a)a.remove();}
+// Lichess-style best-move arrow: straight for most moves, L-bent for knights,
+// with a tapered head whose tip lands on the destination centre. Coordinates are
+// in the board's 8×8 viewBox (square centre = col+0.5, row+0.5), so it follows
+// board flips automatically via disp().
 function drawArrow(from,to){
   clearArrow();
   const f=disp(FILES.indexOf(from[0]),parseInt(from[1])), t=disp(FILES.indexOf(to[0]),parseInt(to[1]));
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.id='arrows'; svg.setAttribute('viewBox','0 0 8 8');
-  svg.innerHTML=`<defs><marker id="ah" markerWidth="4" markerHeight="4" refX="2.4" refY="2" orient="auto">
-    <path d="M0,0 L4,2 L0,4 Z" fill="var(--hint)"/></marker></defs>
-    <line class="hint-line" x1="${f.col+0.5}" y1="${f.row+0.5}" x2="${t.col+0.5}" y2="${t.row+0.5}"
-      stroke="var(--hint)" stroke-width="0.26" stroke-linecap="round" marker-end="url(#ah)" opacity="0.92"/>`;
+  const A={x:f.col+0.5,y:f.row+0.5}, B={x:t.col+0.5,y:t.row+0.5};
+  const dc=t.col-f.col, dr=t.row-f.row;
+  const knight=(Math.abs(dc)===1&&Math.abs(dr)===2)||(Math.abs(dc)===2&&Math.abs(dr)===1);
+  let pts;
+  if(knight){ const corner = Math.abs(dc)>Math.abs(dr) ? {x:B.x,y:A.y} : {x:A.x,y:B.y}; pts=[A,corner,B]; }
+  else pts=[A,B];
+
+  const W=0.17, HEAD=0.42, HALF=0.27, START_GAP=0.26;
+  const norm=v=>{const l=Math.hypot(v.x,v.y)||1;return{x:v.x/l,y:v.y/l};};
+  const lerp=(a,b,d)=>{const u=norm({x:b.x-a.x,y:b.y-a.y});return{x:a.x+u.x*d,y:a.y+u.y*d};};
+  // pull the shaft start out of the origin square a touch
+  const s0=lerp(pts[0],pts[1],START_GAP);
+  // head sits on the final segment; shaft stops where the head begins
+  const tip=pts[pts.length-1], prev=pts[pts.length-2];
+  const dir=norm({x:tip.x-prev.x,y:tip.y-prev.y});
+  const base={x:tip.x-dir.x*HEAD,y:tip.y-dir.y*HEAD};
+  const perp={x:-dir.y,y:dir.x};
+  const shaft=[s0,...pts.slice(1,-1),base];
+  const shaftD='M '+shaft.map(p=>p.x.toFixed(3)+' '+p.y.toFixed(3)).join(' L ');
+  const headD=`M ${tip.x.toFixed(3)} ${tip.y.toFixed(3)} `+
+    `L ${(base.x+perp.x*HALF).toFixed(3)} ${(base.y+perp.y*HALF).toFixed(3)} `+
+    `L ${(base.x-perp.x*HALF).toFixed(3)} ${(base.y-perp.y*HALF).toFixed(3)} Z`;
+  const svg=document.createElementNS(SVGNS,'svg');
+  svg.id='arrows'; svg.setAttribute('viewBox','0 0 8 8'); svg.setAttribute('preserveAspectRatio','none');
+  svg.innerHTML=`<path class="hint-line" d="${shaftD}" fill="none" stroke="var(--hint)" stroke-width="${W}"
+      stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+    <path class="hint-head" d="${headD}" fill="var(--hint)" opacity="0.95"/>`;
   boardEl.appendChild(svg);
 }
 function setHintArrow(){
+  if(isReviewing()){ clearArrow(); return; }
   if(hintOn&&currentAnalysis&&currentAnalysis.best&&!game.game_over()&&game.turn()===humanColor){
     const b=currentAnalysis.best; hintMove={from:b.slice(0,2),to:b.slice(2,4)}; drawArrow(hintMove.from,hintMove.to);
   } else { hintMove=null; clearArrow(); }
@@ -549,6 +655,7 @@ hintBtn.addEventListener('click',()=>{
 document.getElementById('undoBtn').addEventListener('click',async()=>{
   if(busy||game.history().length===0) return;
   sfx('ui');
+  reviewIndex=null;
   game.undo();
   if(game.history().length>0&&game.turn()!==humanColor) game.undo();
   lastMove=null; selected=null; legalDests=[]; clearArrow();
@@ -573,7 +680,7 @@ function setThinking(t){document.getElementById('thinking').textContent=t;}
 async function newGame(){
   if(!engineReady) return;
   game.reset(); engineSend('ucinewgame');
-  orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null;
+  orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null; reviewIndex=null;
   document.getElementById('coach').innerHTML=
     '<div class="placeholder">Make a move and I\'ll grade it against Stockfish\'s best line.</div>';
   clearArrow(); hideGameOver(); render(); updateStatus(); renderMoves();
@@ -620,6 +727,7 @@ function applyRemoteMove(uci){
   const m=game.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});
   if(!m){ LabMP.sendControl('sync-request'); return; }
   lastMove={from:m.from,to:m.to};
+  reviewIndex=null;
   selected=null; legalDests=[]; clearArrow(); render(); updateStatus(); renderMoves();
   animateSlide(m.from,m.to); moveSfx(m); if(game.in_check()&&!game.game_over()) sfx('check');
   if(game.game_over()){ busy=true; updateStatus(); endSfx(); mpOver=true; mpFinishText(); showGameOver(); return; }
@@ -648,7 +756,7 @@ function mpOnControl(p){
 }
 function newGameMP(){
   game.reset(); mpOver=false;
-  selected=null; legalDests=[]; lastMove=null; hintMove=null; clearArrow();
+  selected=null; legalDests=[]; lastMove=null; hintMove=null; clearArrow(); reviewIndex=null;
   orientation=mpColor; render(); updateStatus(); renderMoves(); mpRefreshTurn();
 }
 function initMultiplayer(){
@@ -728,6 +836,23 @@ document.getElementById('goNew').addEventListener('click',()=>{
   if(MP){ try{ LabMP.sendControl('rematch'); }catch(_){}; mpRematch(); } else newGame();
 });
 document.getElementById('goReview').addEventListener('click',()=>{ sfx('ui'); hideGameOver(); });
+
+/* move-list replay: click a ply, transport buttons, arrow keys */
+function curPly(){ return isReviewing()?reviewIndex:liveLen(); }
+document.getElementById('moves').addEventListener('click',e=>{
+  const s=e.target.closest('.san[data-ply]'); if(!s) return; sfx('ui'); gotoPly(+s.dataset.ply);
+});
+document.getElementById('navStart').addEventListener('click',()=>{ if(liveLen()){ sfx('ui'); gotoPly(0);} });
+document.getElementById('navPrev').addEventListener('click',()=>{ if(curPly()>0){ sfx('ui'); gotoPly(curPly()-1);} });
+document.getElementById('navNext').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(reviewIndex+1);} });
+document.getElementById('navLive').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(liveLen());} });
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'){ if(curPly()>0){ gotoPly(curPly()-1); e.preventDefault(); } }
+  else if(e.key==='ArrowRight'){ if(isReviewing()){ gotoPly(reviewIndex+1); e.preventDefault(); } }
+  else if(e.key==='Home'){ if(liveLen()){ gotoPly(0); e.preventDefault(); } }
+  else if(e.key==='End'){ if(isReviewing()){ gotoPly(liveLen()); e.preventDefault(); } }
+});
+updateReviewBar();  // disable transport until there are moves
 
 render();           // show the start position immediately
 if(MP){ initMultiplayer(); } else { initEngine(); }
