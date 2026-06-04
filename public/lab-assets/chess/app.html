@@ -24,6 +24,27 @@
   .sq .pc.w{color:#eafcff;text-shadow:0 0 10px rgba(120,240,255,.75),0 0 22px rgba(80,200,255,.45),0 2px 3px rgba(0,0,0,.55)}
   .sq .pc.b{color:#241433;text-shadow:0 0 12px rgba(185,49,255,.85),0 0 24px rgba(255,46,132,.5),0 1px 0 rgba(255,255,255,.12)}
   .sq.sel .pc{filter:drop-shadow(0 0 9px rgba(255,122,69,.85))}
+  /* drag-and-drop + move animation: pieces that live outside .sq need their own color rules */
+  .board{touch-action:none}
+  .board.dragging,.board.dragging .sq{cursor:grabbing}
+  .sq.drag-over::after{content:"";position:absolute;inset:0;z-index:1;border-radius:5px;
+    box-shadow:inset 0 0 0 3px var(--hint),0 0 16px rgba(51,229,214,.45)}
+  .drag-ghost,.moving-pc{position:fixed;transform:translate(-50%,-50%);pointer-events:none;line-height:1;will-change:left,top}
+  .drag-ghost{z-index:60;filter:drop-shadow(0 0 12px rgba(255,122,69,.7))}
+  .moving-pc{z-index:55;transition:left .18s cubic-bezier(.22,.61,.36,1),top .18s cubic-bezier(.22,.61,.36,1)}
+  .drag-ghost.w,.moving-pc.w{color:#eafcff;text-shadow:0 0 10px rgba(120,240,255,.75),0 0 22px rgba(80,200,255,.45),0 2px 3px rgba(0,0,0,.55)}
+  .drag-ghost.b,.moving-pc.b{color:#241433;text-shadow:0 0 12px rgba(185,49,255,.85),0 0 24px rgba(255,46,132,.5),0 1px 0 rgba(255,255,255,.12)}
+  /* eval bar flips with the board so the side at the bottom of the board is at the bottom of the bar */
+  .evalbar.flip .white{bottom:auto;top:0}
+  /* board-box hosts the game-over overlay */
+  .board-box{position:relative}
+  .go-sub{font-size:14px;color:var(--ink-dim);margin:2px 0 0}
+  .overlay-card .tag{display:inline-block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:12px;font-weight:600;
+    letter-spacing:.06em;text-transform:uppercase;padding:3px 12px;border-radius:999px;
+    border:1px solid currentColor;box-shadow:0 0 14px -2px currentColor}
+  .overlay-card .tag.win{color:var(--good)} .overlay-card .tag.lose{color:var(--bad)} .overlay-card .tag.draw{color:var(--warn)}
+  .overlay-card .btns{display:flex;gap:9px;margin-top:16px}
+  @media(prefers-reduced-motion:reduce){.moving-pc{transition:none}}
 </style>
 </head>
 <body>
@@ -36,7 +57,18 @@
     <div>
       <div class="board-area">
         <div class="evalbar" title="Stockfish evaluation"><div class="white" id="evalWhite"></div><div class="mid"></div></div>
-        <div class="board-box"><div class="board" id="board"></div></div>
+        <div class="board-box">
+          <div class="board" id="board"></div>
+          <div class="overlay" id="gameOver"><div class="overlay-card">
+            <span class="tag" id="goTag"></span>
+            <h3 id="goTitle"></h3>
+            <p class="go-sub" id="goSub"></p>
+            <div class="btns">
+              <button class="btn primary" id="goNew">New game</button>
+              <button class="btn" id="goReview">Review</button>
+            </div>
+          </div></div>
+        </div>
       </div>
       <div class="thinking" id="thinking"></div>
     </div>
@@ -63,6 +95,7 @@
         <div class="btns">
           <button class="btn" id="hintBtn">Show best move</button>
           <button class="btn" id="undoBtn">Take back</button>
+          <button class="btn" id="flipBtn">Flip board</button>
         </div>
         <button class="btn primary" id="newBtn">New game</button>
         <button class="btn" id="mpStartBtn">Play a friend · 1v1</button>
@@ -209,6 +242,7 @@ function sqName(f,r){ return FILES[f]+r; }
 function disp(file,rank){ return orientation==='w' ? {row:8-rank,col:file} : {row:rank-1,col:7-file}; }
 function render(){
   boardEl.innerHTML='';
+  const eb=document.querySelector('.evalbar'); if(eb) eb.classList.toggle('flip',orientation==='b');
   const checkSq=inCheckSquare();
   for(let row=0;row<8;row++)for(let col=0;col<8;col++){
     let file,rank;
@@ -224,7 +258,6 @@ function render(){
     if(legalDests.includes(name)){const d=document.createElement('div');d.className=pc?'ring':'dot';cell.appendChild(d);}
     if(col===0){const c=document.createElement('span');c.className='coord r '+(isLight?'on-l':'on-d');c.textContent=rank;cell.appendChild(c);}
     if(row===7){const c=document.createElement('span');c.className='coord f '+(isLight?'on-l':'on-d');c.textContent=FILES[file];cell.appendChild(c);}
-    cell.addEventListener('click',()=>onSquare(name));
     boardEl.appendChild(cell);
   }
   if(hintOn&&hintMove&&game.turn()===humanColor&&!game.game_over()) drawArrow(hintMove.from,hintMove.to);
@@ -236,27 +269,122 @@ function inCheckSquare(){
   return null;
 }
 
-/* ===================== interaction ===================== */
-function onSquare(name){
-  if(busy||game.game_over()||game.turn()!==humanColor) return;
+/* ===================== interaction (pointer: drag + tap) ===================== */
+const DRAG_THRESHOLD=6;
+let down=null, dragging=false, ghostEl=null;
+
+function inputAllowed(){ return !busy && !game.game_over() && game.turn()===humanColor; }
+
+/* pixel geometry for the 8x8 grid, honouring board orientation */
+function squareFromPoint(cx,cy){
+  const r=boardEl.getBoundingClientRect();
+  const x=cx-r.left, y=cy-r.top;
+  if(x<0||y<0||x>r.width||y>r.height) return null;
+  const col=Math.min(7,Math.floor(x/(r.width/8))), row=Math.min(7,Math.floor(y/(r.height/8)));
+  let file,rank;
+  if(orientation==='w'){ file=col; rank=8-row; } else { file=7-col; rank=row+1; }
+  return FILES[file]+rank;
+}
+function squareCenter(name){
+  const r=boardEl.getBoundingClientRect();
+  const d=disp(FILES.indexOf(name[0]),parseInt(name[1]));
+  const cw=r.width/8, ch=r.height/8;
+  return { x:r.left+(d.col+0.5)*cw, y:r.top+(d.row+0.5)*ch };
+}
+function pieceAt(name){ return boardEl.querySelector('[data-sq="'+name+'"] .pc'); }
+
+function selectSquare(name){
+  selected=name; legalDests=game.moves({square:name,verbose:true}).map(m=>m.to); render(); sfx('select');
+}
+function tryMove(from,to,animate){
+  const moving=game.get(from);
+  if(moving&&moving.type==='p'&&(to[1]==='8'||to[1]==='1')) askPromotion(from,to,animate);
+  else doHumanMove({from,to,animate:animate});
+}
+function handleTap(name){
   const pc=game.get(name);
-  if(pc&&pc.color===humanColor){
-    selected=name; legalDests=game.moves({square:name,verbose:true}).map(m=>m.to); render(); sfx('select'); return;
-  }
-  if(selected&&legalDests.includes(name)){
-    const moving=game.get(selected);
-    if(moving.type==='p'&&(name[1]==='8'||name[1]==='1')) askPromotion(selected,name);
-    else doHumanMove({from:selected,to:name});
-    return;
-  }
+  if(pc&&pc.color===humanColor){ if(name!==selected) selectSquare(name); return; }
+  if(selected&&legalDests.includes(name)){ tryMove(selected,name,true); return; }
   selected=null; legalDests=[]; render();
 }
-function askPromotion(from,to){
+
+/* floating piece that follows the pointer while dragging */
+function startGhost(name,cx,cy){
+  const o=pieceAt(name); if(!o) return;
+  ghostEl=document.createElement('div');
+  ghostEl.className='drag-ghost pc '+(game.get(name)||{}).color;
+  ghostEl.textContent=o.textContent;
+  ghostEl.style.fontSize=getComputedStyle(o).fontSize;
+  document.body.appendChild(ghostEl); moveGhost(cx,cy);
+  o.style.opacity='0';
+}
+function moveGhost(cx,cy){ if(ghostEl){ ghostEl.style.left=cx+'px'; ghostEl.style.top=cy+'px'; } }
+function endGhost(){ if(ghostEl){ ghostEl.remove(); ghostEl=null; } }
+function setDropTarget(name){
+  boardEl.querySelectorAll('.sq.drag-over').forEach(s=>s.classList.remove('drag-over'));
+  if(name&&legalDests.includes(name)){ const c=boardEl.querySelector('[data-sq="'+name+'"]'); if(c) c.classList.add('drag-over'); }
+}
+
+/* a piece sliding from→to (engine replies, tap moves, remote moves; not drags) */
+function animateSlide(from,to){
+  const dest=pieceAt(to); if(!dest) return;
+  const a=squareCenter(from), b=squareCenter(to);
+  const mover=document.createElement('div');
+  mover.className='moving-pc pc '+(dest.classList.contains('b')?'b':'w');
+  mover.textContent=dest.textContent;
+  mover.style.fontSize=getComputedStyle(dest).fontSize;
+  mover.style.left=a.x+'px'; mover.style.top=a.y+'px';
+  document.body.appendChild(mover); dest.style.opacity='0';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ mover.style.left=b.x+'px'; mover.style.top=b.y+'px'; }));
+  setTimeout(()=>{ mover.remove(); if(dest) dest.style.opacity=''; },200);
+}
+
+function onPointerDown(e){
+  if(e.button!=null&&e.button!==0) return;
+  if(!inputAllowed()) return;
+  const name=squareFromPoint(e.clientX,e.clientY); if(!name) return;
+  down={sq:name,x:e.clientX,y:e.clientY};
+  const pc=game.get(name);
+  if(pc&&pc.color===humanColor){
+    if(name!==selected) selectSquare(name);
+    try{ boardEl.setPointerCapture(e.pointerId); }catch(_){}
+  }
+}
+function onPointerMove(e){
+  if(!down) return;
+  if(!dragging){
+    if(Math.hypot(e.clientX-down.x,e.clientY-down.y)<DRAG_THRESHOLD) return;
+    const pc=game.get(down.sq);
+    if(!(pc&&pc.color===humanColor)) return;   // only pieces drag
+    dragging=true; boardEl.classList.add('dragging'); startGhost(down.sq,e.clientX,e.clientY);
+  }
+  moveGhost(e.clientX,e.clientY);
+  setDropTarget(squareFromPoint(e.clientX,e.clientY));
+  e.preventDefault();
+}
+function onPointerUp(e){
+  if(!down) return;
+  const drop=squareFromPoint(e.clientX,e.clientY);
+  if(dragging){
+    endGhost(); boardEl.classList.remove('dragging'); setDropTarget(null);
+    const from=down.sq; dragging=false; down=null;
+    if(drop&&drop!==from&&legalDests.includes(drop)) tryMove(from,drop,false); // dropped by hand → no slide
+    else render();                                                             // illegal → snap back
+    return;
+  }
+  const name=drop||down.sq; down=null;
+  handleTap(name);
+}
+function onPointerCancel(){
+  if(dragging){ endGhost(); boardEl.classList.remove('dragging'); setDropTarget(null); render(); }
+  dragging=false; down=null;
+}
+function askPromotion(from,to,animate){
   const promo=document.getElementById('promo'), opts=document.getElementById('promoOpts');
   opts.innerHTML='';
   ['q','r','b','n'].forEach(t=>{
     const btn=document.createElement('button'); btn.textContent=GLYPH[t];
-    btn.onclick=()=>{promo.classList.remove('show'); doHumanMove({from,to,promotion:t});};
+    btn.onclick=()=>{promo.classList.remove('show'); doHumanMove({from,to,promotion:t,animate:animate});};
     opts.appendChild(btn);
   });
   promo.classList.add('show');
@@ -270,11 +398,12 @@ async function doHumanMove(mv){
   if(!move){selected=null;legalDests=[];render();return;}
   lastMove={from:move.from,to:move.to};
   selected=null; legalDests=[]; clearArrow(); render(); updateStatus(); renderMoves();
+  if(mv.animate) animateSlide(move.from,move.to);   // tap moves slide; drags already landed by hand
   moveSfx(move); if(game.in_check()&&!game.game_over()) sfx('check');
 
   if(MP){
     mpBroadcastMove(move);
-    if(game.game_over()){ busy=true; updateStatus(); endSfx(); mpOver=true; mpFinishText(); }
+    if(game.game_over()){ busy=true; updateStatus(); endSfx(); mpOver=true; mpFinishText(); showGameOver(); }
     else { busy=true; mpRefreshTurn(); }
     return;
   }
@@ -285,15 +414,15 @@ async function doHumanMove(mv){
   coachGrade(move,before,after,preFen);
   refreshEvalBar(after);
 
-  if(game.game_over()){ currentAnalysis=after; busy=false; setThinking(''); updateStatus(); endSfx(); return; }
+  if(game.game_over()){ currentAnalysis=after; busy=false; setThinking(''); updateStatus(); endSfx(); showGameOver(); return; }
 
   setThinking('Stockfish is thinking…');
   const reply=await enginePlay(game.fen(),level);
   const m=game.move({from:reply.best.slice(0,2),to:reply.best.slice(2,4),promotion:reply.best[4]});
   if(m){ lastMove={from:m.from,to:m.to}; }
   render(); updateStatus(); renderMoves();
-  if(m){ moveSfx(m); if(game.in_check()&&!game.game_over()) sfx('check'); }
-  if(game.game_over()) endSfx();
+  if(m){ animateSlide(m.from,m.to); moveSfx(m); if(game.in_check()&&!game.game_over()) sfx('check'); }
+  if(game.game_over()){ endSfx(); showGameOver(); }
 
   busy=false;
   await settle();
@@ -447,14 +576,15 @@ async function newGame(){
   orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null;
   document.getElementById('coach').innerHTML=
     '<div class="placeholder">Make a move and I\'ll grade it against Stockfish\'s best line.</div>';
-  clearArrow(); render(); updateStatus(); renderMoves();
+  clearArrow(); hideGameOver(); render(); updateStatus(); renderMoves();
   busy=true;
   if(humanColor==='b'){
     setThinking('Stockfish is thinking…');
     const reply=await enginePlay(game.fen(),level);
     const m=game.move({from:reply.best.slice(0,2),to:reply.best.slice(2,4),promotion:reply.best[4]});
-    if(m){ lastMove={from:m.from,to:m.to}; moveSfx(m); }
+    if(m){ lastMove={from:m.from,to:m.to}; }
     render(); updateStatus(); renderMoves();
+    if(m){ animateSlide(m.from,m.to); moveSfx(m); }
   }
   busy=false;
   await settle();
@@ -491,8 +621,8 @@ function applyRemoteMove(uci){
   if(!m){ LabMP.sendControl('sync-request'); return; }
   lastMove={from:m.from,to:m.to};
   selected=null; legalDests=[]; clearArrow(); render(); updateStatus(); renderMoves();
-  moveSfx(m); if(game.in_check()&&!game.game_over()) sfx('check');
-  if(game.game_over()){ busy=true; updateStatus(); endSfx(); mpOver=true; mpFinishText(); return; }
+  animateSlide(m.from,m.to); moveSfx(m); if(game.in_check()&&!game.game_over()) sfx('check');
+  if(game.game_over()){ busy=true; updateStatus(); endSfx(); mpOver=true; mpFinishText(); showGameOver(); return; }
   mpRefreshTurn();
 }
 function mpSendSync(){ LabMP.sendControl('sync',{ moves: game.history({verbose:true}).map(m=>m.from+m.to+(m.promotion||'')) }); }
@@ -506,13 +636,14 @@ function mpResign(){
   LabMP.sendControl('resign'); mpOver=true; busy=true;
   mpEl('status').textContent=(mpColor==='w'?'Black':'White')+' wins — you resigned';
   mpEl('mpStatus').textContent='You resigned.';
+  showResult('lose','You resigned',(mpColor==='w'?'Black':'White')+' wins.');
 }
 function mpRematch(){ mpOver=false; newGameMP(); mpEl('coach').innerHTML='<div class="placeholder">Rematch — good luck.</div>'; }
 function mpOnControl(p){
   if(!p||!p.t) return;
   if(p.t==='sync') mpApplySync(p.data&&p.data.moves);
   else if(p.t==='sync-request'){ if(mpColor==='w'&&!mpOver) mpSendSync(); }
-  else if(p.t==='resign'){ mpOver=true; busy=true; sfx('win'); mpEl('status').textContent='Opponent resigned — you win'; mpEl('mpStatus').textContent='Opponent resigned — you win.'; }
+  else if(p.t==='resign'){ mpOver=true; busy=true; sfx('win'); mpEl('status').textContent='Opponent resigned — you win'; mpEl('mpStatus').textContent='Opponent resigned — you win.'; showResult('win','Opponent resigned','You win.'); }
   else if(p.t==='rematch'){ mpRematch(); }
 }
 function newGameMP(){
@@ -551,10 +682,53 @@ function initMultiplayer(){
   });
 }
 
+/* ===================== game-over overlay ===================== */
+function showResult(cls,title,sub){
+  const ov=document.getElementById('gameOver'); if(!ov) return;
+  const tag=document.getElementById('goTag');
+  tag.className='tag '+cls; tag.textContent=cls==='win'?'Victory':cls==='lose'?'Defeat':'Draw';
+  document.getElementById('goTitle').textContent=title;
+  document.getElementById('goSub').textContent=sub||'';
+  document.getElementById('goReview').style.display = game.history().length ? '' : 'none';
+  ov.classList.add('show');
+}
+function showGameOver(){
+  if(!game.game_over()) return;
+  let cls,t,s;
+  if(game.in_checkmate()){
+    const loser=game.turn(), won=loser!==humanColor;
+    cls=won?'win':'lose'; t=won?'Checkmate — you win':'Checkmate'; s=(loser==='w'?'White':'Black')+' is mated.';
+  } else if(game.in_stalemate()){ cls='draw'; t='Stalemate'; s='No legal moves — the game is drawn.'; }
+  else if(game.in_threefold_repetition()){ cls='draw'; t='Draw'; s='Threefold repetition.'; }
+  else if(game.insufficient_material()){ cls='draw'; t='Draw'; s='Insufficient material.'; }
+  else { cls='draw'; t='Draw'; s='Fifty-move rule.'; }
+  showResult(cls,t,s);
+}
+function hideGameOver(){ const ov=document.getElementById('gameOver'); if(ov) ov.classList.remove('show'); }
+
 /* ===================== boot ===================== */
 if(window.LabAudio) LabAudio.mountControls(document.getElementById('audioCtl'));
 const mpStartBtn=document.getElementById('mpStartBtn');
 if(mpStartBtn) mpStartBtn.addEventListener('click',()=>{ sfx('ui'); mpGoto(Math.random().toString(36).slice(2,8)); });
+
+/* board input: unified pointer handlers (drag + tap) live on the board element */
+boardEl.addEventListener('pointerdown',onPointerDown);
+boardEl.addEventListener('pointermove',onPointerMove);
+boardEl.addEventListener('pointerup',onPointerUp);
+boardEl.addEventListener('pointercancel',onPointerCancel);
+
+/* flip board (view only — does not change which side you play) */
+document.getElementById('flipBtn').addEventListener('click',()=>{
+  sfx('ui'); orientation=(orientation==='w'?'b':'w');
+  selected=null; legalDests=[]; clearArrow(); render(); setHintArrow();
+});
+/* game-over overlay buttons */
+document.getElementById('goNew').addEventListener('click',()=>{
+  sfx('ui'); hideGameOver();
+  if(MP){ try{ LabMP.sendControl('rematch'); }catch(_){}; mpRematch(); } else newGame();
+});
+document.getElementById('goReview').addEventListener('click',()=>{ sfx('ui'); hideGameOver(); });
+
 render();           // show the start position immediately
 if(MP){ initMultiplayer(); } else { initEngine(); }
 </script>
