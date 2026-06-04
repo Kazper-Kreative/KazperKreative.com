@@ -49,11 +49,21 @@
   .hint-head{animation:hintpulse 1.8s ease-in-out infinite}
   /* move-list replay: clickable plies + transport bar */
   .moves-head{display:flex;align-items:center;gap:6px;margin-bottom:10px}
-  .moves-head .navbtn{background:rgba(8,8,18,.6);border:1px solid var(--panel-edge);color:var(--ink-dim);
+  .navbtn{background:rgba(8,8,18,.6);border:1px solid var(--panel-edge);color:var(--ink-dim);
     border-radius:8px;min-width:34px;height:32px;cursor:pointer;font-size:14px;line-height:1;transition:.15s;
     display:grid;place-items:center}
-  .moves-head .navbtn:hover{color:var(--ink);border-color:var(--accent)}
-  .moves-head .navbtn:disabled{opacity:.35;cursor:default;border-color:var(--panel-edge);color:var(--ink-faint)}
+  .navbtn:hover{color:var(--ink);border-color:var(--accent)}
+  .navbtn:disabled{opacity:.35;cursor:default;border-color:var(--panel-edge);color:var(--ink-faint)}
+  /* review strip pinned under the board so transport is in view on mobile */
+  .review-strip{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:12px;
+    background:linear-gradient(180deg,rgba(20,20,34,.7),rgba(10,10,18,.66));border:1px solid var(--accent);
+    box-shadow:0 0 22px rgba(255,122,69,.2)}
+  .review-strip[hidden]{display:none}
+  .review-strip .navbtn{min-width:40px;height:34px;font-size:16px}
+  .review-strip .rs-label{flex:1;text-align:center;font-family:'Space Grotesk',system-ui,sans-serif;
+    font-size:13px;color:var(--accent);letter-spacing:.04em}
+  .review-strip .rs-live{flex:0 0 auto;min-width:0;padding:8px 16px}
+  .coach .tag.rev{color:var(--violet)}
   .moves-head .rev-label{flex:1;text-align:center;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:12px;color:var(--ink-faint);letter-spacing:.04em}
   .moves-head.reviewing .rev-label{color:var(--accent)}
@@ -99,6 +109,12 @@
         </div>
       </div>
       <div class="thinking" id="thinking"></div>
+      <div class="review-strip" id="reviewStrip" hidden>
+        <button class="navbtn" id="rsPrev" aria-label="Previous move">‹</button>
+        <span class="rs-label" id="rsLabel">Reviewing</span>
+        <button class="navbtn" id="rsNext" aria-label="Next move">›</button>
+        <button class="btn rs-live" id="rsLive">Live</button>
+      </div>
     </div>
     <div>
       <div class="panel">
@@ -575,19 +591,36 @@ function renderMoves(){
   } else el.scrollTop=el.scrollHeight;
 }
 /* jump to the position after `idx` half-moves (idx>=liveLen → back to live) */
+let savedCoachHTML=null;
 function gotoPly(idx){
-  const len=liveLen();
+  const wasReviewing=isReviewing(), len=liveLen();
   reviewIndex = (idx>=len) ? null : Math.max(0,idx);
+  const nowReviewing=isReviewing(), coach=document.getElementById('coach');
+  if(nowReviewing&&!wasReviewing) savedCoachHTML=coach.innerHTML;   // remember the live coaching
   selected=null; legalDests=[]; clearArrow();
   render(); renderMoves();
+  if(nowReviewing) showReviewExplanation();
+  else if(wasReviewing&&savedCoachHTML!=null){ coach.innerHTML=savedCoachHTML; savedCoachHTML=null; }
+}
+function showReviewExplanation(){
+  const idx=reviewIndex, coach=document.getElementById('coach');
+  if(idx<=0){ coach.innerHTML='<span class="tag rev">Review</span><p class="msg">Starting position — step forward to replay the game.</p>'; return; }
+  const h=game.history({verbose:true}), mv=h[idx-1];
+  const c=new Chess(); for(let i=0;i<idx-1;i++){ const x=h[i]; c.move({from:x.from,to:x.to,promotion:x.promotion}); }
+  const m=c.move({from:mv.from,to:mv.to,promotion:mv.promotion});
+  const moveNo=Math.ceil(idx/2), dots=mv.color==='w'?'.':'…';
+  coach.innerHTML=`<span class="tag rev">Review</span><p class="msg"><b>${moveNo}${dots} ${mv.san}</b> — ${m?describeMove(c,m):''}</p>`;
 }
 function updateReviewBar(){
-  const rev=isReviewing(), len=liveLen();
-  const label=document.getElementById('revLabel'); if(label) label.textContent = rev ? ('Move '+reviewIndex+' / '+len) : 'Live';
+  const rev=isReviewing(), len=liveLen(), cur = rev ? reviewIndex : len;
+  const set=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
+  set('revLabel', rev ? ('Move '+reviewIndex+' / '+len) : 'Live');
+  set('rsLabel',  rev ? ('Move '+reviewIndex+' / '+len) : 'Reviewing');
   const head=document.getElementById('movesHead'); if(head) head.classList.toggle('reviewing',rev);
-  const cur = rev ? reviewIndex : len;
+  const strip=document.getElementById('reviewStrip'); if(strip) strip.hidden=!rev;
   const dis=(id,v)=>{const b=document.getElementById(id);if(b)b.disabled=v;};
   dis('navStart',cur<=0); dis('navPrev',cur<=0); dis('navNext',!rev); dis('navLive',!rev);
+  dis('rsPrev',cur<=0); dis('rsNext',!rev);
 }
 const SVGNS='http://www.w3.org/2000/svg';
 function clearArrow(){const a=document.getElementById('arrows');if(a)a.remove();}
@@ -627,10 +660,54 @@ function drawArrow(from,to){
     <path class="hint-head" d="${headD}" fill="var(--hint)" opacity="0.95"/>`;
   boardEl.appendChild(svg);
 }
+/* ----- plain-language move explanations (heuristic, offline) ----- */
+const PIECE_NAME={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
+function evalLabel(a){
+  if(!a) return '';
+  if(a.mateWhite!=null) return (a.mateWhite>0?'White':'Black')+' mates in '+Math.abs(a.mateWhite);
+  const p=(a.scoreWhite||0)/100;
+  if(Math.abs(p)<0.2) return 'even';
+  return (p>0?'White +':'Black +')+Math.abs(p).toFixed(1);
+}
+// describe a chess.js move object, given the position AFTER it was played
+function describeMove(after,m){
+  const parts=[];
+  if(m.flags.includes('k')) parts.push('castles kingside, tucking the king away');
+  else if(m.flags.includes('q')) parts.push('castles queenside');
+  else if(m.flags.includes('p')) parts.push('promotes to a '+PIECE_NAME[m.promotion||'q']);
+  else if(m.flags.includes('e')) parts.push('captures en passant');
+  else if(m.flags.includes('c')) parts.push('captures the '+(PIECE_NAME[m.captured]||'piece')+' on '+m.to);
+  else if((m.piece==='n'||m.piece==='b')&&(m.from[1]==='1'||m.from[1]==='8')) parts.push('develops the '+PIECE_NAME[m.piece]);
+  else if(m.piece==='p'&&['e4','d4','e5','d5'].includes(m.to)) parts.push('stakes a claim in the centre');
+  else if(m.piece==='p') parts.push('pushes the pawn to '+m.to);
+  else if(m.piece==='k') parts.push('walks the king to '+m.to);
+  else parts.push('repositions the '+PIECE_NAME[m.piece]+' to '+m.to);
+  if(after.in_checkmate()) parts.push('— and it’s checkmate');
+  else if(after.in_check()) parts.push('with check');
+  const s=parts.join(' ');
+  return s.charAt(0).toUpperCase()+s.slice(1)+'.';
+}
+function describeUci(fen,uci){
+  try{
+    const c=new Chess(fen);
+    const m=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||'q'});
+    return m ? describeMove(c,m) : 'The engine’s top choice here.';
+  }catch(e){ return 'The engine’s top choice here.'; }
+}
+function showHintExplanation(){
+  if(!currentAnalysis||!currentAnalysis.best) return;
+  const san=sanFromUci(game.fen(),currentAnalysis.best);
+  const ev=evalLabel(currentAnalysis);
+  const desc=describeUci(game.fen(),currentAnalysis.best);
+  document.getElementById('coach').innerHTML=
+    `<span class="tag great">Best move</span><p class="msg"><b>${san}</b>${ev?` <span style="color:var(--ink-faint)">(${ev})</span>`:''} — ${desc}<br><span style="color:var(--ink-faint)">The arrow tracks the best move until you turn it off.</span></p>`;
+}
+
 function setHintArrow(){
   if(isReviewing()){ clearArrow(); return; }
   if(hintOn&&currentAnalysis&&currentAnalysis.best&&!game.game_over()&&game.turn()===humanColor){
     const b=currentAnalysis.best; hintMove={from:b.slice(0,2),to:b.slice(2,4)}; drawArrow(hintMove.from,hintMove.to);
+    showHintExplanation();
   } else { hintMove=null; clearArrow(); }
 }
 
@@ -651,12 +728,14 @@ hintBtn.addEventListener('click',()=>{
   hintOn=!hintOn;
   hintBtn.classList.toggle('on',hintOn);
   hintBtn.textContent=hintOn?'Hide best move':'Show best move';
-  if(!hintOn){hintMove=null;clearArrow();render();return;}
-  setHintArrow();
-  if(hintMove){
-    document.getElementById('coach').innerHTML=
-      `<span class="tag great">Hint</span><p class="msg">Stockfish suggests <b>${sanFromUci(game.fen(),currentAnalysis.best)}</b>. The arrow follows the position until you hide it.</p>`;
+  if(!hintOn){
+    hintMove=null; clearArrow(); render();
+    document.getElementById('coach').innerHTML='<div class="placeholder">Hint off — your move.</div>';
+    return;
   }
+  setHintArrow();
+  if(!hintMove&&!isReviewing())
+    document.getElementById('coach').innerHTML='<div class="placeholder">The best-move arrow appears on your turn.</div>';
 });
 document.getElementById('undoBtn').addEventListener('click',async()=>{
   if(busy||game.history().length===0) return;
@@ -852,6 +931,9 @@ document.getElementById('navStart').addEventListener('click',()=>{ if(liveLen())
 document.getElementById('navPrev').addEventListener('click',()=>{ if(curPly()>0){ sfx('ui'); gotoPly(curPly()-1);} });
 document.getElementById('navNext').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(reviewIndex+1);} });
 document.getElementById('navLive').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(liveLen());} });
+document.getElementById('rsPrev').addEventListener('click',()=>{ if(curPly()>0){ sfx('ui'); gotoPly(curPly()-1);} });
+document.getElementById('rsNext').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(reviewIndex+1);} });
+document.getElementById('rsLive').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(liveLen());} });
 window.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'){ if(curPly()>0){ gotoPly(curPly()-1); e.preventDefault(); } }
   else if(e.key==='ArrowRight'){ if(isReviewing()){ gotoPly(reviewIndex+1); e.preventDefault(); } }
