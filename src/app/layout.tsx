@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 import SiteInteractions from "@/components/site/SiteInteractions";
 import { ProjectModalProvider } from "@/components/site/ProjectModal";
+import ServiceWorkerRegister from "@/components/site/ServiceWorkerRegister";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -56,6 +57,15 @@ export const metadata: Metadata = {
       "A creative agency and the home of Kazper's Echo. We build worlds, brands, and the network behind them.",
   },
   robots: { index: true, follow: true },
+  // Installed-PWA hints. Next auto-injects <link rel="manifest"> from app/manifest.ts.
+  applicationName: "The Lab",
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "The Lab" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0b0b0e",
+  // Let the app draw under the Android status/nav bars when installed standalone.
+  viewportFit: "cover",
 };
 
 const jsonLd = {
@@ -114,6 +124,7 @@ export default function RootLayout({
           {children}
         </ProjectModalProvider>
         <SiteInteractions />
+        <ServiceWorkerRegister />
         <Analytics />
       </body>
     </html>
