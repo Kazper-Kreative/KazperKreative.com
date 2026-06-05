@@ -5,7 +5,8 @@
      Guarantees: the generator prunes any floor the orb can't reach into walls,
      so every visible tile is paintable, and the slide-graph is strongly
      connected, so no slide can ever strand you. 100-level difficulty ramp:
-     tiny & open early -> large, dense & intricate by level 100. -->
+     tiny & open early -> large, dense & intricate by level 100. The board is
+     PORTRAIT (taller than wide) with square cells, to fill a phone screen. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -27,7 +28,7 @@
       <span class="hud-spacer"></span>
       <button class="btn" id="newBtn">New maze</button>
     </div>
-    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="456" height="456"></canvas></div>
+    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="380" height="552"></canvas></div>
     <p class="hint-text">Arrows / WASD · or swipe. The orb flies wall-to-wall — paint every tile.</p>
   </div>
   <footer><span class="dim" style="font-size:12px">Phosphor · Maze Paint</span><span class="audio-ctl" id="audioCtl"></span></footer>
@@ -36,8 +37,9 @@
 const A=window.LabArcade, el=(id)=>document.getElementById(id);
 const cv=el('cv'), ctx=cv.getContext('2d');
 const DIRS={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+const BUFW=380;                                  // fixed buffer width; height derives from rows
 
-let N, CELL, wall, painted, paintTarget, ball, anim, queued=null, level=1, animating=false, done=false;
+let R, C, CELL, wall, painted, paintTarget, ball, anim, queued=null, level=1, animating=false, done=false;
 
 /* persistence: best level reached (higher = better) + resume the last level */
 function loadLevel(){ try{ return Math.max(1, parseInt(localStorage.getItem('lab_phosphor_lvl')||'1',10)||1); }catch(e){ return 1; } }
@@ -46,7 +48,7 @@ level = loadLevel();
 const bestLvl=A.hs.get('phosphor'); el('best').textContent = bestLvl>0 ? ('Lvl '+bestLvl) : '—';
 
 const key=(r,c)=>r+','+c;
-const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
+const inB=(r,c)=>r>=0&&r<R&&c>=0&&c<C;
 const cx=(c)=>c*CELL+CELL/2, cy=(r)=>r*CELL+CELL/2;
 
 function slidePath(r,c,dr,dc){
@@ -72,39 +74,38 @@ function analyse(sr,sc){
   return { cov, nodes:seen.size, strong: rseen.size===seen.size };
 }
 
-/* Difficulty ramp keyed to level: the grid grows 5 -> 21 (carries late-game
-   complexity), while walls climb to a MODERATE 22% — high enough to be intricate,
-   not so high the board fragments into a few tiny islands. Both plateau ~L80, so
-   levels get steadily bigger/twistier up to "extremely complex" and hold there. */
-function gridSize(l){ return Math.min(5 + Math.floor((l-1)/5), 21); }
+/* Difficulty ramp keyed to level. Columns grow 5 -> 16; rows are ~1.45x columns
+   (portrait); walls climb to a MODERATE 22% — intricate, not fragmented. Both
+   plateau ~L80, so levels get steadily bigger/twistier and hold there. */
+function colsForLevel(l){ return Math.min(5 + Math.floor((l-1)/6), 16); }
+function rowsForLevel(l){ return Math.round(colsForLevel(l)*1.45); }
 function wallDensity(l){ return Math.min(0.06 + (l-1)*0.0022, 0.22); }
 
 function gen(){
-  N = gridSize(level); CELL = cv.width / N;
+  C = colsForLevel(level); R = rowsForLevel(level);
+  CELL = BUFW / C; cv.width = BUFW; cv.height = Math.round(CELL*R);
   const density = wallDensity(level), sr=1, sc=1;
-  const need = Math.max(8, Math.floor(N*N*0.22));
+  const need = Math.max(8, Math.floor(R*C*0.22));
   let best=null;
   for(let tries=0; tries<300; tries++){
-    wall=[]; for(let r=0;r<N;r++){ wall.push([]); for(let c=0;c<N;c++) wall[r].push(Math.random()<density?1:0); }
+    wall=[]; for(let r=0;r<R;r++){ wall.push([]); for(let c=0;c<C;c++) wall[r].push(Math.random()<density?1:0); }
     wall[sr][sc]=0;
     const a=analyse(sr,sc);
     if(!a.strong) continue;
-    // prune unreachable floor into walls so EVERY visible tile is paintable
-    for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(!wall[r][c] && !a.cov.has(key(r,c))) wall[r][c]=1;
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++) if(!wall[r][c] && !a.cov.has(key(r,c))) wall[r][c]=1;  // prune unreachable floor
     if(a.cov.size>=need){ commit(sr,sc,a.cov); return; }
     if(!best || a.cov.size>best.cov.size) best={wall:wall.map(row=>row.slice()), cov:a.cov, sr, sc};
   }
   if(best){ wall=best.wall; commit(best.sr,best.sc,best.cov); return; }
-  // last resort: open grid (trivially strong); prune to its paintable set
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++) wall[r][c]=0;
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++) wall[r][c]=0;          // last resort: open grid
   const a=analyse(sr,sc);
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(!wall[r][c] && !a.cov.has(key(r,c))) wall[r][c]=1;
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++) if(!wall[r][c] && !a.cov.has(key(r,c))) wall[r][c]=1;
   commit(sr,sc,a.cov);
 }
 
 function commit(sr,sc,cov){
   paintTarget=cov.size;
-  painted=new Set([key(sr,sc)]);                 // orb paints the tile it starts on
+  painted=new Set([key(sr,sc)]);
   ball={r:sr,c:sc,x:cx(sc),y:cy(sr)};
   anim=null; queued=null; animating=false; done=false;
   el('level').textContent=level; el('painted').textContent=painted.size+'/'+paintTarget;
@@ -156,7 +157,7 @@ function update(dt){
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.fillStyle='rgba(8,8,18,.72)'; ctx.fillRect(0,0,cv.width,cv.height);
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
     const x=c*CELL, y=r*CELL;
     if(wall[r][c]){ ctx.fillStyle='rgba(120,110,190,.30)'; ctx.fillRect(x+1.5,y+1.5,CELL-3,CELL-3);
       ctx.strokeStyle='rgba(150,140,210,.45)'; ctx.lineWidth=1; ctx.strokeRect(x+1.5,y+1.5,CELL-3,CELL-3); }
@@ -171,7 +172,7 @@ function draw(){
 
 A.keys((d)=>move(d));
 A.swipe(cv,(d)=>{ if(d!=='tap') move(d); });
-el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); gen(); });   // fresh maze, same level
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); gen(); });
 
 gen();
 A.loop((dt)=>{ update(dt); draw(); });
