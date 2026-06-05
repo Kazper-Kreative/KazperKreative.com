@@ -1,10 +1,11 @@
 <!doctype html>
 <!-- Phosphor · Maze Paint — Kazper Kreative Lab arcade.
-     Tomb-of-the-Mask-style: the orb sticks to a wall; swipe and it FLIES until
-     the next wall, painting/collecting every ball it passes. Clear the board to
-     advance. Levels are generated so the slide-graph is STRONGLY CONNECTED —
-     from any resting spot you can reach every other, so no move ever strands you
-     and every ball is collectable. -->
+     The orb sticks to a wall; swipe and it FLIES until the next wall, PAINTING
+     every floor tile it crosses. Paint the whole board to clear the level.
+     Guarantees: the generator prunes any floor the orb can't reach into walls,
+     so every visible tile is paintable, and the slide-graph is strongly
+     connected, so no slide can ever strand you. 100-level difficulty ramp:
+     tiny & open early -> large, dense & intricate by level 100. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -21,13 +22,13 @@
   <div class="arcade">
     <div class="hud">
       <div class="hud-stat accent"><span class="k">Level</span><span class="v" id="level">1</span></div>
-      <div class="hud-stat"><span class="k">Balls</span><span class="v" id="balls">0</span></div>
+      <div class="hud-stat"><span class="k">Painted</span><span class="v" id="painted">0/0</span></div>
       <div class="hud-stat"><span class="k">Best</span><span class="v" id="best">—</span></div>
       <span class="hud-spacer"></span>
-      <button class="btn" id="newBtn">Restart</button>
+      <button class="btn" id="newBtn">New maze</button>
     </div>
-    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="440" height="440"></canvas></div>
-    <p class="hint-text">Arrows / WASD · or swipe. The orb flies wall-to-wall — sweep up every ball.</p>
+    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="456" height="456"></canvas></div>
+    <p class="hint-text">Arrows / WASD · or swipe. The orb flies wall-to-wall — paint every tile.</p>
   </div>
   <footer><span class="dim" style="font-size:12px">Phosphor · Maze Paint</span><span class="audio-ctl" id="audioCtl"></span></footer>
 </div>
@@ -36,37 +37,34 @@ const A=window.LabArcade, el=(id)=>document.getElementById(id);
 const cv=el('cv'), ctx=cv.getContext('2d');
 const DIRS={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
 
-let N, CELL, wall, dots, ball, anim, queued=null, level=1, animating=false, done=false;
+let N, CELL, wall, painted, paintTarget, ball, anim, queued=null, level=1, animating=false, done=false;
+
+/* persistence: best level reached (higher = better) + resume the last level */
+function loadLevel(){ try{ return Math.max(1, parseInt(localStorage.getItem('lab_phosphor_lvl')||'1',10)||1); }catch(e){ return 1; } }
+function saveLevel(l){ try{ localStorage.setItem('lab_phosphor_lvl', String(l)); }catch(e){} }
+level = loadLevel();
 const bestLvl=A.hs.get('phosphor'); el('best').textContent = bestLvl>0 ? ('Lvl '+bestLvl) : '—';
 
 const key=(r,c)=>r+','+c;
 const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
 const cx=(c)=>c*CELL+CELL/2, cy=(r)=>r*CELL+CELL/2;
 
-/* Walk one slide from (r,c) in (dr,dc); return {stop:[r,c], path:[...cells entered]}. */
 function slidePath(r,c,dr,dc){
   const path=[];
   while(true){ const nr=r+dr, nc=c+dc; if(!inB(nr,nc)||wall[nr][nc]) break; r=nr;c=nc; path.push([r,c]); }
   return {stop:[r,c], path};
 }
 
-/* Analyse a layout from start: cells the orb can pass over (cov), how many
-   resting nodes are reachable, and whether the slide-graph is STRONGLY
-   CONNECTED (every reachable node can also slide back to the start). Strong
-   connectivity is what makes the board un-strandable + fully clearable. */
+/* From start: cov = every cell the orb can pass over; strong = every reachable
+   resting node can also slide back to the start (no stranding). */
 function analyse(sr,sc){
-  const seen=new Set([key(sr,sc)]), order=[[sr,sc]], cov=new Set();
-  const fwd=new Map();
+  const seen=new Set([key(sr,sc)]), order=[[sr,sc]], cov=new Set([key(sr,sc)]), fwd=new Map();
   for(let i=0;i<order.length;i++){ const [r,c]=order[i], outs=[];
     for(const k in DIRS){ const [dr,dc]=DIRS[k]; const {stop,path}=slidePath(r,c,dr,dc);
       for(const [pr,pc] of path) cov.add(key(pr,pc));
-      const sk=key(stop[0],stop[1]);
-      if(sk!==key(r,c)) outs.push(sk);
-      if(!seen.has(sk)){ seen.add(sk); order.push(stop); }
-    }
-    fwd.set(key(r,c), outs);
-  }
-  // reverse edges, then BFS back from start
+      const sk=key(stop[0],stop[1]); if(sk!==key(r,c)) outs.push(sk);
+      if(!seen.has(sk)){ seen.add(sk); order.push(stop); } }
+    fwd.set(key(r,c), outs); }
   const rev=new Map();
   for(const [u,vs] of fwd) for(const v of vs){ if(!rev.has(v)) rev.set(v,[]); rev.get(v).push(u); }
   const rseen=new Set([key(sr,sc)]), rq=[key(sr,sc)];
@@ -74,35 +72,51 @@ function analyse(sr,sc){
   return { cov, nodes:seen.size, strong: rseen.size===seen.size };
 }
 
-function commit(sr,sc,cov){
-  dots=cov; dots.delete(key(sr,sc));            // orb sits on start; no ball there
-  ball={r:sr,c:sc,x:cx(sc),y:cy(sr)};
-  anim=null; queued=null; animating=false; done=false;
-  el('balls').textContent=dots.size; el('level').textContent=level;
-}
+/* Difficulty ramp keyed to level: the grid grows 5 -> 21 (carries late-game
+   complexity), while walls climb to a MODERATE 22% — high enough to be intricate,
+   not so high the board fragments into a few tiny islands. Both plateau ~L80, so
+   levels get steadily bigger/twistier up to "extremely complex" and hold there. */
+function gridSize(l){ return Math.min(5 + Math.floor((l-1)/5), 21); }
+function wallDensity(l){ return Math.min(0.06 + (l-1)*0.0022, 0.22); }
 
 function gen(){
-  N = Math.min(9 + level, 17);
-  CELL = cv.width / N;
-  const density = Math.min(0.15 + level*0.011, 0.25);
-  const sr=1, sc=1, need=Math.max(12, Math.floor(N*N*0.34));
-  for(let tries=0; tries<200; tries++){
+  N = gridSize(level); CELL = cv.width / N;
+  const density = wallDensity(level), sr=1, sc=1;
+  const need = Math.max(8, Math.floor(N*N*0.22));
+  let best=null;
+  for(let tries=0; tries<300; tries++){
     wall=[]; for(let r=0;r<N;r++){ wall.push([]); for(let c=0;c<N;c++) wall[r].push(Math.random()<density?1:0); }
     wall[sr][sc]=0;
     const a=analyse(sr,sc);
-    if(a.strong && a.cov.size>=need){ commit(sr,sc,a.cov); return; }
+    if(!a.strong) continue;
+    // prune unreachable floor into walls so EVERY visible tile is paintable
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(!wall[r][c] && !a.cov.has(key(r,c))) wall[r][c]=1;
+    if(a.cov.size>=need){ commit(sr,sc,a.cov); return; }
+    if(!best || a.cov.size>best.cov.size) best={wall:wall.map(row=>row.slice()), cov:a.cov, sr, sc};
   }
-  // fallback: fully open grid — trivially strongly connected and clearable
+  if(best){ wall=best.wall; commit(best.sr,best.sc,best.cov); return; }
+  // last resort: open grid (trivially strong); prune to its paintable set
   for(let r=0;r<N;r++)for(let c=0;c<N;c++) wall[r][c]=0;
-  commit(sr,sc, analyse(sr,sc).cov);
+  const a=analyse(sr,sc);
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(!wall[r][c] && !a.cov.has(key(r,c))) wall[r][c]=1;
+  commit(sr,sc,a.cov);
+}
+
+function commit(sr,sc,cov){
+  paintTarget=cov.size;
+  painted=new Set([key(sr,sc)]);                 // orb paints the tile it starts on
+  ball={r:sr,c:sc,x:cx(sc),y:cy(sr)};
+  anim=null; queued=null; animating=false; done=false;
+  el('level').textContent=level; el('painted').textContent=painted.size+'/'+paintTarget;
+  saveLevel(level);
 }
 
 function move(dir){
   if(done) return;
-  if(animating){ queued=dir; return; }          // buffer one move — fires when the orb stops
+  if(animating){ queued=dir; return; }
   const [dr,dc]=DIRS[dir]||[]; if(dr===undefined) return;
   const {stop,path}=slidePath(ball.r,ball.c,dr,dc);
-  if(!path.length){ queued=null; return; }       // flush against a wall — nothing to do
+  if(!path.length){ queued=null; return; }
   A.sfx('move');
   ball.r=stop[0]; ball.c=stop[1];
   anim={ fromX:ball.x, fromY:ball.y, toX:cx(stop[1]), toY:cy(stop[0]),
@@ -110,16 +124,17 @@ function move(dir){
   animating=true;
 }
 
-function collectAt(r,c){
+function paintAt(r,c){
   const k=key(r,c);
-  if(dots.has(k)){ dots.delete(k); el('balls').textContent=dots.size; A.sfx('point');
-    if(dots.size===0) clear(); }
+  if(!painted.has(k)){ painted.add(k); el('painted').textContent=painted.size+'/'+paintTarget; A.sfx('point');
+    if(painted.size>=paintTarget) clear(); }
 }
 
 function clear(){
   done=true; A.sfx('win');
   const reached=level, best=A.hs.set('phosphor', reached); el('best').textContent='Lvl '+best;
-  A.overlay(el('stage'),{ tag:'Cleared', tagClass:'great', title:'Level '+reached,
+  saveLevel(level+1);
+  A.overlay(el('stage'),{ tag:'Painted', tagClass:'great', title:'Level '+reached,
     sub: reached>=best?'New best — onward!':('Best · Lvl '+best),
     btn:'Next level', onBtn:()=>{ level++; gen(); } });
 }
@@ -127,35 +142,36 @@ function clear(){
 function update(dt){
   if(!anim) return;
   anim.t += dt;
-  const p = Math.min(1, anim.t/anim.dur), e = 1-(1-p)*(1-p);   // ease-out
+  const p = Math.min(1, anim.t/anim.dur), e = 1-(1-p)*(1-p);
   ball.x = anim.fromX + (anim.toX-anim.fromX)*e;
   ball.y = anim.fromY + (anim.toY-anim.fromY)*e;
   const reach = Math.floor(e*anim.path.length + 1e-4);
-  while(anim.idx < reach){ const [pr,pc]=anim.path[anim.idx++]; collectAt(pr,pc); }
-  if(p>=1){ while(anim.idx<anim.path.length){ const [pr,pc]=anim.path[anim.idx++]; collectAt(pr,pc); }
+  while(anim.idx < reach){ const [pr,pc]=anim.path[anim.idx++]; paintAt(pr,pc); }
+  if(p>=1){ while(anim.idx<anim.path.length){ const [pr,pc]=anim.path[anim.idx++]; paintAt(pr,pc); }
     ball.x=anim.toX; ball.y=anim.toY; anim=null; animating=false;
-    if(!done && queued){ const d=queued; queued=null; move(d); }   // chain buffered swipe
+    if(!done && queued){ const d=queued; queued=null; move(d); }
   }
 }
 
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.fillStyle='rgba(8,8,18,.72)'; ctx.fillRect(0,0,cv.width,cv.height);
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(wall[r][c]){
-    ctx.fillStyle='rgba(120,110,190,.30)'; ctx.fillRect(c*CELL+1.5, r*CELL+1.5, CELL-3, CELL-3);
-    ctx.strokeStyle='rgba(150,140,210,.45)'; ctx.lineWidth=1; ctx.strokeRect(c*CELL+1.5, r*CELL+1.5, CELL-3, CELL-3);
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const x=c*CELL, y=r*CELL;
+    if(wall[r][c]){ ctx.fillStyle='rgba(120,110,190,.30)'; ctx.fillRect(x+1.5,y+1.5,CELL-3,CELL-3);
+      ctx.strokeStyle='rgba(150,140,210,.45)'; ctx.lineWidth=1; ctx.strokeRect(x+1.5,y+1.5,CELL-3,CELL-3); }
+    else if(painted.has(key(r,c))){ ctx.fillStyle='rgba(51,229,214,.22)'; ctx.fillRect(x+1,y+1,CELL-2,CELL-2);
+      ctx.strokeStyle='rgba(51,229,214,.40)'; ctx.lineWidth=1; ctx.strokeRect(x+1.5,y+1.5,CELL-3,CELL-3); }
+    else { ctx.fillStyle='rgba(150,155,210,.09)'; ctx.fillRect(x+2,y+2,CELL-4,CELL-4);          // unpainted floor
+      ctx.strokeStyle='rgba(150,150,210,.16)'; ctx.lineWidth=1; ctx.strokeRect(x+2.5,y+2.5,CELL-5,CELL-5); }
   }
-  const t = performance.now()/600;
-  for(const k of dots){ const [r,c]=k.split(',').map(Number); const pulse=0.8+Math.sin(t+(r*3+c))*0.12;
-    ctx.fillStyle='rgba(255,122,69,.95)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(255,122,69,.7)';
-    ctx.beginPath(); ctx.arc(cx(c), cy(r), CELL*0.13*pulse, 0, 7); ctx.fill(); ctx.shadowBlur=0; }
   ctx.shadowBlur=20; ctx.shadowColor='rgba(120,240,255,.95)'; ctx.fillStyle='#eafcff';
   ctx.beginPath(); ctx.arc(ball.x, ball.y, CELL*0.34, 0, 7); ctx.fill(); ctx.shadowBlur=0;
 }
 
 A.keys((d)=>move(d));
 A.swipe(cv,(d)=>{ if(d!=='tap') move(d); });
-el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); level=1; gen(); });
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); gen(); });   // fresh maze, same level
 
 gen();
 A.loop((dt)=>{ update(dt); draw(); });

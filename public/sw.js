@@ -9,10 +9,16 @@
  *     passthrough, never cached (don't stash auth/session responses).
  * Bump CACHE to force a clean sweep of old entries.
  */
-const CACHE = "lab-v1";
+const CACHE = "lab-v2";
 
 // Same-origin path prefixes that are safe to cache (static, public, immutable-ish).
 const STATIC_PREFIXES = ["/_next/static/", "/icons/", "/assets/", "/images/", "/lab-assets/"];
+
+// Per-game logic (the iframe documents) changes deploy-to-deploy — always serve
+// it network-first so a new game build lands immediately, not on the 2nd open.
+function isGameDoc(url) {
+  return url.pathname.startsWith("/lab-assets/") && url.pathname.endsWith(".html");
+}
 
 self.addEventListener("install", (event) => {
   // Activate this SW immediately rather than waiting for old tabs to close.
@@ -40,8 +46,9 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return; // Supabase & other origins: passthrough
 
-  // HTML navigations: network-first so new deploys win, cache as offline fallback.
-  if (request.mode === "navigate") {
+  // HTML navigations AND game iframe documents: network-first so new deploys win,
+  // cache as offline fallback.
+  if (request.mode === "navigate" || isGameDoc(url)) {
     event.respondWith(
       (async () => {
         try {
