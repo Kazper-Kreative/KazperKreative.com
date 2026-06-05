@@ -160,6 +160,65 @@ PowerShell with `[System.IO.File]::ReadAllText` /
 `[System.IO.File]::WriteAllText` (byte-faithful). The Edit tool also
 preserves CRLF.
 
+## The Lab (`/lab`)
+
+A members-only area: engine-coached **trainers** (chess, checkers) and a
+**ghostly arcade** (trine, cascade, serpent, sapper, solitude, phosphor,
+updraft, bullseye, enclosure). Added after this file's original routing
+list, so don't be surprised it's not mentioned above.
+
+- **Gating.** `src/app/lab/layout.tsx` server-gates the whole area via
+  `getLabAccess()` (Supabase): no session → `LabLogin`; not entitled →
+  `LabSubscribe`; else `LabShell`. The asset bundle under `/lab-assets`
+  is *independently* hard-gated in middleware (401 without entitlement),
+  so even the iframe can't load assets without access. Entitlement logic
+  is the import-safe `src/lib/lab/access.ts` (`isEntitled`).
+- **Games are self-contained static apps** at
+  `public/lab-assets/<slug>/app.html` — **not** part of the Next build —
+  framed same-origin by the `/lab` routes. `?room=<id>` flips a game into
+  1v1 via `?mp=1&room=<id>`. Shared layer in `public/lab-assets/_shared/`
+  (`lab-theme.css` is the games' design system; `lab-audio.js`,
+  `lab-multiplayer.js`, vendored `supabase.js`). **Each game's CSS/JS is
+  scoped to its own `app.html`**, so edits there can't affect other games.
+- **Chess (`/lab/chess`, "The Study")** runs real **Stockfish 18 lite**
+  (single-threaded WASM, UCI over a Web Worker — needs no COOP/COEP) plus
+  vendored **chess.js** for rules. It has drag-and-drop + tap moves, move
+  animations, flip board, a game-over overlay, click-through move-list
+  replay with an under-board transport strip, and a best-move hint that
+  explains the move (heuristic threat detection + the engine's principal
+  variation). Difficulty is Stockfish "Skill Level" tiers.
+
+## PWA & deployment
+
+- The site is an **installable PWA**. `src/app/manifest.ts` →
+  `/manifest.webmanifest` (start_url `/lab`, standalone, dark);
+  `public/sw.js` is the service worker — **network-first** for HTML (new
+  deploys show up on next open), stale-while-revalidate for static +
+  `/lab-assets`, and **passthrough for Supabase/auth/POST** so gated and
+  session responses are never cached. `ServiceWorkerRegister.tsx`
+  registers it **production-only** (off in `next dev`). Icons in
+  `public/icons/` are generated from `public/assets/k-mark.png`. Install
+  on a phone via Chrome → Add to Home Screen at `/lab`.
+- **Hosting is Vercel.** The live project is
+  **`kazper-kreative-com-lm2l`** (team `masons-projects-44a3c732`); it
+  owns **kazperkreative.com**. Two other `kazper-kreative-com*` projects
+  exist but are stale/errored — ignore them.
+- **Production deploys from `master`** (Vercel → Settings → Environments
+  → Production → Branch Tracking = `master`). `git push` to `master` →
+  automatic production deploy (~1 min); the service worker serves it on
+  next app launch. No manual promote. `feat/static-site-port-supabase`
+  is the legacy long-lived branch that predated the re-port; **`master`
+  is now the source of truth.**
+
+## Testing the Lab static games
+
+Jest/Playwright app E2E don't cover the static games (they're plain files
+under `public/lab-assets`). To smoke-test one, serve `public/` with any
+static server (set `.wasm` → `application/wasm`) and drive
+`app.html` with Playwright — assert the engine boots, a move registers,
+and there are zero console errors. Stockfish lite is single-threaded, so
+no cross-origin-isolation headers are needed.
+
 ## Known follow-ups
 
 - Replace the placeholder `public/assets/k-mark.png` with the real
