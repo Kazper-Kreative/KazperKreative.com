@@ -87,6 +87,14 @@
   .rep-moment .rep-mv{font-size:13px;color:var(--ink-dim)} .rep-moment .rep-mv b{color:var(--ink)}
   .rep-clean{color:var(--good);font-size:13.5px;text-align:center;margin:4px 0}
   .rep-hint{color:var(--ink-faint);font-size:11.5px;text-align:center;margin:10px 0 0}
+  /* rating swing line in the report + header badge */
+  .rep-rating{display:flex;align-items:center;justify-content:center;gap:8px;margin:0 0 12px;
+    font-family:'Space Grotesk',system-ui,sans-serif;font-size:14px;color:var(--ink)}
+  .rep-rating:empty{display:none}
+  .rep-rating-lbl{color:var(--ink-faint);font-size:11px;text-transform:uppercase;letter-spacing:.12em}
+  .rep-delta.up{color:var(--good)} .rep-delta.down{color:var(--bad)}
+  .rating-badge{color:var(--accent)!important}
+  .rating-badge[hidden]{display:none}
   .moves-head .rev-label{flex:1;text-align:center;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:12px;color:var(--ink-faint);letter-spacing:.04em}
   .moves-head.reviewing .rev-label{color:var(--accent)}
@@ -113,6 +121,7 @@
   <header>
     <h1>The Study</h1>
     <span class="sub">Chess · Stockfish 18</span>
+    <span class="sub rating-badge" id="ratingBadge" hidden></span>
   </header>
   <div class="layout">
     <div>
@@ -214,14 +223,15 @@ function moveSfx(move){
 /* ===================== game + state ===================== */
 const game = new Chess();
 const LEVELS = [
-  {name:'Beginner', skill:0,  movetime:300},
-  {name:'Casual',   skill:5,  movetime:450},
-  {name:'Strong',   skill:11, movetime:700},
-  {name:'Master',   skill:20, movetime:1000},
+  {name:'Beginner', skill:0,  movetime:300,  elo:800},
+  {name:'Casual',   skill:5,  movetime:450,  elo:1300},
+  {name:'Strong',   skill:11, movetime:700,  elo:1800},
+  {name:'Master',   skill:20, movetime:1000, elo:2400},
 ];
 const ANALYSIS_MS = 600;
 let level=0, humanColor='w', orientation='w';
 let moveReport=[];             // per-human-move grades, drives the post-game report
+let recorded=false;            // guard: record each finished vs-bot game once
 let selected=null, legalDests=[], lastMove=null;
 let busy=true;                 // gate input until engine ready / while engine works
 let hintOn=false, hintMove=null;
@@ -851,7 +861,7 @@ function setThinking(t){document.getElementById('thinking').textContent=t;}
 async function newGame(){
   if(!engineReady) return;
   game.reset(); engineSend('ucinewgame');
-  orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null; reviewIndex=null; moveReport=[];
+  orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null; reviewIndex=null; moveReport=[]; recorded=false;
   document.getElementById('coach').innerHTML=
     '<div class="placeholder">Make a move and I\'ll grade it against Stockfish\'s best line.</div>';
   clearArrow(); hideGameOver(); render(); updateStatus(); renderMoves();
@@ -991,9 +1001,31 @@ function buildReport(){
     : `<p class="rep-clean">No serious mistakes — a clean game.</p>`;
   return `<div class="rep"><div class="rep-acc"><span class="rep-acc-num">${acc}%</span>`+
          `<span class="rep-acc-lbl">your accuracy</span></div>`+
+         `<div class="rep-rating" id="repRating"></div>`+
          `<div class="rep-chips">${chips}</div>${moments}`+
          (worst.length?`<p class="rep-hint">Tap a moment to replay it.</p>`:'')+`</div>`;
 }
+// record a finished vs-bot game → server updates Elo + archives it; show the swing.
+async function recordGame(){
+  if(MP||recorded||!moveReport.length) return;
+  recorded=true;
+  const result = game.in_checkmate() ? (game.turn()!==humanColor?'win':'loss') : 'draw';
+  const acc = Math.round((moveReport.reduce((s,m)=>s+m.accuracy,0)/moveReport.length)*10)/10;
+  const L = LEVELS[level];
+  try{
+    const res = await fetch('/api/chess/result',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ result, accuracy:acc, color:humanColor, level:L.name, oppRating:L.elo, moves:game.history().join(' ') })});
+    const j = await res.json();
+    if(j&&j.saved){
+      setRatingBadge(j.ratingAfter);
+      const el=document.getElementById('repRating');
+      if(el){ const up=j.delta>=0;
+        el.innerHTML=`<span class="rep-rating-lbl">rating</span> <b>${j.ratingBefore} → ${j.ratingAfter}</b>`+
+          `<span class="rep-delta ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(j.delta)}</span>`; }
+    }
+  }catch(e){ /* offline / not signed in — the report still stands, just no rating */ }
+}
+function setRatingBadge(r){ const b=document.getElementById('ratingBadge'); if(b){ b.textContent='Rating '+r; b.hidden=false; } }
 function showGameOver(){
   if(!game.game_over()) return;
   let cls,t,s;
@@ -1006,6 +1038,7 @@ function showGameOver(){
   else { cls='draw'; t='Draw'; s='Fifty-move rule.'; }
   showResult(cls,t,s);
   document.getElementById('goReport').innerHTML=buildReport();   // single-player: attach the report
+  recordGame();                                                  // persist result + move Elo
 }
 function hideGameOver(){ const ov=document.getElementById('gameOver'); if(ov) ov.classList.remove('show'); }
 
@@ -1056,6 +1089,9 @@ window.addEventListener('keydown',e=>{
   else if(e.key==='End'){ if(isReviewing()){ gotoPly(liveLen()); e.preventDefault(); } }
 });
 updateReviewBar();  // disable transport until there are moves
+
+// show the player's current chess rating (signed-in users; silent otherwise)
+if(!MP){ fetch('/api/chess/result').then(r=>r.json()).then(j=>{ if(j&&j.signedIn&&j.stats) setRatingBadge(j.stats.rating); }).catch(()=>{}); }
 
 render();           // show the start position immediately
 if(MP){ initMultiplayer(); } else { initEngine(); }
