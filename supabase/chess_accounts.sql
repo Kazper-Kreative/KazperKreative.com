@@ -36,7 +36,7 @@ create table if not exists public.game_stats (
   wins          integer not null default 0,
   losses        integer not null default 0,
   draws         integer not null default 0,
-  best_accuracy real,
+  best_accuracy numeric,
   updated_at    timestamptz not null default now(),
   primary key (user_id, game)
 );
@@ -56,7 +56,7 @@ create table if not exists public.chess_games (
   opponent     text,                            -- 'bot' | 'human'
   level        text,                            -- difficulty tier / opponent label
   result       text,                            -- 'win' | 'loss' | 'draw'
-  accuracy     real,
+  accuracy     numeric,
   rating_after integer,
   moves        text                             -- space-separated SAN (or PGN)
 );
