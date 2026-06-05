@@ -55,9 +55,15 @@ function apply(t,r,c, player){
   for(const [br,bc] of adjBoxes(t,r,c)){ if(!owner[br][bc] && boxSides(br,bc)===4){ owner[br][bc]=player; scores[player]++; made++; A.sfx('point'); } }
   el('s0').textContent=scores[MP?mySeat:1]; el('s1').textContent=scores[MP?(mySeat===1?2:1):2];
   if(scores[1]+scores[2]===B*B){ over=true; finish(); return made; }
-  if(made===0){ turn = turn===1?2:1; }
-  setStatus();
+  if(made===0){ turn = turn===1?2:1; setStatus(); }
+  else setStatus(goAgain(player, made));   // closed a box → same player must play again
   return made;
+}
+// Make the "claim a box, go again" rule unmistakable.
+function goAgain(player, n){
+  const mine = MP ? player===mySeat : player===1;
+  const who = mine ? 'You' : (MP ? 'Opponent' : 'Bot');
+  return who + ' closed ' + (n>1 ? n+' boxes' : 'a box') + ' — ' + (mine ? 'go again!' : 'again…');
 }
 function finish(){ const w = scores[1]===scores[2] ? 0 : (scores[1]>scores[2]?1:2);
   const youWon = w && (MP? w===mySeat : w===1);
@@ -98,7 +104,9 @@ cv.addEventListener('pointerdown',(e)=>{
 function draw(){
   ctx.clearRect(0,0,cv.width,cv.height);
   // claimed boxes
-  for(let r=0;r<B;r++)for(let c=0;c<B;c++) if(owner[r][c]){ ctx.fillStyle=owner[r][c]===1?'rgba(51,229,214,.16)':'rgba(185,49,255,.18)'; ctx.fillRect(MAR+c*STEP+3,MAR+r*STEP+3,STEP-6,STEP-6); }
+  for(let r=0;r<B;r++)for(let c=0;c<B;c++) if(owner[r][c]){ const o=owner[r][c];
+    ctx.fillStyle=o===1?'rgba(51,229,214,.26)':'rgba(185,49,255,.28)'; ctx.fillRect(MAR+c*STEP+3,MAR+r*STEP+3,STEP-6,STEP-6);
+    ctx.fillStyle=o===1?'#33e5d6':'#b931ff'; ctx.shadowBlur=8; ctx.shadowColor=ctx.fillStyle; ctx.beginPath(); ctx.arc(MAR+(c+0.5)*STEP, MAR+(r+0.5)*STEP, 4, 0, 7); ctx.fill(); ctx.shadowBlur=0; }
   // edges
   function seg(x1,y1,x2,y2,on){ ctx.strokeStyle = on?'rgba(255,255,255,.85)':'rgba(150,140,210,.18)'; ctx.lineWidth=on?4:3; ctx.lineCap='round';
     if(on){ctx.shadowBlur=10;ctx.shadowColor='rgba(255,122,69,.6)';} ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.shadowBlur=0; }
