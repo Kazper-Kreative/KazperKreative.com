@@ -1,85 +1,159 @@
 <!doctype html>
-<!-- Phosphor · Maze — Kazper Kreative Lab arcade. Navigate; your trail lights up. -->
+<!-- Phosphor · Maze Paint — Kazper Kreative Lab arcade.
+     Tomb-of-the-Mask-style: the orb sticks to a wall; swipe and it FLIES until
+     the next wall, painting/collecting every ball it passes. Clear the board to
+     advance. Each level is generated so 100% of its balls are reachable. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>Phosphor — Maze</title>
+<title>Phosphor — Maze Paint</title>
 <link rel="stylesheet" href="/lab-assets/_shared/lab-theme.css">
 <script src="/lab-assets/_shared/lab-audio.js"></script>
 <script src="/lab-assets/_shared/lab-arcade.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <header><h1>Phosphor</h1><span class="sub">Maze</span></header>
+  <header><h1>Phosphor</h1><span class="sub">Maze Paint</span></header>
   <div class="arcade">
     <div class="hud">
-      <div class="hud-stat accent"><span class="k">Time</span><span class="v" id="time">0.0</span></div>
+      <div class="hud-stat accent"><span class="k">Level</span><span class="v" id="level">1</span></div>
+      <div class="hud-stat"><span class="k">Balls</span><span class="v" id="balls">0</span></div>
       <div class="hud-stat"><span class="k">Best</span><span class="v" id="best">—</span></div>
       <span class="hud-spacer"></span>
-      <button class="btn" id="newBtn">New maze</button>
+      <button class="btn" id="newBtn">Restart</button>
     </div>
-    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="420" height="420"></canvas></div>
-    <p class="hint-text">Arrows / WASD · or swipe. Light the way to the exit.</p>
+    <div class="stage" id="stage"><canvas class="game-canvas" id="cv" width="440" height="440"></canvas></div>
+    <p class="hint-text">Arrows / WASD · or swipe. The orb flies wall-to-wall — sweep up every ball.</p>
   </div>
-  <footer><span class="dim" style="font-size:12px">Phosphor</span><span class="audio-ctl" id="audioCtl"></span></footer>
+  <footer><span class="dim" style="font-size:12px">Phosphor · Maze Paint</span><span class="audio-ctl" id="audioCtl"></span></footer>
 </div>
 <script>
 const A=window.LabArcade, el=(id)=>document.getElementById(id);
-const cv=el('cv'), ctx=cv.getContext('2d'), N=15, CELL=cv.width/N;
-let cells, px, py, started, t0, done, raf;
-const bt=A.hs.getTime('phosphor'); el('best').textContent = bt!=null ? (bt/1000).toFixed(1) : '—';
+const cv=el('cv'), ctx=cv.getContext('2d');
+const DIRS={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+
+let N, CELL, wall, dots, ball, anim, level=1, animating=false, done=false;
+const bestLvl=A.hs.get('phosphor'); el('best').textContent = bestLvl>0 ? ('Lvl '+bestLvl) : '—';
+
+const key=(r,c)=>r+','+c;
+const inB=(r,c)=>r>=0&&r<N&&c>=0&&c<N;
+
+/* Walk one slide from (r,c) in dir; return {stop:[r,c], path:[[r,c]...]} of
+   every cell entered before a wall/edge stops the orb. */
+function slidePath(r,c,dr,dc){
+  const path=[];
+  while(true){ const nr=r+dr, nc=c+dc; if(!inB(nr,nc)||wall[nr][nc]) break; r=nr;c=nc; path.push([r,c]); }
+  return {stop:[r,c], path};
+}
+
+/* Every cell the orb can ever pass over, by BFS across reachable stop-cells.
+   These — and only these — get balls, so the board is always 100% clearable. */
+function coverage(sr,sc){
+  const seen=new Set([key(sr,sc)]), q=[[sr,sc]], cov=new Set();
+  while(q.length){ const [r,c]=q.shift();
+    for(const k in DIRS){ const [dr,dc]=DIRS[k]; const {stop,path}=slidePath(r,c,dr,dc);
+      for(const [pr,pc] of path) cov.add(key(pr,pc));
+      const sk=key(stop[0],stop[1]); if(!seen.has(sk)){ seen.add(sk); q.push(stop); }
+    }
+  }
+  return cov;
+}
 
 function gen(){
-  cells=[]; for(let r=0;r<N;r++){ cells.push([]); for(let c=0;c<N;c++) cells[r].push({N:1,E:1,S:1,W:1,v:0,lit:0}); }
-  const stack=[[0,0]]; cells[0][0].v=1; const opp={N:'S',S:'N',E:'W',W:'E'}; const d={N:[-1,0],S:[1,0],E:[0,1],W:[0,-1]};
-  while(stack.length){ const [r,c]=stack[stack.length-1];
-    const nb=Object.keys(d).filter(k=>{ const nr=r+d[k][0],nc=c+d[k][1]; return nr>=0&&nr<N&&nc>=0&&nc<N&&!cells[nr][nc].v; });
-    if(!nb.length){ stack.pop(); continue; }
-    const k=nb[(Math.random()*nb.length)|0]; const nr=r+d[k][0],nc=c+d[k][1];
-    cells[r][c][k]=0; cells[nr][nc][opp[k]]=0; cells[nr][nc].v=1; stack.push([nr,nc]);
+  N = Math.min(9 + level, 17);                 // grows with level, capped
+  CELL = cv.width / N;
+  const density = Math.min(0.18 + level*0.012, 0.30);
+  for(let tries=0; tries<60; tries++){
+    wall=[]; for(let r=0;r<N;r++){ wall.push([]); for(let c=0;c<N;c++) wall[r].push(Math.random()<density?1:0); }
+    // start: a guaranteed-open cell near a corner
+    let sr=1, sc=1; wall[sr][sc]=0;
+    const cov = coverage(sr,sc);
+    if(cov.size >= Math.floor(N*N*0.42) && cov.size >= 10){
+      dots=cov; dots.delete(key(sr,sc));           // orb sits on start; no ball there
+      ball={r:sr,c:sc,x:cx(sc),y:cy(sr)};
+      anim=null; animating=false; done=false;
+      el('balls').textContent=dots.size; el('level').textContent=level;
+      return;
+    }
   }
-  px=0; py=0; started=false; done=false; cells[0][0].lit=1; el('time').textContent='0.0';
+  // extremely unlikely fallback: open board
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++) wall[r][c]=0;
+  const cov=coverage(1,1); dots=cov; dots.delete(key(1,1));
+  ball={r:1,c:1,x:cx(1),y:cy(1)}; anim=null; animating=false; done=false;
+  el('balls').textContent=dots.size; el('level').textContent=level;
 }
+
+const cx=(c)=>c*CELL+CELL/2, cy=(r)=>r*CELL+CELL/2;
+
 function move(dir){
-  if(done) return;
-  const map={up:'N',down:'S',left:'W',right:'E'}, k=map[dir]; if(!k)return;
-  if(cells[py][px][k]) { return; }
-  if(!started){ started=true; t0=Date.now(); }
-  const d={N:[-1,0],S:[1,0],E:[0,1],W:[0,-1]}[k]; py+=d[0]; px+=d[1]; cells[py][px].lit=1; A.sfx('move');
-  if(px===N-1&&py===N-1){ win(); }
+  if(animating||done) return;
+  const [dr,dc]=DIRS[dir]||[]; if(dr===undefined) return;
+  const {stop,path}=slidePath(ball.r,ball.c,dr,dc);
+  if(!path.length) return;                         // already flush against a wall
+  A.sfx('move');
+  ball.r=stop[0]; ball.c=stop[1];
+  anim={ fromX:ball.x, fromY:ball.y, toX:cx(stop[1]), toY:cy(stop[0]),
+         t:0, dur: Math.max(0.10, path.length*0.045), path, idx:0 };
+  animating=true;
 }
-function win(){
-  done=true; const ms=Date.now()-t0; A.sfx('win');
-  const best=A.hs.setTime('phosphor', ms); el('best').textContent=(best/1000).toFixed(1);
-  A.overlay(el('stage'),{tag:'Escaped',tagClass:'great',title:(ms/1000).toFixed(1)+'s', sub: ms<=best?'New best!':'Best '+(best/1000).toFixed(1)+'s', btn:'New maze', onBtn:()=>{ gen(); } });
+
+function collectAt(r,c){
+  const k=key(r,c);
+  if(dots.has(k)){ dots.delete(k); el('balls').textContent=dots.size; A.sfx('point');
+    if(dots.size===0) clear(); }
 }
+
+function clear(){
+  done=true; A.sfx('win');
+  const reached=level;
+  const best=A.hs.set('phosphor', reached); el('best').textContent='Lvl '+best;
+  A.overlay(el('stage'),{ tag:'Cleared', tagClass:'great', title:'Level '+reached,
+    sub: reached>=best?'New best — onward!':('Best · Lvl '+best),
+    btn:'Next level', onBtn:()=>{ level++; gen(); } });
+}
+
+function update(dt){
+  if(!anim) return;
+  anim.t += dt;
+  const p = Math.min(1, anim.t/anim.dur);
+  const e = 1-(1-p)*(1-p);                          // ease-out
+  ball.x = anim.fromX + (anim.toX-anim.fromX)*e;
+  ball.y = anim.fromY + (anim.toY-anim.fromY)*e;
+  // collect balls as the orb's progress crosses each path cell
+  const reach = Math.floor(e*anim.path.length + 0.0001);
+  while(anim.idx < reach){ const [pr,pc]=anim.path[anim.idx++]; collectAt(pr,pc); }
+  if(p>=1){ while(anim.idx<anim.path.length){ const [pr,pc]=anim.path[anim.idx++]; collectAt(pr,pc); }
+    ball.x=anim.toX; ball.y=anim.toY; anim=null; animating=false; }
+}
+
 function draw(){
-  if(started&&!done) el('time').textContent=((Date.now()-t0)/1000).toFixed(1);
   ctx.clearRect(0,0,cv.width,cv.height);
-  ctx.fillStyle='rgba(8,8,18,.7)'; ctx.fillRect(0,0,cv.width,cv.height);
-  // lit cells (phosphor trail)
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(cells[r][c].lit){ ctx.fillStyle='rgba(51,229,214,.14)'; ctx.fillRect(c*CELL,r*CELL,CELL,CELL); }
-  // exit
-  ctx.fillStyle='rgba(255,122,69,.25)'; ctx.fillRect((N-1)*CELL,(N-1)*CELL,CELL,CELL);
+  ctx.fillStyle='rgba(8,8,18,.72)'; ctx.fillRect(0,0,cv.width,cv.height);
   // walls
-  ctx.strokeStyle='rgba(150,140,210,.55)'; ctx.lineWidth=2; ctx.lineCap='round';
-  for(let r=0;r<N;r++)for(let c=0;c<N;c++){ const x=c*CELL,y=r*CELL,k=cells[r][c];
-    if(k.N){line(x,y,x+CELL,y);} if(k.W){line(x,y,x,y+CELL);}
-    if(k.E&&c===N-1){line(x+CELL,y,x+CELL,y+CELL);} if(k.S&&r===N-1){line(x,y+CELL,x+CELL,y+CELL);} }
-  // player orb
-  ctx.shadowBlur=18; ctx.shadowColor='rgba(120,240,255,.9)'; ctx.fillStyle='#eafcff';
-  ctx.beginPath(); ctx.arc(px*CELL+CELL/2, py*CELL+CELL/2, CELL*0.3, 0,7); ctx.fill(); ctx.shadowBlur=0;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++) if(wall[r][c]){
+    ctx.fillStyle='rgba(120,110,190,.30)';
+    ctx.fillRect(c*CELL+1.5, r*CELL+1.5, CELL-3, CELL-3);
+    ctx.strokeStyle='rgba(150,140,210,.45)'; ctx.lineWidth=1; ctx.strokeRect(c*CELL+1.5, r*CELL+1.5, CELL-3, CELL-3);
+  }
+  // balls to collect
+  const t = performance.now()/600;
+  for(const k of dots){ const [r,c]=k.split(',').map(Number);
+    const pulse = 0.8 + Math.sin(t + (r*3+c))*0.12;
+    ctx.fillStyle='rgba(255,122,69,.95)'; ctx.shadowBlur=8; ctx.shadowColor='rgba(255,122,69,.7)';
+    ctx.beginPath(); ctx.arc(cx(c), cy(r), CELL*0.13*pulse, 0, 7); ctx.fill(); ctx.shadowBlur=0; }
+  // orb
+  ctx.shadowBlur=20; ctx.shadowColor='rgba(120,240,255,.95)'; ctx.fillStyle='#eafcff';
+  ctx.beginPath(); ctx.arc(ball.x, ball.y, CELL*0.34, 0, 7); ctx.fill(); ctx.shadowBlur=0;
 }
-function line(x1,y1,x2,y2){ ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
 
 A.keys((d)=>move(d));
 A.swipe(cv,(d)=>{ if(d!=='tap') move(d); });
-el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); gen(); });
+el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); level=1; gen(); });
 
 gen();
-A.loop(()=>draw());
+A.loop((dt)=>{ update(dt); draw(); });
 if(window.LabAudio) LabAudio.mountControls(el('audioCtl'));
 </script>
 </body>

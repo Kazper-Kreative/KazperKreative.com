@@ -24,7 +24,7 @@ const GAMES = [
   { slug: "enclosure", glyph: "⊞", name: "Enclosure", game: "Dots & Boxes", tag: "Bot · 1v1", desc: "Close the most boxes. Mind the chains." },
   { slug: "bullseye", glyph: "◎", name: "Bullseye", game: "Darts", tag: "Bot · 1v1", desc: "501, double-or-nothing nerve. Throw against bot or friend." },
   { slug: "serpent", glyph: "∿", name: "Serpent", game: "Snake", tag: "Solo", desc: "Chase the lights, grow the glow, don't bite yourself." },
-  { slug: "phosphor", glyph: "⬡", name: "Phosphor", game: "Maze", tag: "Solo", desc: "Light a path to the exit. Beat your best time." },
+  { slug: "phosphor", glyph: "⬡", name: "Phosphor", game: "Maze Paint", tag: "Solo", desc: "The orb flies wall-to-wall — sweep up every ball to clear the board." },
   { slug: "updraft", glyph: "▲", name: "Updraft", game: "Flappy", tag: "Solo", desc: "Tap to rise, thread the gaps, chase the high score." },
   { slug: "sapper", glyph: "✸", name: "Sapper", game: "Minesweeper", tag: "Solo", desc: "Sweep the field by logic alone. Three sizes." },
   { slug: "solitude", glyph: "♠", name: "Solitude", game: "Solitaire", tag: "Solo", desc: "Klondike, tap-to-move. Build the four suits home." },
