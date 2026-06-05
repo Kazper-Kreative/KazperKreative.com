@@ -222,9 +222,15 @@ no cross-origin-isolation headers are needed.
 ## Known follow-ups
 
 - Replace the placeholder `public/assets/k-mark.png` with the real
-  iridescent K PNG.
-- CSP is still `Content-Security-Policy-Report-Only` (now scoped to
-  `*.supabase.co`). Watch DevTools, then flip to enforce.
-- Confirm the Supabase `submissions` table + RLS policies are
-  provisioned in the project (`lenbcecnvjaylhigtlfl`); the inbox
-  silently falls back to localStorage if not.
+  iridescent K PNG. (PWA icons in `public/icons/` are generated from it —
+  regenerate them after swapping.)
+- CSP is **enforced** (`Content-Security-Policy` in `next.config.ts`,
+  scoped to `self` + `*.supabase.co` + Cloudflare Turnstile). Widen the
+  matching directive when you add a third-party script/font/API.
+- Supabase `lab_members` + RLS are live (the `/lab` gate works in prod).
+  Still worth confirming the `submissions` table + RLS in project
+  `lenbcecnvjaylhigtlfl` — the inbox/forms silently fall back to
+  localStorage if it's missing.
+- Dependency tree is clean (`npm audit` = 0 on Next 16 + Supabase). The
+  old Dependabot alerts were stale hits against the removed Sanity/
+  Three.js deps and have been dismissed.
