@@ -1,5 +1,9 @@
 <!doctype html>
-<!-- Bullseye · Darts (501) — Kazper Kreative Lab arcade. vs Bot or 1v1. -->
+<!-- Bullseye · Darts — Kazper Kreative Lab arcade.
+     One throw per turn, two-tap aim: a guide sweeps UP/DOWN → tap to lock the
+     height, then sweeps LEFT/RIGHT → tap to lock the side, then the arrow flies
+     (3D-style). Race DOWN from 150; when your remaining hits the finish range
+     (<=40) GOLD wedges appear — hit gold to win. vs Bot or online 1v1. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -12,117 +16,177 @@
 </head>
 <body>
 <div class="wrap">
-  <header><h1>Bullseye</h1><span class="sub">Darts · 501</span></header>
+  <header><h1>Bullseye</h1><span class="sub">Darts · race from 150</span></header>
   <div class="arcade">
     <div class="hud">
-      <div class="hud-stat accent"><span class="k" id="k0">You</span><span class="v" id="s0">501</span></div>
-      <div class="hud-stat"><span class="k" id="k1">Bot</span><span class="v" id="s1">501</span></div>
-      <div class="hud-stat"><span class="k">Darts</span><span class="v" id="darts">3</span></div>
+      <div class="hud-stat accent"><span class="k" id="k0">You</span><span class="v" id="s0">150</span></div>
+      <div class="hud-stat"><span class="k" id="k1">Bot</span><span class="v" id="s1">150</span></div>
       <span class="hud-spacer"></span>
       <button class="btn" id="newBtn">New</button>
     </div>
     <div class="stage" id="stage" style="background:transparent;box-shadow:none">
       <canvas class="game-canvas" id="cv" width="380" height="380" style="border-radius:50%;background:transparent"></canvas>
     </div>
-    <p class="status" id="status" style="margin-top:14px;text-align:center">Tap the board to throw.</p>
+    <p class="status" id="status" style="margin-top:14px;text-align:center">Tap to lock the height.</p>
+    <p class="hint-text">Tap / click (or Space) to lock — height first, then side.</p>
     <div class="panel mp-panel" id="mpPanel" hidden style="margin-top:14px"></div>
     <button class="btn" id="mpStart" style="width:100%;margin-top:12px">Play a friend · 1v1</button>
   </div>
-  <footer><span class="dim" style="font-size:12px">First to exactly 0 wins.</span><span class="audio-ctl" id="audioCtl"></span></footer>
+  <footer><span class="dim" style="font-size:12px">Hit the gold to check out.</span><span class="audio-ctl" id="audioCtl"></span></footer>
 </div>
 <script>
 const A=window.LabArcade, el=(id)=>document.getElementById(id);
 const MP=A.mp.active();
-const cv=el('cv'), ctx=cv.getContext('2d'), W=cv.width, CX=W/2, CY=W/2, R=W/2-6;
+const cv=el('cv'), ctx=cv.getContext('2d'), W=cv.width, CX=W/2, CY=W/2, R=W/2-8;
 const ORDER=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
-const rr={bull:0.09, eye:0.038, tin:0.55, tout:0.62, din:0.94, dout:1.0};
-let score=[501,501], cur=0, dartsLeft=3, turnStart=501, over=false, marks=[], busy=false;
-let mySeat=0, ready=false, mpPanel=null;
+const rr={eye:0.038, bull:0.09, tin:0.55, tout:0.62, din:0.94, dout:1.0};
+const START=150, GOLD_AT=40, GOLD_WEDGES=4;
 
+let rem=[START,START], cur=0, over=false;
+let phase='vert', lockX=CX, lockY=CY, gold=[], marks=[], dart=null;
+let mySeat=0, ready=false, mpPanel=null;
+const isMine = ()=> MP ? (ready && cur===mySeat) : (cur===0);
+
+/* ---------- scoring ---------- */
 function hit(x,y){
   const dx=x-CX, dy=y-CY, d=Math.hypot(dx,dy)/R;
-  if(d>1) return {pts:0,label:'Miss'};
-  if(d<rr.eye) return {pts:50,label:'Bull'};
-  if(d<rr.bull) return {pts:25,label:'25'};
+  if(d>1) return {pts:0,label:'Miss',seg:-1,d};
+  if(d<rr.eye) return {pts:50,label:'Bull',seg:-1,d};
+  if(d<rr.bull) return {pts:25,label:'25',seg:-1,d};
   let a=Math.atan2(dx,-dy)*180/Math.PI; if(a<0)a+=360;
-  const base=ORDER[Math.floor(((a+9)%360)/18)];
-  if(d>=rr.din) return {pts:base*2,label:'D'+base};
-  if(d>=rr.tin&&d<=rr.tout) return {pts:base*3,label:'T'+base};
-  return {pts:base,label:''+base};
+  const idx=Math.floor(((a+9)%360)/18), base=ORDER[idx];
+  if(d>=rr.din) return {pts:base*2,label:'D'+base,seg:idx,d};
+  if(d>=rr.tin&&d<=rr.tout) return {pts:base*3,label:'T'+base,seg:idx,d};
+  return {pts:base,label:''+base,seg:idx,d};
 }
+const goldActive=(p)=> rem[p]<=GOLD_AT && rem[p]>0 && !over;
+function pickGold(){ const all=[...Array(20).keys()], g=[]; for(let i=0;i<GOLD_WEDGES;i++){ g.push(all.splice((Math.random()*all.length)|0,1)[0]); } return g; }
+
+function refresh(){ el('s0').textContent=rem[MP?mySeat:0]; el('s1').textContent=rem[MP?(1-mySeat):1]; }
 function setStatus(t){ el('status').textContent=t; }
-function refresh(){ el('s0').textContent=score[MP?mySeat:0]; el('s1').textContent=score[MP?(1-mySeat):1]; el('darts').textContent=dartsLeft; }
-
-function applyThrow(x,y, scatter){
-  const sx=x+(Math.random()-.5)*scatter, sy=y+(Math.random()-.5)*scatter;
-  const h=hit(sx,sy); marks.push({x:sx,y:sy});
-  const rem=score[cur]-h.pts;
-  if(rem<0||rem===1){ // bust
-    A.sfx('lose'); score[cur]=turnStart; dartsLeft=0; setStatus('Bust! ('+h.label+') — turn lost'); }
-  else { score[cur]=rem; dartsLeft--; A.sfx(h.pts>=40?'point':'move'); setStatus(h.label+' for '+h.pts);
-    if(rem===0){ over=true; A.sfx('win'); win(cur); refresh(); return; } }
-  refresh();
-  if(dartsLeft<=0){ endTurn(); }
+function turnLabel(){
+  if(over) return '';
+  if(MP) return ready ? (cur===mySeat?'Your throw — tap to lock height.':"Opponent's throw…") : 'Waiting for opponent…';
+  return cur===0 ? 'Tap to lock the height.' : 'Bot is throwing…';
 }
-function win(p){ const youWon = MP? p===mySeat : p===0; setStatus((youWon?'You':(MP?'Opponent':'Bot'))+' checked out — game!'); if(mpPanel)mpPanel.setStatus(youWon?'You win!':'Opponent wins.'); }
-function endTurn(){
-  setTimeout(()=>{ cur=1-cur; dartsLeft=3; turnStart=score[cur]; marks=[]; refresh();
-    if(MP){ mpBroadcast(); setStatus(cur===mySeat?'Your turn — throw.':"Opponent's turn…"); }
-    else { setStatus(cur===0?'Your turn — throw.':'Bot is up…'); if(cur===1) botTurn(); }
-  }, 700);
-}
-function throwAt(x,y, scatter){ if(over||dartsLeft<=0)return; applyThrow(x,y,scatter); if(MP&&!over) mpBroadcast(); }
 
-/* crosshair oscillation */
-let t=0, chx=CX, chy=CY;
-function tick(dt){ t+=dt; chx=CX+Math.sin(t*1.7)*R*0.72; chy=CY+Math.sin(t*1.15+1)*R*0.72; draw(); }
-
-cv.addEventListener('pointerdown',()=>{
+/* ---------- turn flow ---------- */
+function startTurn(){
   if(over) return;
-  if(MP){ if(!ready||cur!==mySeat)return; throwAt(chx,chy, R*0.10); }
-  else { if(cur!==0)return; throwAt(chx,chy, R*0.10); }
-});
-function botTurn(){
-  if(over||cur!==1)return; busy=true;
-  const fire=()=>{ if(over||cur!==1||dartsLeft<=0){busy=false;return;}
-    // aim: <=40 → go for it (aim a value), else treble-20 region
-    let tx=CX, ty=CY-R*((rr.tin+rr.tout)/2); // T20 (top)
-    if(score[1]<=40){ tx=CX; ty=CY; } // bull-ish to close
-    applyThrow(tx,ty, R*0.13);
-    if(!over && dartsLeft>0) setTimeout(fire, 650); else busy=false;
-  };
-  setTimeout(fire, 650);
+  marks=[]; dart=null; lockX=CX; lockY=CY;
+  gold = goldActive(cur) ? pickGold() : [];
+  if(isMine()){ phase='vert'; setStatus(goldActive(cur)?'Gold is live — lock the height.':'Tap to lock the height.'); }
+  else { phase='wait'; setStatus(turnLabel()); if(!MP && cur===1) botThrow(); }
+}
+function lockTap(){
+  if(over || !isMine()) return;
+  if(phase==='vert'){ lockY=guideY(); phase='horiz'; A.sfx('ui'); setStatus('Now lock the side.'); }
+  else if(phase==='horiz'){ lockX=guideX(); phase='flying'; A.sfx('ui'); setStatus('Arrow away…'); launch(lockX,lockY); }
+}
+function launch(tx,ty){
+  phase='flying';
+  dart={ tx, ty, t:0, dur:0.42, thrower:cur };
+}
+function resolve(){
+  const t=dart, h=hit(t.tx,t.ty); marks.push({x:t.tx,y:t.ty,gold:false});
+  const p=t.thrower, won = goldActive(p) && h.seg>=0 && gold.includes(h.seg);
+  if(won){ marks[marks.length-1].gold=true; rem[p]=0; over=true; refresh(); A.sfx('win'); win(p); dart=null; if(MP) broadcast(); return; }
+  rem[p]=Math.max(1, rem[p]-h.pts);            // never reach 0 except by gold
+  refresh(); A.sfx(h.pts>=40?'point':'move');
+  setStatus((p===(MP?mySeat:0)?'You':(MP?'Opponent':'Bot'))+': '+h.label+(h.pts?(' (−'+h.pts+')'):'')+(goldActive(p)?' — gold next!':''));
+  dart=null;
+  if(MP){ broadcast(); }
+  setTimeout(()=>{ if(over)return; cur=1-cur; startTurn(); if(MP) broadcast(); }, 900);
+}
+function win(p){ const youWon = MP? p===mySeat : p===0;
+  setStatus((youWon?'You':(MP?'Opponent':'Bot'))+' hit gold — game!');
+  if(mpPanel) mpPanel.setStatus(youWon?'You win!':'Opponent wins.'); }
+
+/* ---------- bot ---------- */
+function botThrow(){
+  if(over||cur!==1) return;
+  setTimeout(()=>{ if(over||cur!==1)return;
+    let tx, ty;
+    if(goldActive(1) && gold.length){                 // aim a gold wedge mid-board
+      const seg=gold[(Math.random()*gold.length)|0], ang=(seg*18-90)*Math.PI/180;
+      const rad=R*0.5; tx=CX+Math.cos(ang)*rad; ty=CY+Math.sin(ang)*rad;
+    } else { const ang=(0*18-90)*Math.PI/180, rad=R*((rr.tin+rr.tout)/2); tx=CX+Math.cos(ang)*rad; ty=CY+Math.sin(ang)*rad; } // T20
+    const miss=R*0.16; tx+=(Math.random()-.5)*miss; ty+=(Math.random()-.5)*miss;
+    launch(tx,ty);
+  }, 800);
 }
 
+/* ---------- aim guides (oscillating) ---------- */
+let clock=0;
+const guideY=()=> CY + Math.sin(clock*1.9)*R*0.96;
+const guideX=()=> CX + Math.sin(clock*2.2)*R*0.96;
+
+/* ---------- input ---------- */
+cv.addEventListener('pointerdown', lockTap);
+window.addEventListener('keydown',(e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); lockTap(); } }, {passive:false});
+
+/* ---------- render ---------- */
+function ringSeg(a0,a1,ri,ro,color){ ctx.fillStyle=color; ctx.beginPath(); ctx.arc(CX,CY,R*ro,a0,a1); ctx.arc(CX,CY,R*ri,a1,a0,true); ctx.closePath(); ctx.fill(); }
 function draw(){
   ctx.clearRect(0,0,W,W);
   for(let i=0;i<20;i++){ const a0=(i*18-9-90)*Math.PI/180, a1=((i+1)*18-9-90)*Math.PI/180;
-    // single (alt dark/violet), treble + double rings (accent/cyan)
+    const isGold = gold.includes(i);
+    if(isGold){ ringSeg(a0,a1, rr.bull, rr.dout, 'rgba(255,196,64,.30)'); }
     ringSeg(a0,a1, rr.bull, rr.din, i%2? 'rgba(30,28,52,.85)':'rgba(16,16,30,.9)');
-    ringSeg(a0,a1, rr.tin, rr.tout, i%2?'#7b3ff2':'#b931ff');
-    ringSeg(a0,a1, rr.din, rr.dout, i%2?'#ff7a45':'#ff2e84');
+    ringSeg(a0,a1, rr.tin, rr.tout, isGold?'#ffc440':(i%2?'#7b3ff2':'#b931ff'));
+    ringSeg(a0,a1, rr.din, rr.dout, isGold?'#ffd76a':(i%2?'#ff7a45':'#ff2e84'));
   }
-  // bull
   ctx.fillStyle='#33e5d6'; ctx.beginPath(); ctx.arc(CX,CY,R*rr.bull,0,7); ctx.fill();
   ctx.fillStyle='#ff2e84'; ctx.beginPath(); ctx.arc(CX,CY,R*rr.eye,0,7); ctx.fill();
   // numbers
   ctx.fillStyle='rgba(236,237,244,.82)'; ctx.font='600 11px "Space Grotesk",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  for(let i=0;i<20;i++){ const a=(i*18-90)*Math.PI/180; const rx=CX+Math.cos(a)*(R*0.86), ry=CY+Math.sin(a)*(R*0.86); ctx.fillText(ORDER[i],rx,ry); }
-  // marks (thrown darts)
-  for(const m of marks){ ctx.fillStyle='#eafcff'; ctx.shadowBlur=10; ctx.shadowColor='rgba(120,240,255,.9)'; ctx.beginPath(); ctx.arc(m.x,m.y,4,0,7); ctx.fill(); ctx.shadowBlur=0; }
-  // crosshair (only when it's your throw + interactive)
-  const myThrow = over? false : (MP? (ready&&cur===mySeat) : cur===0);
-  if(myThrow){ ctx.strokeStyle='rgba(255,122,69,.95)'; ctx.lineWidth=2; ctx.shadowBlur=12; ctx.shadowColor='rgba(255,122,69,.8)';
-    ctx.beginPath(); ctx.arc(chx,chy,9,0,7); ctx.moveTo(chx-14,chy); ctx.lineTo(chx+14,chy); ctx.moveTo(chx,chy-14); ctx.lineTo(chx,chy+14); ctx.stroke(); ctx.shadowBlur=0; }
+  for(let i=0;i<20;i++){ const a=(i*18-90)*Math.PI/180, rx=CX+Math.cos(a)*(R*0.86), ry=CY+Math.sin(a)*(R*0.86); ctx.fillText(ORDER[i],rx,ry); }
+  // stuck darts
+  for(const m of marks){ ctx.fillStyle=m.gold?'#ffd76a':'#eafcff'; ctx.shadowBlur=10; ctx.shadowColor=m.gold?'rgba(255,196,64,.9)':'rgba(120,240,255,.9)'; ctx.beginPath(); ctx.arc(m.x,m.y,4,0,7); ctx.fill(); ctx.shadowBlur=0; }
+  // aim guides for the local thrower
+  if(isMine() && (phase==='vert'||phase==='horiz')){
+    ctx.strokeStyle='rgba(255,196,64,.95)'; ctx.lineWidth=2; ctx.shadowBlur=10; ctx.shadowColor='rgba(255,196,64,.7)';
+    if(phase==='vert'){ const y=guideY(); ctx.beginPath(); ctx.moveTo(CX-R,y); ctx.lineTo(CX+R,y); ctx.stroke(); }
+    else { ctx.beginPath(); ctx.moveTo(lockX-R,lockY); ctx.lineTo(lockX+R,lockY); ctx.stroke();   // locked height
+      ctx.strokeStyle='rgba(51,229,214,.95)'; ctx.shadowColor='rgba(51,229,214,.7)'; const x=guideX(); ctx.beginPath(); ctx.moveTo(x,CY-R); ctx.lineTo(x,CY+R); ctx.stroke(); }
+    ctx.shadowBlur=0;
+  }
+  // flying 3D arrow
+  if(dart){ drawDart(dart); }
 }
-function ringSeg(a0,a1,ri,ro,color){ ctx.fillStyle=color; ctx.beginPath(); ctx.arc(CX,CY,R*ro,a0,a1); ctx.arc(CX,CY,R*ri,a1,a0,true); ctx.closePath(); ctx.fill(); }
+function drawDart(t){
+  const p=Math.min(1,t.t/t.dur), e=p*p*(3-2*p);            // smoothstep
+  // travels from near the viewer (below, large) to the locked point (small)
+  const sx=CX, sy=W*1.35, x=sx+(t.tx-sx)*e, y=sy+(t.ty-sy)*e;
+  const scale=1.5-1.0*e, len=46*scale, hw=8*scale;
+  const ang=Math.atan2(t.ty-sy, t.tx-sx);
+  ctx.save();
+  // shadow converging onto the board
+  ctx.globalAlpha=0.28*(1-e)+0.1; ctx.fillStyle='#000'; ctx.beginPath(); ctx.ellipse(x+6*scale, y+8*scale, len*0.5, hw, ang, 0, 7); ctx.fill(); ctx.globalAlpha=1;
+  ctx.translate(x,y); ctx.rotate(ang);
+  // shaft
+  ctx.strokeStyle='#cfe9ff'; ctx.lineWidth=3*scale; ctx.lineCap='round'; ctx.beginPath(); ctx.moveTo(-len,0); ctx.lineTo(len*0.5,0); ctx.stroke();
+  // head
+  ctx.fillStyle='#eafcff'; ctx.shadowBlur=10; ctx.shadowColor='rgba(120,240,255,.9)'; ctx.beginPath(); ctx.moveTo(len,0); ctx.lineTo(len*0.5,-hw); ctx.lineTo(len*0.5,hw); ctx.closePath(); ctx.fill(); ctx.shadowBlur=0;
+  // fletching
+  ctx.fillStyle='#ff7a45'; ctx.beginPath(); ctx.moveTo(-len,0); ctx.lineTo(-len*0.7,-hw*1.1); ctx.lineTo(-len*0.55,0); ctx.lineTo(-len*0.7,hw*1.1); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
 
-function reset(){ score=[501,501]; cur=0; dartsLeft=3; turnStart=501; over=false; marks=[]; busy=false; refresh(); setStatus(MP?(ready?(cur===mySeat?'Your turn — throw.':"Opponent's turn…"):'Waiting for opponent…'):'Your turn — throw.'); if(MP)mpBroadcast(); }
+/* ---------- loop ---------- */
+function tick(dt){
+  clock+=dt;
+  if(dart){ dart.t+=dt; if(dart.t>=dart.dur){ resolve(); } }
+  draw();
+}
+
+/* ---------- lifecycle ---------- */
+function reset(){ rem=[START,START]; cur=0; over=false; phase='vert'; gold=[]; marks=[]; dart=null; refresh(); startTurn(); if(MP) broadcast(); }
 el('newBtn').addEventListener('click',()=>{ A.sfx('ui'); if(MP)A.mp.control('rematch'); reset(); });
 el('mpStart').addEventListener('click',()=>{ A.sfx('ui'); A.mp.startUrl('bullseye'); });
 
-/* MP: thrower is authoritative, broadcasts full snapshot */
-function mpBroadcast(){ A.mp.control('state',{score,cur,dartsLeft,turnStart,over,marks}); }
+/* ---------- multiplayer (thrower authoritative, broadcasts snapshot) ---------- */
+function broadcast(){ A.mp.control('state',{rem,cur,over,gold,marks}); }
 function initMP(){
   el('mpStart').style.display='none'; el('k0').textContent='You'; el('k1').textContent='Them';
   const panel=el('mpPanel'); panel.hidden=false;
@@ -131,10 +195,11 @@ function initMP(){
     onRematch:()=>{ A.mp.control('rematch'); reset(); } });
   A.mp.join({ game:'bullseye', on:{
     status:(s)=>{ if(s==='error') mpPanel.setStatus('Connection problem — refresh.'); },
-    seat:(role,opp)=>{ if(role==='w'||role==='b') mySeat = role==='w'?0:1; ready=opp; mpPanel.setRole(role==='spectator'?'Spectating':('You are P'+(mySeat+1))); mpPanel.setDot(ready, role==='spectator'); refresh(); setStatus(ready?(cur===mySeat?'Your turn — throw.':"Opponent's turn…"):'Waiting for opponent…'); if(opp&&mySeat===0) mpBroadcast(); },
-    opponent:(opp)=>{ ready=opp; mpPanel.setDot(ready); if(opp&&mySeat===0) mpBroadcast(); },
+    seat:(role,opp)=>{ if(role==='w'||role==='b') mySeat=role==='w'?0:1; ready=opp; mpPanel.setRole(role==='spectator'?'Spectating':('You are P'+(mySeat+1))); mpPanel.setDot(ready, role==='spectator'); refresh(); setStatus(turnLabel()); if(opp&&mySeat===0) broadcast(); },
+    opponent:(opp)=>{ ready=opp; mpPanel.setDot(ready); setStatus(turnLabel()); if(opp&&mySeat===0) broadcast(); },
     control:(p)=>{ if(!p)return;
-      if(p.t==='state'&&p.data){ score=p.data.score.slice(); cur=p.data.cur; dartsLeft=p.data.dartsLeft; turnStart=p.data.turnStart; over=!!p.data.over; marks=p.data.marks||[]; refresh(); if(over){ win(cur===mySeat?1-mySeat:mySeat); } else setStatus(cur===mySeat?'Your turn — throw.':"Opponent's turn…"); }
+      if(p.t==='state'&&p.data){ rem=p.data.rem.slice(); cur=p.data.cur; over=!!p.data.over; gold=p.data.gold||[]; marks=p.data.marks||[]; refresh();
+        if(over){ win(rem[mySeat]===0?mySeat:1-mySeat); } else { if(isMine()&&phase!=='vert'&&phase!=='horiz'){ phase='vert'; } setStatus(turnLabel()); } }
       else if(p.t==='rematch') reset();
       else if(p.t==='resign'){ over=true; A.sfx('win'); setStatus('Opponent resigned — you win'); mpPanel.setStatus('Opponent resigned — you win.'); }
     },

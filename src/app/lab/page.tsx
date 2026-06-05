@@ -22,7 +22,7 @@ const GAMES = [
   { slug: "trine", glyph: "✕", name: "Trine", game: "Tic-Tac-Toe", tag: "Bot · 1v1", desc: "Three in a row against a flawless bot — or a friend." },
   { slug: "cascade", glyph: "◍", name: "Cascade", game: "Connect Four", tag: "Bot · 1v1", desc: "Drop four in a row. Alpha-beta bot or online duel." },
   { slug: "enclosure", glyph: "⊞", name: "Enclosure", game: "Dots & Boxes", tag: "Bot · 1v1", desc: "Close the most boxes. Mind the chains." },
-  { slug: "bullseye", glyph: "◎", name: "Bullseye", game: "Darts", tag: "Bot · 1v1", desc: "501, double-or-nothing nerve. Throw against bot or friend." },
+  { slug: "bullseye", glyph: "◎", name: "Bullseye", game: "Darts", tag: "Bot · 1v1", desc: "Two-tap aim, one arrow a turn. Race down from 150 — hit the gold to win." },
   { slug: "serpent", glyph: "∿", name: "Serpent", game: "Snake", tag: "Solo", desc: "Chase the lights, grow the glow, don't bite yourself." },
   { slug: "phosphor", glyph: "⬡", name: "Phosphor", game: "Maze Paint", tag: "Solo", desc: "The orb flies wall-to-wall — sweep up every ball to clear the board." },
   { slug: "updraft", glyph: "▲", name: "Updraft", game: "Flappy", tag: "Solo", desc: "Tap to rise, thread the gaps, chase the high score." },
