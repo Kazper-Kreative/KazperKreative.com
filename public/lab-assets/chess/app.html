@@ -56,13 +56,14 @@
   .navbtn:disabled{opacity:.35;cursor:default;border-color:var(--panel-edge);color:var(--ink-faint)}
   /* review strip pinned under the board so transport is in view on mobile */
   .review-strip{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;border-radius:12px;
-    background:linear-gradient(180deg,rgba(20,20,34,.7),rgba(10,10,18,.66));border:1px solid var(--accent);
-    box-shadow:0 0 22px rgba(255,122,69,.2)}
+    background:linear-gradient(180deg,rgba(20,20,34,.7),rgba(10,10,18,.66));border:1px solid var(--panel-edge);
+    transition:border-color .2s,box-shadow .2s}
   .review-strip[hidden]{display:none}
-  .review-strip .navbtn{min-width:40px;height:34px;font-size:16px}
+  .review-strip.reviewing{border-color:var(--accent);box-shadow:0 0 22px rgba(255,122,69,.2)}
+  .review-strip .navbtn{flex:0 0 auto;min-width:42px;height:34px;font-size:16px}
   .review-strip .rs-label{flex:1;text-align:center;font-family:'Space Grotesk',system-ui,sans-serif;
-    font-size:13px;color:var(--accent);letter-spacing:.04em}
-  .review-strip .rs-live{flex:0 0 auto;min-width:0;padding:8px 16px}
+    font-size:13px;color:var(--ink-faint);letter-spacing:.04em}
+  .review-strip.reviewing .rs-label{color:var(--accent)}
   .coach .tag.rev{color:var(--violet)}
   .moves-head .rev-label{flex:1;text-align:center;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:12px;color:var(--ink-faint);letter-spacing:.04em}
@@ -110,10 +111,11 @@
       </div>
       <div class="thinking" id="thinking"></div>
       <div class="review-strip" id="reviewStrip" hidden>
-        <button class="navbtn" id="rsPrev" aria-label="Previous move">‹</button>
-        <span class="rs-label" id="rsLabel">Reviewing</span>
-        <button class="navbtn" id="rsNext" aria-label="Next move">›</button>
-        <button class="btn rs-live" id="rsLive">Live</button>
+        <button class="navbtn" id="rsStart" title="First move" aria-label="First move">⏮</button>
+        <button class="navbtn" id="rsPrev" title="Back" aria-label="Back">‹</button>
+        <span class="rs-label" id="rsLabel">Live</span>
+        <button class="navbtn" id="rsNext" title="Forward" aria-label="Forward">›</button>
+        <button class="navbtn" id="rsLatest" title="Latest / Live" aria-label="Latest">⏭</button>
       </div>
     </div>
     <div>
@@ -250,7 +252,7 @@ function uciSearch(fen, skill, goCmd){
       if(line.indexOf('info')===0 && line.indexOf(' pv ')>=0){
         const sm=line.match(/score (cp|mate) (-?\d+)/);
         if(sm){ if(sm[1]==='cp'){cp=+sm[2];mate=null;} else {mate=+sm[2];cp=null;} }
-        const pm=line.match(/ pv (\S+)/); if(pm) pv=pm[1];
+        const pm=line.match(/ pv (.+?)\s*$/); if(pm) pv=pm[1].split(/\s+/);
       } else if(line.indexOf('bestmove')===0){
         const best=line.split(/\s+/)[1];
         lineHandler=null;
@@ -258,7 +260,7 @@ function uciSearch(fen, skill, goCmd){
           best,
           scoreWhite: cp!=null ? (stm==='w'?cp:-cp) : null,
           mateWhite:  mate!=null ? (stm==='w'?mate:-mate) : null,
-          pv: pv||best
+          pv: (pv&&pv.length)?pv:[best]
         });
       }
     };
@@ -614,13 +616,14 @@ function showReviewExplanation(){
 function updateReviewBar(){
   const rev=isReviewing(), len=liveLen(), cur = rev ? reviewIndex : len;
   const set=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
-  set('revLabel', rev ? ('Move '+reviewIndex+' / '+len) : 'Live');
-  set('rsLabel',  rev ? ('Move '+reviewIndex+' / '+len) : 'Reviewing');
+  const lbl = rev ? ('Move '+reviewIndex+' / '+len) : 'Live';
+  set('revLabel',lbl); set('rsLabel',lbl);
   const head=document.getElementById('movesHead'); if(head) head.classList.toggle('reviewing',rev);
-  const strip=document.getElementById('reviewStrip'); if(strip) strip.hidden=!rev;
+  // the under-board strip stays visible for the whole game so review is always one tap away
+  const strip=document.getElementById('reviewStrip'); if(strip){ strip.hidden=len===0; strip.classList.toggle('reviewing',rev); }
   const dis=(id,v)=>{const b=document.getElementById(id);if(b)b.disabled=v;};
   dis('navStart',cur<=0); dis('navPrev',cur<=0); dis('navNext',!rev); dis('navLive',!rev);
-  dis('rsPrev',cur<=0); dis('rsNext',!rev);
+  dis('rsStart',cur<=0); dis('rsPrev',cur<=0); dis('rsNext',!rev); dis('rsLatest',!rev);
 }
 const SVGNS='http://www.w3.org/2000/svg';
 function clearArrow(){const a=document.getElementById('arrows');if(a)a.remove();}
@@ -660,8 +663,10 @@ function drawArrow(from,to){
     <path class="hint-head" d="${headD}" fill="var(--hint)" opacity="0.95"/>`;
   boardEl.appendChild(svg);
 }
-/* ----- plain-language move explanations (heuristic, offline) ----- */
+/* ----- strategy-oriented move explanations (engine PV + threat detection) ----- */
 const PIECE_NAME={p:'pawn',n:'knight',b:'bishop',r:'rook',q:'queen',k:'king'};
+const PIECE_VAL={p:1,n:3,b:3,r:5,q:9,k:0};
+function cap1(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 function evalLabel(a){
   if(!a) return '';
   if(a.mateWhite!=null) return (a.mateWhite>0?'White':'Black')+' mates in '+Math.abs(a.mateWhite);
@@ -669,38 +674,79 @@ function evalLabel(a){
   if(Math.abs(p)<0.2) return 'even';
   return (p>0?'White +':'Black +')+Math.abs(p).toFixed(1);
 }
-// describe a chess.js move object, given the position AFTER it was played
-function describeMove(after,m){
-  const parts=[];
-  if(m.flags.includes('k')) parts.push('castles kingside, tucking the king away');
-  else if(m.flags.includes('q')) parts.push('castles queenside');
-  else if(m.flags.includes('p')) parts.push('promotes to a '+PIECE_NAME[m.promotion||'q']);
-  else if(m.flags.includes('e')) parts.push('captures en passant');
-  else if(m.flags.includes('c')) parts.push('captures the '+(PIECE_NAME[m.captured]||'piece')+' on '+m.to);
-  else if((m.piece==='n'||m.piece==='b')&&(m.from[1]==='1'||m.from[1]==='8')) parts.push('develops the '+PIECE_NAME[m.piece]);
-  else if(m.piece==='p'&&['e4','d4','e5','d5'].includes(m.to)) parts.push('stakes a claim in the centre');
-  else if(m.piece==='p') parts.push('pushes the pawn to '+m.to);
-  else if(m.piece==='k') parts.push('walks the king to '+m.to);
-  else parts.push('repositions the '+PIECE_NAME[m.piece]+' to '+m.to);
-  if(after.in_checkmate()) parts.push('— and it’s checkmate');
-  else if(after.in_check()) parts.push('with check');
-  const s=parts.join(' ');
-  return s.charAt(0).toUpperCase()+s.slice(1)+'.';
+// the strategic point of a move (position passed is AFTER the move)
+function coreIdea(after,m){
+  if(m.flags.includes('k')) return 'castles the king to safety and brings the rook toward the centre';
+  if(m.flags.includes('q')) return 'castles queenside, activating the rook and tucking the king away';
+  if(m.flags.includes('p')) return 'promotes to a '+PIECE_NAME[m.promotion||'q']+' — a decisive material swing';
+  if(after.in_checkmate()) return 'delivers checkmate';
+  if(m.flags.includes('e')||m.flags.includes('c')){
+    const ph='captures the '+(PIECE_NAME[m.captured]||'piece')+' on '+m.to;
+    return after.in_check()? ph+', and it lands with check' : ph;
+  }
+  if(after.in_check()) return 'checks the king, seizing the initiative and forcing a response';
+  if(m.piece==='p'&&['e4','d4','e5','d5'].includes(m.to)) return 'fights for the centre and frees the bishop and queen';
+  if(m.piece==='p'&&['c4','c5','f4','f5','b4','g4'].includes(m.to)) return 'grabs space and pressures the centre from the wing';
+  if((m.piece==='n'||m.piece==='b')&&(m.from[1]==='1'||m.from[1]==='8')) return 'develops the '+PIECE_NAME[m.piece]+' toward the centre, readying to castle';
+  if(m.piece==='r'&&(m.to[0]==='d'||m.to[0]==='e')) return 'lifts the rook onto a central/open file where it bites hardest';
+  if(m.piece==='q') return 'swings the queen to a more active, pressuring post';
+  if(m.piece==='n') return 'reroutes the knight toward a stronger outpost';
+  if(m.piece==='b') return 'puts the bishop on a longer, more dangerous diagonal';
+  if(m.piece==='k') return 'walks the king to a safer square';
+  if(m.piece==='p') return 'gains space with '+m.to+', cramping the opponent';
+  return 'quietly improves the worst-placed piece';
 }
-function describeUci(fen,uci){
+// biggest winning capture the side that just moved now threatens (crude SEE: net material > 0)
+function biggestThreat(fenAfter){
   try{
-    const c=new Chess(fen);
-    const m=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]||'q'});
-    return m ? describeMove(c,m) : 'The engine’s top choice here.';
-  }catch(e){ return 'The engine’s top choice here.'; }
+    const parts=fenAfter.split(' ');
+    parts[1]=parts[1]==='w'?'b':'w'; parts[3]='-';   // hand the move back to the side that just played
+    const fen=parts.join(' '), probe=new Chess(fen);
+    if(probe.in_check()) return null;                 // can't probe a position that's actually check
+    let best=null;
+    probe.moves({verbose:true}).forEach(m=>{
+      if(!(m.flags.includes('c')||m.flags.includes('e'))) return;
+      const gain=PIECE_VAL[m.captured]||0;
+      const t=new Chess(fen); t.move({from:m.from,to:m.to,promotion:'q'});
+      const recapture=t.moves({verbose:true}).some(r=>r.to===m.to&&(r.flags.includes('c')||r.flags.includes('e')));
+      const net = recapture ? gain-(PIECE_VAL[m.piece]||0) : gain;
+      if(net>0 && (!best||net>best.net)) best={san:m.san,captured:m.captured,net};
+    });
+    return best;
+  }catch(e){ return null; }
 }
+function uciToSanLine(fen,uciArr,max){
+  const c=new Chess(fen), out=[];
+  for(let i=0;i<Math.min(max,(uciArr||[]).length);i++){
+    const u=uciArr[i], m=c.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});
+    if(!m) break; out.push(m.san);
+  }
+  return out;
+}
+// strategic description of a played move (used in review): core idea + any threat it sets up
+function describeMove(after,m){
+  const bits=[coreIdea(after,m)];
+  if(!after.in_checkmate()){
+    const th=biggestThreat(after.fen());
+    if(th) bits.push('threatening <b>'+th.san+'</b> to win the '+(PIECE_NAME[th.captured]||'material'));
+  }
+  return cap1(bits.join(', '))+'.';
+}
+// rich live-hint explanation: core idea + threat + engine eval + the engine's planned line
 function showHintExplanation(){
   if(!currentAnalysis||!currentAnalysis.best) return;
-  const san=sanFromUci(game.fen(),currentAnalysis.best);
-  const ev=evalLabel(currentAnalysis);
-  const desc=describeUci(game.fen(),currentAnalysis.best);
+  const fen=game.fen(), a=currentAnalysis;
+  const san=sanFromUci(fen,a.best), ev=evalLabel(a);
+  let idea;
+  try{
+    const c=new Chess(fen);
+    const m=c.move({from:a.best.slice(0,2),to:a.best.slice(2,4),promotion:a.best[4]||'q'});
+    idea = (a.mateWhite!=null) ? cap1(coreIdea(c,m))+' — and it forces mate in '+Math.abs(a.mateWhite)+'.' : describeMove(c,m);
+  }catch(e){ idea='The engine’s top choice here.'; }
+  const line=uciToSanLine(fen,a.pv,5);
+  const plan = line.length>=2 ? `<br><span style="color:var(--ink-faint)">Plan: <b>${line.join(' ')}</b></span>` : '';
   document.getElementById('coach').innerHTML=
-    `<span class="tag great">Best move</span><p class="msg"><b>${san}</b>${ev?` <span style="color:var(--ink-faint)">(${ev})</span>`:''} — ${desc}<br><span style="color:var(--ink-faint)">The arrow tracks the best move until you turn it off.</span></p>`;
+    `<span class="tag great">Best move</span><p class="msg"><b>${san}</b>${ev?` <span style="color:var(--ink-faint)">(${ev})</span>`:''} — ${idea}${plan}</p>`;
 }
 
 function setHintArrow(){
@@ -931,9 +977,10 @@ document.getElementById('navStart').addEventListener('click',()=>{ if(liveLen())
 document.getElementById('navPrev').addEventListener('click',()=>{ if(curPly()>0){ sfx('ui'); gotoPly(curPly()-1);} });
 document.getElementById('navNext').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(reviewIndex+1);} });
 document.getElementById('navLive').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(liveLen());} });
+document.getElementById('rsStart').addEventListener('click',()=>{ if(curPly()>0){ sfx('ui'); gotoPly(0);} });
 document.getElementById('rsPrev').addEventListener('click',()=>{ if(curPly()>0){ sfx('ui'); gotoPly(curPly()-1);} });
 document.getElementById('rsNext').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(reviewIndex+1);} });
-document.getElementById('rsLive').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(liveLen());} });
+document.getElementById('rsLatest').addEventListener('click',()=>{ if(isReviewing()){ sfx('ui'); gotoPly(liveLen());} });
 window.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'){ if(curPly()>0){ gotoPly(curPly()-1); e.preventDefault(); } }
   else if(e.key==='ArrowRight'){ if(isReviewing()){ gotoPly(reviewIndex+1); e.preventDefault(); } }
