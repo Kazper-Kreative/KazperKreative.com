@@ -65,6 +65,28 @@
     font-size:13px;color:var(--ink-faint);letter-spacing:.04em}
   .review-strip.reviewing .rs-label{color:var(--accent)}
   .coach .tag.rev{color:var(--violet)}
+  /* post-game report inside the game-over overlay */
+  .overlay-card{max-height:86vh;overflow:auto;max-width:380px}
+  .rep-wrap:empty{display:none}
+  .rep{margin:14px 0 4px;text-align:left}
+  .rep-acc{display:flex;align-items:baseline;gap:8px;justify-content:center;margin-bottom:12px}
+  .rep-acc-num{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;font-size:40px;line-height:1;
+    background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .rep-acc-lbl{font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.12em}
+  .rep-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px}
+  .rep-chip{font-family:'Space Grotesk',system-ui,sans-serif;font-size:11.5px;font-weight:600;padding:3px 9px;
+    border-radius:999px;border:1px solid currentColor;opacity:.95}
+  .rep-chip.best,.rep-chip.good{color:var(--good)} .rep-chip.great{color:var(--great)}
+  .rep-chip.inacc{color:var(--warn)} .rep-chip.mistake,.rep-chip.blunder{color:var(--bad)}
+  .rep-moments{display:flex;flex-direction:column;gap:7px}
+  .rep-moment{display:flex;align-items:center;gap:9px;width:100%;text-align:left;cursor:pointer;
+    background:rgba(8,8,18,.55);border:1px solid var(--panel-edge);border-radius:10px;padding:8px 10px;
+    color:var(--ink);font-family:'Hanken Grotesk',system-ui,sans-serif;transition:.15s}
+  .rep-moment:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .rep-moment .tag{flex:0 0 auto;margin:0;font-size:10px;padding:2px 7px}
+  .rep-moment .rep-mv{font-size:13px;color:var(--ink-dim)} .rep-moment .rep-mv b{color:var(--ink)}
+  .rep-clean{color:var(--good);font-size:13.5px;text-align:center;margin:4px 0}
+  .rep-hint{color:var(--ink-faint);font-size:11.5px;text-align:center;margin:10px 0 0}
   .moves-head .rev-label{flex:1;text-align:center;font-family:'Space Grotesk',system-ui,sans-serif;
     font-size:12px;color:var(--ink-faint);letter-spacing:.04em}
   .moves-head.reviewing .rev-label{color:var(--accent)}
@@ -102,6 +124,7 @@
             <span class="tag" id="goTag"></span>
             <h3 id="goTitle"></h3>
             <p class="go-sub" id="goSub"></p>
+            <div class="rep-wrap" id="goReport"></div>
             <div class="btns">
               <button class="btn primary" id="goNew">New game</button>
               <button class="btn" id="goReview">Review</button>
@@ -198,6 +221,7 @@ const LEVELS = [
 ];
 const ANALYSIS_MS = 600;
 let level=0, humanColor='w', orientation='w';
+let moveReport=[];             // per-human-move grades, drives the post-game report
 let selected=null, legalDests=[], lastMove=null;
 let busy=true;                 // gate input until engine ready / while engine works
 let hintOn=false, hintMove=null;
@@ -527,6 +551,13 @@ function sanFromUci(fen,uci){
   try{const c=new Chess(fen);const m=c.move({from:uci.slice(0,2),to:uci.slice(2,4),promotion:uci[4]});return m?m.san:uci;}
   catch(e){return uci;}
 }
+// Lichess-style win% model → per-move accuracy, so the report reads like the
+// numbers players already know.
+function winPct(cpMover){ return 50 + 50*(2/(1+Math.exp(-0.00368208*cpMover)) - 1); }
+function moveAccuracy(winBefore,winAfter){
+  const a=103.1668*Math.exp(-0.04354*(winBefore-winAfter)) - 3.1669;
+  return Math.max(0,Math.min(100,a));
+}
 function coachGrade(move,before,after,preFen){
   const bCp=cpOf(before), aCp=cpOf(after);
   let loss = humanColor==='w' ? (bCp-aCp) : (aCp-bCp);
@@ -534,18 +565,27 @@ function coachGrade(move,before,after,preFen){
   const humanUci=move.from+move.to+(move.promotion||'');
   const playedBest = before&&before.best&&before.best.slice(0,4)===humanUci.slice(0,4);
   const c=classify(loss,playedBest);
+  const bestSan = before&&before.best ? sanFromUci(preFen,before.best) : null;
+  const bestLine = (before&&before.pv) ? uciToSanLine(preFen,before.pv,5) : [];
+  const lineStr = bestLine.length>1 ? ` Line: <b>${bestLine.join(' ')}</b>.` : '';
   const coach=document.getElementById('coach');
   let msg='';
-  if(playedBest){ msg='You played the move Stockfish likes best. '; }
+  if(playedBest){ msg='You played the move Stockfish likes best.'; }
   else{
-    const bestSan = before&&before.best ? sanFromUci(preFen,before.best) : null;
     const lp=(loss/100).toFixed(1);
     if(c.tag==='great'||c.tag==='good') msg='Solid.'+(bestSan?` Stockfish leaned toward <b>${bestSan}</b>.`:'');
-    else if(c.tag==='inacc')  msg=`Slightly loose — about <b>${lp}</b> of a pawn behind <b>${bestSan}</b>.`;
-    else if(c.tag==='mistake')msg=`This concedes roughly <b>${lp}</b> pawns. <b>${bestSan}</b> was stronger.`;
-    else msg=`Costly — around <b>${lp}</b> pawns. <b>${bestSan}</b> was much better here.`;
+    else if(c.tag==='inacc')  msg=`Slightly loose — about <b>${lp}</b> of a pawn behind <b>${bestSan}</b>.`+lineStr;
+    else if(c.tag==='mistake')msg=`This concedes roughly <b>${lp}</b> pawns. <b>${bestSan}</b> was stronger.`+lineStr;
+    else msg=`Costly — around <b>${lp}</b> pawns. <b>${bestSan}</b> was much better here.`+lineStr;
   }
   coach.innerHTML=`<span class="tag ${c.tag}">${c.label}</span><p class="msg">${msg}</p>`;
+
+  // record for the post-game report (win%-based accuracy)
+  const wB=winPct(humanColor==='w'?bCp:-bCp), wA=winPct(humanColor==='w'?aCp:-aCp);
+  moveReport.push({
+    ply: game.history().length, san: move.san, loss, tag:c.tag, label:c.label,
+    accuracy: moveAccuracy(wB,wA), bestSan, bestLine: bestLine.join(' ')
+  });
 }
 
 /* ===================== eval bar / status / hint ===================== */
@@ -811,7 +851,7 @@ function setThinking(t){document.getElementById('thinking').textContent=t;}
 async function newGame(){
   if(!engineReady) return;
   game.reset(); engineSend('ucinewgame');
-  orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null; reviewIndex=null;
+  orientation=humanColor; selected=null; legalDests=[]; lastMove=null; hintMove=null; reviewIndex=null; moveReport=[];
   document.getElementById('coach').innerHTML=
     '<div class="placeholder">Make a move and I\'ll grade it against Stockfish\'s best line.</div>';
   clearArrow(); hideGameOver(); render(); updateStatus(); renderMoves();
@@ -928,8 +968,31 @@ function showResult(cls,title,sub){
   tag.className='tag '+cls; tag.textContent=cls==='win'?'Victory':cls==='lose'?'Defeat':'Draw';
   document.getElementById('goTitle').textContent=title;
   document.getElementById('goSub').textContent=sub||'';
+  document.getElementById('goReport').innerHTML='';   // default: no report (e.g. 1v1); showGameOver fills it
   document.getElementById('goReview').style.display = game.history().length ? '' : 'none';
   ov.classList.add('show');
+}
+// post-game coaching report from the accumulated per-move grades
+const REP_LABELS={best:'Best',great:'Excellent',good:'Good',inacc:'Inaccuracy',mistake:'Mistake',blunder:'Blunder'};
+function buildReport(){
+  if(!moveReport.length) return '';
+  const acc=Math.round(moveReport.reduce((s,m)=>s+m.accuracy,0)/moveReport.length);
+  const counts={}; moveReport.forEach(m=>counts[m.tag]=(counts[m.tag]||0)+1);
+  const chips=['best','great','good','inacc','mistake','blunder'].filter(t=>counts[t])
+    .map(t=>`<span class="rep-chip ${t}">${counts[t]} ${REP_LABELS[t]}</span>`).join('');
+  const worst=moveReport.filter(m=>m.tag==='inacc'||m.tag==='mistake'||m.tag==='blunder')
+    .sort((a,b)=>b.loss-a.loss).slice(0,3);
+  const moments = worst.length
+    ? `<div class="rep-moments">`+worst.map(m=>{
+        const no=Math.ceil(m.ply/2), dots=(m.ply%2===1)?'.':'…';
+        return `<button class="rep-moment" data-ply="${m.ply}"><span class="tag ${m.tag}">${m.label}</span>`+
+               `<span class="rep-mv"><b>${no}${dots} ${m.san}</b> → better <b>${m.bestSan||'—'}</b></span></button>`;
+      }).join('')+`</div>`
+    : `<p class="rep-clean">No serious mistakes — a clean game.</p>`;
+  return `<div class="rep"><div class="rep-acc"><span class="rep-acc-num">${acc}%</span>`+
+         `<span class="rep-acc-lbl">your accuracy</span></div>`+
+         `<div class="rep-chips">${chips}</div>${moments}`+
+         (worst.length?`<p class="rep-hint">Tap a moment to replay it.</p>`:'')+`</div>`;
 }
 function showGameOver(){
   if(!game.game_over()) return;
@@ -942,6 +1005,7 @@ function showGameOver(){
   else if(game.insufficient_material()){ cls='draw'; t='Draw'; s='Insufficient material.'; }
   else { cls='draw'; t='Draw'; s='Fifty-move rule.'; }
   showResult(cls,t,s);
+  document.getElementById('goReport').innerHTML=buildReport();   // single-player: attach the report
 }
 function hideGameOver(){ const ov=document.getElementById('gameOver'); if(ov) ov.classList.remove('show'); }
 
@@ -967,6 +1031,10 @@ document.getElementById('goNew').addEventListener('click',()=>{
   if(MP){ try{ LabMP.sendControl('rematch'); }catch(_){}; mpRematch(); } else newGame();
 });
 document.getElementById('goReview').addEventListener('click',()=>{ sfx('ui'); hideGameOver(); });
+document.getElementById('gameOver').addEventListener('click',e=>{
+  const m=e.target.closest('.rep-moment[data-ply]'); if(!m) return;
+  sfx('ui'); hideGameOver(); gotoPly(+m.dataset.ply);
+});
 
 /* move-list replay: click a ply, transport buttons, arrow keys */
 function curPly(){ return isReviewing()?reviewIndex:liveLen(); }
