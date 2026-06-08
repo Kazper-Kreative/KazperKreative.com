@@ -9,33 +9,32 @@ export interface AdminClient {
   contact_email: string | null;
 }
 
+type Result = Record<string, unknown> | null;
+
 // Staff console: create clients, invite client emails, and issue invoices.
 // All actions POST to /api/billing/admin (staff-gated + RLS-authorized).
 export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  // per-form feedback so the confirmation appears right at the button you used
+  const [fb, setFb] = useState<{ where: string; ok: boolean; text: string } | null>(null);
 
   // new client
   const [cName, setCName] = useState("");
   const [cContact, setCContact] = useState("");
   const [cEmail, setCEmail] = useState("");
-
   // new invoice
   const [iClient, setIClient] = useState(clients[0]?.id || "");
   const [iTitle, setITitle] = useState("");
   const [iAmount, setIAmount] = useState("");
   const [iDue, setIDue] = useState("");
   const [iDesc, setIDesc] = useState("");
-
   // invite
   const [vClient, setVClient] = useState(clients[0]?.id || "");
   const [vEmail, setVEmail] = useState("");
 
-  const post = async (payload: Record<string, unknown>): Promise<boolean> => {
-    setErr("");
-    setMsg("");
+  const post = async (where: string, payload: Record<string, unknown>): Promise<Result> => {
+    setFb(null);
     setBusy(true);
     try {
       const res = await fetch("/api/billing/admin", {
@@ -46,26 +45,27 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
       const data = await res.json();
       setBusy(false);
       if (!res.ok) {
-        setErr(data.error || "Something went wrong.");
-        return false;
+        setFb({ where, ok: false, text: data.error || "Something went wrong." });
+        return null;
       }
       router.refresh();
-      return true;
+      return data;
     } catch {
       setBusy(false);
-      setErr("Network error — try again.");
-      return false;
+      setFb({ where, ok: false, text: "Network error — try again." });
+      return null;
     }
   };
 
+  const Feedback = ({ where }: { where: string }) =>
+    fb && fb.where === where ? (
+      <p style={{ margin: "8px 0 0", fontSize: 13, color: fb.ok ? "var(--good,#39d98a)" : "var(--bad,#ff5d6c)" }}>
+        {fb.text}
+      </p>
+    ) : null;
+
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      {(msg || err) && (
-        <p className="dim" style={{ margin: 0, color: err ? "var(--bad,#ff5d6c)" : "var(--good,#39d98a)" }}>
-          {err || msg}
-        </p>
-      )}
-
       {/* New client */}
       <div className="card" style={{ padding: "clamp(18px,3vw,24px)" }}>
         <span className="kicker no-line" style={{ fontSize: 12 }}>New client</span>
@@ -77,14 +77,16 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
             className="btn btn-fill"
             disabled={busy || !cName.trim()}
             onClick={async () => {
-              if (await post({ action: "createClient", name: cName, contactName: cContact, contactEmail: cEmail })) {
-                setMsg(`Created client "${cName.trim()}".`);
+              const r = await post("client", { action: "createClient", name: cName, contactName: cContact, contactEmail: cEmail });
+              if (r) {
+                setFb({ where: "client", ok: true, text: `Created "${cName.trim()}".${cEmail.trim() ? " Contact invited to the portal." : ""}` });
                 setCName(""); setCContact(""); setCEmail("");
               }
             }}
           >
-            Create client
+            {busy ? "Working…" : "Create client"}
           </button>
+          <Feedback where="client" />
         </div>
       </div>
 
@@ -106,14 +108,22 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
               className="btn btn-fill"
               disabled={busy || !iClient || !iTitle.trim() || !iAmount}
               onClick={async () => {
-                if (await post({ action: "createInvoice", clientId: iClient, title: iTitle, amountDollars: iAmount, dueDate: iDue, description: iDesc })) {
-                  setMsg(`Invoice created for $${iAmount}.`);
+                const r = await post("invoice", { action: "createInvoice", clientId: iClient, title: iTitle, amountDollars: iAmount, dueDate: iDue, description: iDesc });
+                if (r) {
+                  const recips = Number(r.recipients || 0);
+                  const emailed = Number(r.emailed || 0);
+                  const note =
+                    recips === 0 ? "no client email on file — share the /portal link"
+                    : emailed > 0 ? `emailed ${emailed} contact${emailed === 1 ? "" : "s"}`
+                    : "client not emailed (set RESEND_API_KEY to auto-notify)";
+                  setFb({ where: "invoice", ok: true, text: `Invoice created and visible in their portal — ${note}.` });
                   setITitle(""); setIAmount(""); setIDue(""); setIDesc("");
                 }
               }}
             >
-              Create &amp; send invoice
+              {busy ? "Working…" : "Create invoice"}
             </button>
+            <Feedback where="invoice" />
           </div>
         )}
       </div>
@@ -134,14 +144,16 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
               className="btn"
               disabled={busy || !vClient || !vEmail.trim()}
               onClick={async () => {
-                if (await post({ action: "addInvite", clientId: vClient, email: vEmail })) {
-                  setMsg(`Invited ${vEmail.trim()}.`);
+                const r = await post("invite", { action: "addInvite", clientId: vClient, email: vEmail });
+                if (r) {
+                  setFb({ where: "invite", ok: true, text: `${vEmail.trim()} now has portal access.` });
                   setVEmail("");
                 }
               }}
             >
-              Add access
+              {busy ? "Working…" : "Add access"}
             </button>
+            <Feedback where="invite" />
           </div>
         )}
       </div>

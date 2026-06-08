@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase/server";
-import { getBillingIdentity } from "@/lib/billing/access";
+import { getBillingIdentity, formatMoney } from "@/lib/billing/access";
+import { sendInvoiceEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
       "KK-" + new Date().getFullYear() + "-" +
       Math.random().toString(36).slice(2, 6).toUpperCase();
 
+    const amountCents = Math.round(amountDollars * 100);
     const { data, error } = await sb
       .from("invoices")
       .insert({
@@ -77,7 +79,7 @@ export async function POST(req: Request) {
         number,
         title,
         description: str(body.description),
-        amount_cents: Math.round(amountDollars * 100),
+        amount_cents: amountCents,
         currency: "usd",
         status: "sent",
         due_date: str(body.dueDate),
@@ -86,7 +88,23 @@ export async function POST(req: Request) {
       .select("id")
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ id: data.id, number });
+
+    // notify everyone with portal access to this client (best-effort)
+    const { data: invites } = await sb
+      .from("client_invites")
+      .select("email")
+      .eq("client_id", clientId);
+    const recipients = (invites ?? []).map((r) => r.email).filter(Boolean);
+    let emailed = 0;
+    for (const to of recipients) {
+      if (await sendInvoiceEmail(to, { title, amountLabel: formatMoney(amountCents), number })) emailed++;
+    }
+    return NextResponse.json({
+      id: data.id,
+      number,
+      recipients: recipients.length,
+      emailed,
+    });
   }
 
   if (action === "voidInvoice") {
