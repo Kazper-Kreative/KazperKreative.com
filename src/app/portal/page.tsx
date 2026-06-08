@@ -7,11 +7,12 @@ export const dynamic = "force-dynamic";
 const STATUS_TONE: Record<string, string> = {
   paid: "var(--good,#39d98a)",
   sent: "var(--accent,#ff7a45)",
+  processing: "var(--warn,#f5b54a)",
   draft: "var(--dim,#9aa)",
   void: "var(--dim,#9aa)",
 };
 const STATUS_LABEL: Record<string, string> = {
-  paid: "Paid", sent: "Due", draft: "Draft", void: "Void",
+  paid: "Paid", sent: "Due", processing: "Processing", draft: "Draft", void: "Void",
 };
 
 export default async function PortalPage({

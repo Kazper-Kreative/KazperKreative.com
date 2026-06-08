@@ -34,7 +34,7 @@ export interface InvoiceRow {
   description: string | null;
   amount_cents: number;
   currency: string;
-  status: "draft" | "sent" | "paid" | "void";
+  status: "draft" | "sent" | "processing" | "paid" | "void";
   due_date: string | null;
   paid_at: string | null;
   created_at: string;

@@ -27,24 +27,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Bad signature: ${msg}` }, { status: 400 });
   }
 
-  if (event.type === "checkout.session.completed") {
+  // All three events carry a Checkout Session. Cards settle synchronously
+  // (completed → payment_status "paid"); ACH settles asynchronously
+  // (completed → "processing", then async_payment_succeeded/failed days later).
+  if (event.type.startsWith("checkout.session.")) {
     const session = event.data.object as Stripe.Checkout.Session;
     const invoiceId = session.metadata?.invoice_id;
-    if (invoiceId && session.payment_status === "paid") {
-      const svc = createSupabaseService();
-      if (svc) {
-        await svc
-          .from("invoices")
-          .update({
-            status: "paid",
-            paid_at: new Date().toISOString(),
-            stripe_checkout_session_id: session.id,
-            stripe_payment_intent_id:
-              typeof session.payment_intent === "string" ? session.payment_intent : null,
-          })
-          .eq("id", invoiceId);
-      } else {
-        console.error("[billing webhook] paid invoice but no service-role key:", invoiceId);
+    if (invoiceId) {
+      const common = {
+        stripe_checkout_session_id: session.id,
+        stripe_payment_intent_id:
+          typeof session.payment_intent === "string" ? session.payment_intent : null,
+      };
+
+      let fields: Record<string, unknown> | null = null;
+      if (event.type === "checkout.session.async_payment_succeeded") {
+        fields = { status: "paid", paid_at: new Date().toISOString(), ...common };
+      } else if (event.type === "checkout.session.async_payment_failed") {
+        fields = { status: "sent", ...common }; // bank debit failed → payable again
+      } else if (event.type === "checkout.session.completed") {
+        if (session.payment_status === "paid") {
+          fields = { status: "paid", paid_at: new Date().toISOString(), ...common };
+        } else if (session.payment_status === "unpaid" || session.payment_status === "no_payment_required") {
+          fields = null; // nothing collected yet
+        } else {
+          fields = { status: "processing", ...common }; // e.g. ACH clearing
+        }
+      }
+
+      if (fields) {
+        const svc = createSupabaseService();
+        if (svc) await svc.from("invoices").update(fields).eq("id", invoiceId);
+        else console.error("[billing webhook] settlement event but no service-role key:", invoiceId);
       }
     }
   }
