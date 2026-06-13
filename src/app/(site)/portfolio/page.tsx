@@ -96,6 +96,13 @@ export default function PortfolioPage() {
                 <a href="mailto:masonbell929@gmail.com" className="btn btn-fill btn-lg">
                   Get in touch <span className="arrow">→</span>
                 </a>
+                <a
+                  href="/assets/mason-bell-resume.pdf"
+                  download="Mason-Lee-Bell-Resume.pdf"
+                  className="btn btn-ghost btn-lg"
+                >
+                  Download résumé <span className="arrow">↓</span>
+                </a>
                 <Link href="/" className="btn btn-ghost btn-lg">
                   Kazper Kreative ↗
                 </Link>
@@ -190,6 +197,15 @@ export default function PortfolioPage() {
           <p className="lead" data-reveal data-delay="2">
             {SUMMARY}
           </p>
+          <div className="hero-actions" data-reveal data-delay="2" style={{ marginTop: 20 }}>
+            <a
+              href="/assets/mason-bell-resume.pdf"
+              download="Mason-Lee-Bell-Resume.pdf"
+              className="btn btn-fill"
+            >
+              Download résumé (PDF) <span className="arrow">↓</span>
+            </a>
+          </div>
         </div>
       </section>
 
