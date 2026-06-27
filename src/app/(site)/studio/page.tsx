@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 const WORKS = [
   {
+    proj: "vengeance",
     statusClass: "dev",
     status: "In Development",
     art: "/assets/vengeance.jpg",
@@ -20,6 +21,7 @@ const WORKS = [
     meta: ["Steam · Windows", "Target: Jul 2026"],
   },
   {
+    proj: "shadow",
     statusClass: "dev",
     status: "In Development",
     art: "/assets/sob.jpg",
@@ -93,7 +95,14 @@ export default function StudioPage() {
           </div>
           <div className="proj-grid two">
             {WORKS.map((w, i) => (
-              <article className="card proj-card" data-reveal data-delay={(i % 3).toString()} key={w.title}>
+              <Link
+                href="/work"
+                className="card proj-card js-proj"
+                data-proj={w.proj}
+                data-reveal
+                data-delay={(i % 3).toString()}
+                key={w.title}
+              >
                 <div className="proj-art">
                   <span className={`status ${w.statusClass}`}>{w.status}</span>
                   <img className="art-rect" loading="lazy" decoding="async" src={w.art} alt={w.title} style={{ aspectRatio: "16 / 10" }} />
@@ -114,7 +123,7 @@ export default function StudioPage() {
                     ))}
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </div>
