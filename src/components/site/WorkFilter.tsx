@@ -38,7 +38,7 @@ const ITEMS: Item[] = [
     href: "#",
     status: "In Development",
     statusClass: "dev",
-    title: "Shadow of Beginnings",
+    title: "Shadows of Beginnings",
     label: "Steam · Action RPG",
     badge: { flag: false, text: "Studio" },
     art: "/assets/sob.jpg",

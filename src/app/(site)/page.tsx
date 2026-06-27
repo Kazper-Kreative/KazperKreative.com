@@ -266,13 +266,13 @@ export default function HomePage() {
                 <img
                   className="art-rounded" loading="lazy" decoding="async"
                   src="/assets/sob.jpg"
-                  alt="Shadow of Beginnings"
+                  alt="Shadows of Beginnings"
                   style={{ aspectRatio: "4 / 3" }}
                 />
               </div>
               <div className="work-meta">
                 <div>
-                  <h4>Shadow of Beginnings</h4>
+                  <h4>Shadows of Beginnings</h4>
                   <span className="dim">Steam · Action RPG</span>
                 </div>
                 <span className="tag">Studio</span>

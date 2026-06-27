@@ -5,7 +5,7 @@ import NewsletterForm from "@/components/site/NewsletterForm";
 export const metadata: Metadata = {
   title: "Kazper's Echo · Game Studio",
   description:
-    "Kazper's Echo is the in-house game studio of Kazper Kreative, building original worlds on Unreal Engine 5: MechaVerse, Vengeance: Beyond the Night, and Shadow of Beginnings.",
+    "Kazper's Echo is the in-house game studio of Kazper Kreative, building original worlds on Unreal Engine 5: MechaVerse, Vengeance: Beyond the Night, and Shadows of Beginnings.",
   alternates: { canonical: "/studio" },
 };
 
@@ -24,7 +24,7 @@ const WORKS = [
     status: "In Development",
     art: "/assets/sob.jpg",
     tags: [{ flag: false, label: "Steam" }, { flag: false, label: "Action RPG" }],
-    title: "Shadow of Beginnings",
+    title: "Shadows of Beginnings",
     desc: "An action-RPG of ruin and rebuilding. Gather what's left, brave the horrors beyond the walls, and bring the Town of Beginnings back from the dark.",
     meta: ["Steam · Windows", "Target: Oct 2026"],
   },
@@ -38,7 +38,7 @@ const PILLARS = [
 
 const DEVLOG = [
   { date: "2026 · 05", h: "Vengeance: wiring the rogue-AI threat system", p: "How enemies learn, swarm and adapt, building an AI that actually fights back." },
-  { date: "2026 · 04", h: "Shadow of Beginnings: rebuilding the town", p: "First look at the gather-and-restore loop at the heart of the world." },
+  { date: "2026 · 04", h: "Shadows of Beginnings: rebuilding the town", p: "First look at the gather-and-restore loop at the heart of the world." },
 ];
 
 export default function StudioPage() {

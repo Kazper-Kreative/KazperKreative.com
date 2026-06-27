@@ -5,12 +5,12 @@ test.describe("work", () => {
     await page.goto("/work");
 
     const grid = page.locator("#workGrid");
-    await expect(grid.getByRole("heading", { name: "Shadow of Beginnings" })).toBeVisible();
+    await expect(grid.getByRole("heading", { name: "Shadows of Beginnings" })).toBeVisible();
     await expect(grid.getByRole("heading", { name: "SynX" })).toBeVisible();
 
-    // Filtering to "Agency" hides studio-only Shadow of Beginnings, keeps SynX.
+    // Filtering to "Agency" hides studio-only Shadows of Beginnings, keeps SynX.
     await page.getByRole("button", { name: "Agency" }).click();
-    await expect(grid.getByRole("heading", { name: "Shadow of Beginnings" })).toBeHidden();
+    await expect(grid.getByRole("heading", { name: "Shadows of Beginnings" })).toBeHidden();
     await expect(grid.getByRole("heading", { name: "SynX" })).toBeVisible();
   });
 

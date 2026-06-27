@@ -49,7 +49,7 @@ export interface Project {
   facts: Fact[];
   overview: { kicker: string; title: string; lead: string; dim: string };
   pillars: { kicker: string; title: string; items: Pillar[] };
-  gallery: { kicker: string; title: string; note: string };
+  gallery: { kicker: string; title: string; note: string; images?: string[] };
   cta: {
     kicker: string;
     title: string;
@@ -154,7 +154,7 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
 
   shadow: {
     slug: "shadow",
-    title: "Shadow of Beginnings",
+    title: "Shadows of Beginnings",
     status: "In Development",
     statusClass: "dev",
     tags: ["Steam", "Action RPG"],
@@ -177,7 +177,7 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
     overview: {
       kicker: "Overview",
       title: "Ruin, rebuilding, and the dark beyond the walls.",
-      lead: "Shadow of Beginnings is an action-RPG of ruin and rebuilding. Gather what's left, brave the horrors beyond the walls, and bring the Town of Beginnings back from the dark.",
+      lead: "Shadows of Beginnings is an action-RPG of ruin and rebuilding. Gather what's left, brave the horrors beyond the walls, and bring the Town of Beginnings back from the dark.",
       dim: "Every expedition feeds the town; every rebuilt corner pushes the dark back a little further. More on the world and combat coming soon.",
     },
     pillars: {
@@ -189,11 +189,16 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
         { ic: "◆", h: "A town worth saving", p: "Survivors, stories, and a home that grows as you fight for it." },
       ],
     },
-    gallery: { kicker: "Gallery", title: "From the Town of Beginnings.", note: "Screenshots coming soon" },
+    gallery: {
+      kicker: "Gallery",
+      title: "From the Town of Beginnings.",
+      note: "Captured in Unreal Engine 5 · more at the Steam page",
+      images: ["/assets/sob-1.jpg", "/assets/sob-2.jpg", "/assets/sob-3.jpg"],
+    },
     cta: {
       kicker: "Wishlist now",
       title: "Help rebuild the town.",
-      lead: "Shadow of Beginnings is in development for Steam. Wishlist it now to follow the descent and get notified at launch.",
+      lead: "Shadows of Beginnings is in development for Steam. Wishlist it now to follow the descent and get notified at launch.",
       primary: { url: "https://store.steampowered.com/app/4855310/Shadows_of_Beginnings/", label: "Wishlist on Steam ↗" },
     },
   },

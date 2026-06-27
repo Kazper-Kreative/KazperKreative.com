@@ -17,7 +17,7 @@ const CAPS = [
 
 const WORK = [
   { proj: "vengeance", status: "In Development", statusClass: "dev", art: "/assets/vengeance.jpg", title: "Vengeance: Beyond the Night", label: "Steam · Action", badge: { flag: true, text: "Agency × Studio" } },
-  { proj: "shadow", status: "In Development", statusClass: "dev", art: "/assets/sob.jpg", title: "Shadow of Beginnings", label: "Steam · Action RPG", badge: { flag: false, text: "Studio" } },
+  { proj: "shadow", status: "In Development", statusClass: "dev", art: "/assets/sob.jpg", title: "Shadows of Beginnings", label: "Steam · Action RPG", badge: { flag: false, text: "Studio" } },
   { proj: "synx", status: "Ongoing", statusClass: "dev", clientLogo: "/assets/sensorops-logo.svg", title: "SynX", label: "Sensor Ops · QA + Dev", badge: { flag: false, text: "Agency" } },
 ];
 
@@ -48,7 +48,7 @@ const EXPERIENCE = [
   {
     company: "Team Nebula",
     role: "Gameplay & Backend Developer",
-    note: "Shadow of Beginnings",
+    note: "Shadows of Beginnings",
     bullets: [
       "Architect complex backend data systems, database integrations, and overarching gameplay logic.",
       "Develop robust “Game Feel,” complex inventory economies, town restoration loops, and highly scalable data architectures designed for easy iteration.",

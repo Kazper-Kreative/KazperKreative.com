@@ -197,9 +197,25 @@ export default async function CaseStudyPage({
           </div>
           <div data-reveal>
             <div className="gallery">
-              <div className="slot-ph">Screenshot</div>
-              <div className="slot-ph">Screenshot</div>
-              <div className="slot-ph">Screenshot</div>
+              {project.gallery.images && project.gallery.images.length > 0
+                ? project.gallery.images.map((src, i) => (
+                    <img
+                      key={i}
+                      className="art-rounded"
+                      loading="lazy"
+                      decoding="async"
+                      src={src}
+                      alt={`${project.title} screenshot ${i + 1}`}
+                      style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 14, display: "block" }}
+                    />
+                  ))
+                : (
+                  <>
+                    <div className="slot-ph">Screenshot</div>
+                    <div className="slot-ph">Screenshot</div>
+                    <div className="slot-ph">Screenshot</div>
+                  </>
+                )}
             </div>
             <span className="coming">{project.gallery.note}</span>
           </div>
