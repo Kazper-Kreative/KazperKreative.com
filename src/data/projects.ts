@@ -165,6 +165,7 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
     meta: "Steam · Windows · Target Oct 2026",
     desc: "An action-RPG of ruin and rebuilding. Gather what's left, brave the horrors beyond the walls, and bring the Town of Beginnings back from the dark.",
     art: "/assets/sob.jpg",
+    link: { url: "https://store.steampowered.com/app/4855310/Shadows_of_Beginnings/", label: "Wishlist on Steam" },
     caseLead:
       "Rebuild the Town of Beginnings, one expedition into the dark at a time.",
     facts: [
@@ -190,10 +191,10 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
     },
     gallery: { kicker: "Gallery", title: "From the Town of Beginnings.", note: "Screenshots coming soon" },
     cta: {
-      kicker: "Wishlist soon",
+      kicker: "Wishlist now",
       title: "Help rebuild the town.",
-      lead: "Shadow of Beginnings is in development for Steam. A store page and wishlist are coming.",
-      comingSoon: true,
+      lead: "Shadow of Beginnings is in development for Steam. Wishlist it now to follow the descent and get notified at launch.",
+      primary: { url: "https://store.steampowered.com/app/4855310/Shadows_of_Beginnings/", label: "Wishlist on Steam ↗" },
     },
   },
 
