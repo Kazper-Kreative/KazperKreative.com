@@ -43,6 +43,7 @@ export interface Project {
   clientLogo?: string; // logo for client-panel projects (e.g. SynX)
 
   link?: ProjectLink; // external link
+  steamAppId?: string; // embeds the Steam wishlist widget on the case study
 
   // Case study (/work/[slug])
   caseLead: string;
@@ -166,6 +167,7 @@ export const PROJECTS: Record<ProjectSlug, Project> = {
     desc: "An action-RPG of ruin and rebuilding. Gather what's left, brave the horrors beyond the walls, and bring the Town of Beginnings back from the dark.",
     art: "/assets/sob.jpg",
     link: { url: "https://store.steampowered.com/app/4855310/Shadows_of_Beginnings/", label: "Wishlist on Steam" },
+    steamAppId: "4855310",
     caseLead:
       "Rebuild the Town of Beginnings, one expedition into the dark at a time.",
     facts: [

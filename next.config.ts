@@ -17,8 +17,9 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob:",
   // Supabase REST + Auth + Realtime (wss); Cloudflare Turnstile telemetry.
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com",
-  // Turnstile renders its challenge inside an iframe from this origin.
-  "frame-src 'self' https://challenges.cloudflare.com",
+  // Turnstile renders its challenge inside an iframe from this origin;
+  // store.steampowered.com serves the embeddable Steam wishlist widget.
+  "frame-src 'self' https://challenges.cloudflare.com https://store.steampowered.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

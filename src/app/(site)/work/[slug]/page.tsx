@@ -229,6 +229,16 @@ export default async function CaseStudyPage({
             <span className="kicker no-line">{project.cta.kicker}</span>
             <h2>{project.cta.title}</h2>
             <p className="lead">{project.cta.lead}</p>
+            {project.steamAppId ? (
+              <div style={{ width: "100%", maxWidth: 646, margin: "20px auto 4px" }}>
+                <iframe
+                  title={`${project.title} on Steam`}
+                  src={`https://store.steampowered.com/widget/${project.steamAppId}/`}
+                  loading="lazy"
+                  style={{ width: "100%", height: 190, border: 0, borderRadius: 8, display: "block" }}
+                />
+              </div>
+            ) : null}
             <div className="hero-actions">
               {project.cta.primary ? (
                 <>
