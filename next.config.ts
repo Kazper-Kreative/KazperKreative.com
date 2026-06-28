@@ -10,7 +10,10 @@ const contentSecurityPolicy = [
   "default-src 'self'",
   // Next.js needs 'unsafe-inline' for its hydration bootstrap and JSON-LD;
   // challenges.cloudflare.com serves the Turnstile widget script.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com",
+  // 'wasm-unsafe-eval' lets the chess engine instantiate its WebAssembly
+  // module WITHOUT allowing JS eval() — the engine glue uses no eval/Function,
+  // so this is the tight directive (not the broad 'unsafe-eval').
+  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com",
   // 'unsafe-inline' covers the inline style attributes used across pages.
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self' data:",

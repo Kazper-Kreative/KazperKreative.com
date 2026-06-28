@@ -27,40 +27,57 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: `Bad signature: ${msg}` }, { status: 400 });
   }
 
-  // All three events carry a Checkout Session. Cards settle synchronously
-  // (completed → payment_status "paid"); ACH settles asynchronously
-  // (completed → "processing", then async_payment_succeeded/failed days later).
-  if (event.type.startsWith("checkout.session.")) {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const invoiceId = session.metadata?.invoice_id;
-    if (invoiceId) {
-      const common = {
-        stripe_checkout_session_id: session.id,
-        stripe_payment_intent_id:
-          typeof session.payment_intent === "string" ? session.payment_intent : null,
-      };
+  // Only checkout.session.* carries an invoice to settle. Cards settle
+  // synchronously (completed → "paid"); ACH settles async (completed →
+  // "processing", then async_payment_succeeded/failed days later).
+  if (!event.type.startsWith("checkout.session.")) {
+    return NextResponse.json({ received: true });
+  }
+  const session = event.data.object as Stripe.Checkout.Session;
+  const invoiceId = session.metadata?.invoice_id;
+  if (!invoiceId) return NextResponse.json({ received: true });
 
-      let fields: Record<string, unknown> | null = null;
-      if (event.type === "checkout.session.async_payment_succeeded") {
-        fields = { status: "paid", paid_at: new Date().toISOString(), ...common };
-      } else if (event.type === "checkout.session.async_payment_failed") {
-        fields = { status: "sent", ...common }; // bank debit failed → payable again
-      } else if (event.type === "checkout.session.completed") {
-        if (session.payment_status === "paid") {
-          fields = { status: "paid", paid_at: new Date().toISOString(), ...common };
-        } else if (session.payment_status === "unpaid" || session.payment_status === "no_payment_required") {
-          fields = null; // nothing collected yet
-        } else {
-          fields = { status: "processing", ...common }; // e.g. ACH clearing
-        }
-      }
+  const common = {
+    stripe_checkout_session_id: session.id,
+    stripe_payment_intent_id:
+      typeof session.payment_intent === "string" ? session.payment_intent : null,
+  };
 
-      if (fields) {
-        const svc = createSupabaseService();
-        if (svc) await svc.from("invoices").update(fields).eq("id", invoiceId);
-        else console.error("[billing webhook] settlement event but no service-role key:", invoiceId);
-      }
+  // Each transition declares the statuses it's allowed to move FROM. Applying
+  // the update with `.in("status", from)` makes it idempotent (a duplicate
+  // event no-ops) and prevents moving a paid/voided invoice backward or
+  // settling out of order — no event-id table needed.
+  let target: { fields: Record<string, unknown>; from: string[] } | null = null;
+  if (event.type === "checkout.session.async_payment_succeeded") {
+    target = { fields: { status: "paid", paid_at: new Date().toISOString(), ...common }, from: ["sent", "processing"] };
+  } else if (event.type === "checkout.session.async_payment_failed") {
+    target = { fields: { status: "sent", ...common }, from: ["processing"] }; // only an in-flight debit reverts
+  } else if (event.type === "checkout.session.completed") {
+    if (session.payment_status === "paid") {
+      target = { fields: { status: "paid", paid_at: new Date().toISOString(), ...common }, from: ["sent", "processing"] };
+    } else if (session.payment_status !== "unpaid" && session.payment_status !== "no_payment_required") {
+      target = { fields: { status: "processing", ...common }, from: ["sent"] }; // ACH clearing
     }
+  }
+  if (!target) return NextResponse.json({ received: true }); // nothing collected
+
+  const svc = createSupabaseService();
+  if (!svc) {
+    // We cannot settle without the service-role key. Fail LOUDLY (non-2xx) so
+    // Stripe retries later rather than treating a charged-but-unsettled
+    // payment as done.
+    console.error("[billing webhook] settlement event but no service-role key:", invoiceId);
+    return NextResponse.json({ error: "Settlement temporarily unavailable." }, { status: 500 });
+  }
+
+  const { error } = await svc
+    .from("invoices")
+    .update(target.fields)
+    .eq("id", invoiceId)
+    .in("status", target.from);
+  if (error) {
+    console.error("[billing webhook] settlement write failed:", error.message);
+    return NextResponse.json({ error: "Settlement write failed." }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

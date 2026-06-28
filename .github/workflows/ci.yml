@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [master]
 
-env:
-  NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}
-  NEXT_PUBLIC_SANITY_DATASET: production
-
 jobs:
   ci:
     runs-on: ubuntu-latest

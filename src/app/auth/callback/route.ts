@@ -9,8 +9,10 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const next = url.searchParams.get("next") || "/lab";
-  // Only allow same-origin relative redirects.
-  const dest = next.startsWith("/") ? next : "/lab";
+  // Only allow same-origin relative redirects. Must start with a single "/"
+  // and NOT "//" or "/\" — those resolve to a protocol-relative absolute URL
+  // (e.g. //evil.com), which would be an open redirect for phishing.
+  const dest = /^\/(?![/\\])/.test(next) ? next : "/lab";
 
   if (code) {
     const supabase = await createSupabaseServer();
