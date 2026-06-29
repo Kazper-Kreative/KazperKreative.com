@@ -5,7 +5,7 @@ import NewsletterForm from "@/components/site/NewsletterForm";
 export const metadata: Metadata = {
   title: "Kazper's Echo · Game Studio",
   description:
-    "Kazper's Echo is the in-house game studio of Kazper Kreative, building original worlds on Unreal Engine 5: MechaVerse, Vengeance: Beyond the Night, and Shadows of Beginnings.",
+    "Kazper's Echo is the in-house game studio of Kazper Kreative, building original worlds on Unreal Engine 5: Vengeance: Beyond the Night and Shadows of Beginnings.",
   alternates: { canonical: "/studio" },
 };
 

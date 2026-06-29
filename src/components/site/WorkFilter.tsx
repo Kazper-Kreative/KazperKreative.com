@@ -46,7 +46,7 @@ const ITEMS: Item[] = [
   {
     proj: "synx",
     cat: ["agency"],
-    dev: true,
+    dev: false, // "Ongoing" client engagement, not an in-development title
     href: "https://sensorops.io/syndojo/",
     status: "Ongoing",
     statusClass: "dev",

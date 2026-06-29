@@ -60,8 +60,13 @@ for anything reusable. Dark-only: `<html className="dark">` in
   `/work/[slug]` (case studies), `/join`, `/contact`, `/portfolio`
   (`noindex`).
 - `src/app/inbox/` is **standalone** (no site chrome), `noindex`.
+- `src/app/portal/` (client billing portal) and `src/app/admin/billing/`
+  (staff console) are **standalone**, `noindex` — see the billing section below.
 - `src/app/layout.tsx` (root) mounts `ProjectModalProvider` +
   `SiteInteractions` + Vercel `Analytics`, sets fonts and metadata.
+- **Middleware is `src/proxy.ts`** — Next 16 renamed `middleware.ts` to
+  `proxy.ts` (exports `proxy` + `config`). It refreshes the Supabase session and
+  hard-gates `/lab-assets`. Grepping for `middleware.ts` will find nothing.
 
 ## Interaction layer (`src/components/site/`)
 
@@ -120,6 +125,32 @@ Everything degrades gracefully on missing env:
 The `<Turnstile>` widget needs the `challenges.cloudflare.com` CSP
 allowances already added to `next.config.ts` (script-src, frame-src,
 connect-src).
+
+## Client billing portal (`/portal`, `/admin/billing`)
+
+The first revenue surface — bill clients, they pay by card/ACH via Stripe, the
+company gets paid. Schema in **`supabase/billing.sql`**: `app_staff` (admins,
+seeded by SQL only — no self-promote), `clients`, `client_invites`
+(email→client access), `invoices`. RLS shape: **staff do everything via the
+cookie session** (`is_billing_staff()`); a **client reads only their own** rows,
+matched on `auth.jwt()->>'email'` (`current_email()`) — so a client sees their
+invoices the moment they sign in with an invited email (no `auth.users` lookup).
+Clients never write; the Stripe **webhook** (`src/app/api/billing/webhook`)
+settles invoices with the **service-role** client.
+
+- `/portal` — client view (magic-link login, outstanding balance, Stripe
+  Checkout "Pay"). `/admin/billing` — staff-gated console (create clients,
+  invite emails, issue invoices). Both `noindex`, gated in `src/lib/billing/access.ts`.
+- Routes: `api/billing/checkout` (Checkout Session per invoice, amount read
+  server-side), `api/billing/webhook` (signature-verified; settlement is
+  idempotent + status-guarded so paid/void never moves backward; **fails non-2xx**
+  if it can't write so Stripe retries), `api/billing/admin` (staff actions).
+- Stripe is env-guarded (`src/lib/stripe.ts`, apiVersion pinned). **Needs in
+  prod:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`
+  (webhook can't settle without it), and Supabase Auth **"Secure email change"
+  ON** (the email-based RLS depends on verified emails). Invoice creation emails
+  the client via Resend if `RESEND_API_KEY` is set.
+- Still **test-mode** until live Stripe keys + a live webhook are configured.
 
 ## Conventions / gotchas
 
