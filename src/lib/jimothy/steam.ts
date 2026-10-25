@@ -64,7 +64,10 @@ async function call<T>(
   }
   const body = (await res.json()) as SteamResponse<T>;
   const r = body.response;
-  if (!r || r.result !== "OK" || !r.params) {
+  // ISteamMicroTxn answers { result: "OK", params }; ISteamUserAuth answers
+  // { params } with its result inside params. A missing top-level result is
+  // not a failure; an error object or a result other than OK is.
+  if (!r || !r.params || r.error || (r.result !== undefined && r.result !== "OK")) {
     const e = r?.error;
     throw new SteamError(
       String(e?.errorcode ?? "failure"),
