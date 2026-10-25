@@ -1,0 +1,148 @@
+// Steam's partner Web API, for the Jimothy store. Server-only: every call
+// carries the publisher key, which must never reach a client.
+//
+//   STEAM_PUBLISHER_KEY  the Publisher Web API key (Microtransactions + General)
+//   STEAM_APP_ID         5082200 unless set
+//   STEAM_MTX_SANDBOX    purchases go to ISteamMicroTxnSandbox -- no money
+//                        moves -- unless this is exactly "0"
+
+const PARTNER = "https://partner.steam-api.com";
+
+/** The identity string the game passes to GetAuthTicketForWebApi. Both sides
+ *  must use the same one or Steam rejects the ticket. */
+export const TICKET_IDENTITY = "jimothy-store";
+
+export function steamAppId(): string {
+  return process.env.STEAM_APP_ID || "5082200";
+}
+
+export function isSandbox(): boolean {
+  return process.env.STEAM_MTX_SANDBOX !== "0";
+}
+
+function publisherKey(): string {
+  const key = process.env.STEAM_PUBLISHER_KEY;
+  if (!key) throw new SteamError("not_configured", "STEAM_PUBLISHER_KEY is not set");
+  return key;
+}
+
+export class SteamError extends Error {
+  constructor(public code: string, message: string) {
+    super(message);
+    this.name = "SteamError";
+  }
+}
+
+type SteamResponse<T> = {
+  response?: {
+    result?: string;
+    params?: T;
+    error?: { errorcode?: number | string; errordesc?: string };
+  };
+};
+
+async function call<T>(
+  iface: string,
+  method: string,
+  version: string,
+  params: Record<string, string>,
+  post: boolean
+): Promise<T> {
+  const query = new URLSearchParams({ key: publisherKey(), ...params });
+  const url = `${PARTNER}/${iface}/${method}/${version}/`;
+  const res = post
+    ? await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: query.toString(),
+        cache: "no-store",
+      })
+    : await fetch(`${url}?${query.toString()}`, { cache: "no-store" });
+
+  if (!res.ok) {
+    throw new SteamError("http_" + res.status, `${iface}/${method}: HTTP ${res.status}`);
+  }
+  const body = (await res.json()) as SteamResponse<T>;
+  const r = body.response;
+  if (!r || r.result !== "OK" || !r.params) {
+    const e = r?.error;
+    throw new SteamError(
+      String(e?.errorcode ?? "failure"),
+      `${iface}/${method}: ${e?.errordesc ?? r?.result ?? "no response"}`
+    );
+  }
+  return r.params;
+}
+
+function microTxn(): string {
+  return isSandbox() ? "ISteamMicroTxnSandbox" : "ISteamMicroTxn";
+}
+
+/** Verify a GetAuthTicketForWebApi ticket (hex) and return whose it is. */
+export async function authenticateTicket(ticketHex: string): Promise<string> {
+  if (!/^[0-9a-fA-F]{16,4096}$/.test(ticketHex)) {
+    throw new SteamError("bad_ticket", "ticket is not hex");
+  }
+  const params = await call<{ steamid?: string; result?: string }>(
+    "ISteamUserAuth",
+    "AuthenticateUserTicket",
+    "v1",
+    { appid: steamAppId(), ticket: ticketHex, identity: TICKET_IDENTITY },
+    false
+  );
+  if (params.result !== "OK" || !params.steamid) {
+    throw new SteamError("bad_ticket", "ticket not accepted");
+  }
+  return params.steamid;
+}
+
+export interface InitTxnItem {
+  itemId: number;
+  amountCents: number;
+  description: string;
+}
+
+/** Start a purchase. Steam shows the player its overlay dialog; the game hears
+ *  the answer as MicroTxnAuthorizationResponse_t and then calls finalize. */
+export async function initTxn(
+  orderId: string,
+  steamId: string,
+  item: InitTxnItem,
+  language: string
+): Promise<{ orderid: string; transid: string }> {
+  return call(microTxn(), "InitTxn", "v3", {
+    orderid: orderId,
+    steamid: steamId,
+    appid: steamAppId(),
+    itemcount: "1",
+    language,
+    currency: "USD",
+    usersession: "client",
+    "itemid[0]": String(item.itemId),
+    "qty[0]": "1",
+    "amount[0]": String(item.amountCents),
+    "description[0]": item.description.slice(0, 128),
+  }, true);
+}
+
+export async function finalizeTxn(orderId: string): Promise<{ orderid: string; transid: string }> {
+  return call(microTxn(), "FinalizeTxn", "v2", { orderid: orderId, appid: steamAppId() }, true);
+}
+
+/** What Steam knows about an order: used when finalize fails because it
+ *  already went through (a retry after a dropped response). */
+export async function queryTxn(
+  orderId: string
+): Promise<{ orderid: string; transid: string; steamid: string; status: string }> {
+  return call(microTxn(), "QueryTxn", "v3", { orderid: orderId, appid: steamAppId() }, false);
+}
+
+/** Steam's own languages for the purchase dialog (ISO 639-1, the ones it takes). */
+const LANGUAGES = new Set([
+  "ar", "bg", "zh-CN", "zh-TW", "cs", "da", "nl", "en", "fi", "fr", "de", "el", "hu", "it",
+  "ja", "ko", "no", "pl", "pt", "pt-BR", "ro", "ru", "es", "sv", "th", "tr", "uk", "vi",
+]);
+
+export function purchaseLanguage(requested: unknown): string {
+  return typeof requested === "string" && LANGUAGES.has(requested) ? requested : "en";
+}
