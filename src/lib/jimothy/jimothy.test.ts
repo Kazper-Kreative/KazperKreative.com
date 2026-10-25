@@ -85,3 +85,33 @@ describe("jimothy steam settings", () => {
     expect(purchaseLanguage(undefined)).toBe("en");
   });
 });
+
+describe("jimothy steam responses", () => {
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  function answer(body: unknown) {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => body }) as unknown as typeof fetch;
+  }
+
+  it("accepts AuthenticateUserTicket's shape, which has no top-level result", async () => {
+    process.env.STEAM_PUBLISHER_KEY = "test-publisher-key";
+    answer({ response: { params: { result: "OK", steamid: "76561198000000001" } } });
+    const { authenticateTicket } = await import("./steam");
+    await expect(authenticateTicket("00112233445566778899")).resolves.toBe("76561198000000001");
+  });
+
+  it("rejects a ticket Steam refuses", async () => {
+    answer({ response: { error: { errorcode: 101, errordesc: "Invalid ticket" } } });
+    const { authenticateTicket } = await import("./steam");
+    await expect(authenticateTicket("00112233445566778899")).rejects.toThrow();
+  });
+
+  it("rejects a purchase call whose result is not OK", async () => {
+    answer({ response: { result: "Failure", params: {}, error: { errorcode: 3 } } });
+    const { finalizeTxn } = await import("./steam");
+    await expect(finalizeTxn("100001")).rejects.toThrow();
+  });
+});
