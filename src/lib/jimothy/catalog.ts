@@ -29,9 +29,13 @@ export const RACOIN_PACKS: readonly RacoinPack[] = [
 /**
  * Skins sold for Racoins, by the game's SkinId (UJimothySkin::SkinId).
  * A skin not listed here is not for sale: the free ones are found in the
- * world. Empty until the first paid skins exist; 300-800 is the proposed range.
+ * world. The first two (Kazper, 26 Oct 2026), priced so the $4.99 pouch buys
+ * Night Shift and the $9.99 bag buys both.
  */
-export const SKIN_PRICES: Readonly<Record<string, number>> = {};
+export const SKIN_PRICES: Readonly<Record<string, number>> = {
+  NightShift: 500,
+  NeonAlley: 600,
+};
 
 export function findPack(id: unknown): RacoinPack | undefined {
   return typeof id === "string" ? RACOIN_PACKS.find((p) => p.id === id) : undefined;
