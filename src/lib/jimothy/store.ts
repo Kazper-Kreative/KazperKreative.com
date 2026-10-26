@@ -4,8 +4,8 @@
 
 import { NextResponse } from "next/server";
 import { createSupabaseService } from "@/lib/supabase/server";
-import { RACOIN_PACKS, SKIN_PRICES, type RacoinPack } from "./catalog";
-import { isSandbox } from "./steam";
+import { localPrice, RACOIN_PACKS, SKIN_PRICES, type PackPrice, type RacoinPack } from "./catalog";
+import { isSandbox, userCurrency } from "./steam";
 
 export function db() {
   const client = createSupabaseService();
@@ -19,20 +19,28 @@ export function fail(error: string, status: number) {
 
 export async function wallet(steamId: string) {
   const supabase = db();
-  const [{ data: row }, { data: owned }] = await Promise.all([
+  // Every wallet asks Steam for the player's currency, so the signs agree with
+  // what /racoins/start will charge, after a purchase as much as before one.
+  const [{ data: row }, { data: owned }, currency] = await Promise.all([
     supabase.from("jimothy_wallets").select("balance").eq("steam_id", steamId).maybeSingle(),
     supabase.from("jimothy_owned_skins").select("skin_id").eq("steam_id", steamId),
+    userCurrency(steamId),
   ]);
   return {
     balance: row?.balance ?? 0,
     owned: (owned ?? []).map((r) => r.skin_id as string),
-    packs: RACOIN_PACKS.map(({ id, racoins, priceCents }) => ({ id, racoins, priceCents })),
+    // priceCents stays USD for older builds; currency and amount are what the
+    // player is charged, in hundredths.
+    packs: RACOIN_PACKS.map((pack) => {
+      const price = localPrice(pack, currency);
+      return { id: pack.id, racoins: pack.racoins, priceCents: pack.priceCents, ...price };
+    }),
     skins: Object.entries(SKIN_PRICES).map(([id, price]) => ({ id, price })),
     sandbox: isSandbox(),
   };
 }
 
-export async function createOrder(steamId: string, pack: RacoinPack): Promise<string> {
+export async function createOrder(steamId: string, pack: RacoinPack, price: PackPrice): Promise<string> {
   const { data, error } = await db()
     .from("jimothy_orders")
     .insert({
@@ -40,7 +48,8 @@ export async function createOrder(steamId: string, pack: RacoinPack): Promise<st
       pack_id: pack.id,
       item_id: pack.itemId,
       racoins: pack.racoins,
-      amount_cents: pack.priceCents,
+      amount_cents: price.amount,
+      currency: price.currency,
       sandbox: isSandbox(),
     })
     .select("order_id")

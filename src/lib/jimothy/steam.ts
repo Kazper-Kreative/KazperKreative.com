@@ -101,8 +101,24 @@ export async function authenticateTicket(ticketHex: string): Promise<string> {
 
 export interface InitTxnItem {
   itemId: number;
+  /** Hundredths of `currency`. */
   amountCents: number;
+  /** ISO 4217; USD unless the player's own currency is priced. */
+  currency: string;
   description: string;
+}
+
+/** The player's wallet currency, from Steam; undefined if Steam will not say
+ *  (the store then prices in USD and Steam converts). */
+export async function userCurrency(steamId: string): Promise<string | undefined> {
+  try {
+    const params = await call<{ currency?: string }>(
+      microTxn(), "GetUserInfo", "v2", { steamid: steamId, appid: steamAppId() }, false);
+    return typeof params.currency === "string" && /^[A-Z]{3}$/.test(params.currency)
+      ? params.currency : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /** Start a purchase. Steam shows the player its overlay dialog; the game hears
@@ -119,7 +135,7 @@ export async function initTxn(
     appid: steamAppId(),
     itemcount: "1",
     language,
-    currency: "USD",
+    currency: item.currency,
     usersession: "client",
     "itemid[0]": String(item.itemId),
     "qty[0]": "1",

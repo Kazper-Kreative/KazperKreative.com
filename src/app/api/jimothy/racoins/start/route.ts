@@ -5,9 +5,9 @@
 // player's answer as MicroTxnAuthorizationResponse_t and calls /finish.
 
 import { NextResponse } from "next/server";
-import { findPack } from "@/lib/jimothy/catalog";
+import { findPack, localPrice } from "@/lib/jimothy/catalog";
 import { sessionFrom } from "@/lib/jimothy/session";
-import { initTxn, purchaseLanguage } from "@/lib/jimothy/steam";
+import { initTxn, purchaseLanguage, userCurrency } from "@/lib/jimothy/steam";
 import { createOrder, fail, markOrderFailed } from "@/lib/jimothy/store";
 
 export const runtime = "nodejs";
@@ -25,9 +25,13 @@ export async function POST(req: Request) {
   const pack = findPack(body.pack);
   if (!pack) return fail("no_such_pack", 400);
 
+  // The player's own currency, asked of Steam each time: the price shown on
+  // the sign came from the same lookup in /wallet.
+  const price = localPrice(pack, await userCurrency(steamId));
+
   let orderId: string;
   try {
-    orderId = await createOrder(steamId, pack);
+    orderId = await createOrder(steamId, pack, price);
   } catch {
     return fail("unavailable", 503);
   }
@@ -36,7 +40,7 @@ export async function POST(req: Request) {
     await initTxn(
       orderId,
       steamId,
-      { itemId: pack.itemId, amountCents: pack.priceCents, description: pack.description },
+      { itemId: pack.itemId, amountCents: price.amount, currency: price.currency, description: pack.description },
       purchaseLanguage(body.language)
     );
   } catch (e) {

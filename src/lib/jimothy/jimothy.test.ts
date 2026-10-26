@@ -115,3 +115,45 @@ describe("jimothy steam responses", () => {
     await expect(finalizeTxn("100001")).rejects.toThrow();
   });
 });
+
+describe("jimothy local prices", () => {
+  it("charges USD where the table has no row", async () => {
+    const { localPrice, RACOIN_PACKS } = await import("./catalog");
+    expect(localPrice(RACOIN_PACKS[0], "GBP")).toEqual({ currency: "USD", amount: 499 });
+    expect(localPrice(RACOIN_PACKS[0], undefined)).toEqual({ currency: "USD", amount: 499 });
+  });
+
+  it("uses a valid row and ignores one that breaks Steam's steps", async () => {
+    const catalog = await import("./catalog");
+    const table = catalog.LOCAL_PRICES as Record<string, readonly [number, number, number]>;
+    table.GBP = [429, 849, 1699];
+    table.JPY = [55050, 110000, 220000]; // 550.50 yen: not a whole-yen step
+    table.XXX = [100, 200, 300]; // not a Steam currency
+    try {
+      expect(catalog.localPrice(catalog.RACOIN_PACKS[1], "GBP")).toEqual({ currency: "GBP", amount: 849 });
+      expect(catalog.localPrice(catalog.RACOIN_PACKS[0], "JPY")).toEqual({ currency: "USD", amount: 499 });
+      expect(catalog.localPrice(catalog.RACOIN_PACKS[1], "JPY")).toEqual({ currency: "JPY", amount: 110000 });
+      expect(catalog.localPrice(catalog.RACOIN_PACKS[0], "XXX")).toEqual({ currency: "USD", amount: 499 });
+    } finally {
+      delete table.GBP;
+      delete table.JPY;
+      delete table.XXX;
+    }
+  });
+
+  it("reads the player's currency from GetUserInfo, and gives up quietly", async () => {
+    process.env.STEAM_PUBLISHER_KEY = "test-publisher-key";
+    const realFetch = global.fetch;
+    try {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true, json: async () => ({ response: { result: "OK", params: { currency: "EUR", country: "DE" } } }),
+      }) as unknown as typeof fetch;
+      const { userCurrency } = await import("./steam");
+      await expect(userCurrency("76561198000000001")).resolves.toBe("EUR");
+      global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 }) as unknown as typeof fetch;
+      await expect(userCurrency("76561198000000001")).resolves.toBeUndefined();
+    } finally {
+      global.fetch = realFetch;
+    }
+  });
+});
