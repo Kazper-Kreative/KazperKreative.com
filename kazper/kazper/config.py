@@ -52,6 +52,7 @@ class Config:
     discord_watch_keywords: tuple[str, ...]
     cryptidkeep_url: str
     cryptidkeep_token: str
+    railway_api_token: str
 
 
 def _briefing_time() -> time | None:
@@ -87,4 +88,5 @@ def load_config() -> Config:
         discord_watch_keywords=keywords,
         cryptidkeep_url=_opt("CRYPTIDKEEP_MCP_URL"),
         cryptidkeep_token=_opt("CRYPTIDKEEP_TOKEN"),
+        railway_api_token=_opt("RAILWAY_API_TOKEN"),
     )

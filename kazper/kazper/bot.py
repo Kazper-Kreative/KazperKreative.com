@@ -25,7 +25,7 @@ from discord.ext import tasks
 from .brain import Brain
 from .config import Config
 from .memory import open_memory
-from .tools import Toolbox, cryptidkeep, discord_watch, google, slack
+from .tools import Toolbox, cryptidkeep, discord_watch, google, railway, slack
 
 log = logging.getLogger("kazper")
 
@@ -34,9 +34,10 @@ GOOD, BAD = "👍", "👎"
 
 BRIEFING_PROMPT = (
     "[Scheduled] Morning briefing time. Use your tools to check: today's calendar, email from the last "
-    "day that likely needs me, my Slack DMs, Discord mentions, and my CryptidKeep tasks that are due "
-    "soon or in progress. Then give me a short, skimmable briefing in my voice: what needs me today, "
-    "what can wait, and anything that looks off. Skip sources that aren't connected without fuss."
+    "day that likely needs me, my Slack DMs, Discord mentions, my CryptidKeep tasks that are due "
+    "soon or in progress, and Railway deploys that failed or crashed. Then give me a short, skimmable "
+    "briefing in my voice: what needs me today, what can wait, and anything that looks off. Skip sources "
+    "that aren't connected without fuss."
 )
 
 HELP = (
@@ -72,6 +73,8 @@ async def build_toolbox(cfg: Config, memory) -> Toolbox:
         slack.register(box, slack.Slack(cfg.slack_user_token))
     if cfg.cryptidkeep_url and cfg.cryptidkeep_token:
         await cryptidkeep.register(box, cfg.cryptidkeep_url, cfg.cryptidkeep_token)
+    if cfg.railway_api_token:
+        railway.register(box, railway.Railway(cfg.railway_api_token))
     discord_watch.register(box, memory)
     return box
 

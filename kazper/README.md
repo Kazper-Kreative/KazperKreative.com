@@ -12,7 +12,7 @@ The site never imports this code and Vercel ignores it; Railway builds only this
 
 ## v1 = Tier 0 (watch only)
 
-Kazper **reads** Calendar, Gmail, Slack, Discord mentions and CryptidKeep, answers
+Kazper **reads** Calendar, Gmail, Slack, Discord mentions, CryptidKeep and Railway, answers
 questions about them, and DMs you a briefing every morning. It can't send, reply,
 post or edit anything. That starts in v2, with your approval on each action.
 
@@ -23,7 +23,7 @@ kazper/
   kazper/brain.py               prompt + LLM + tool-calling loop
   kazper/bot.py                 Discord DM line, Discord sense, 7 AM briefing
   kazper/memory.py              Supabase memory (SQLite fallback locally)
-  kazper/tools/                 senses: google, slack, discord_watch, cryptidkeep (MCP)
+  kazper/tools/                 senses: google, slack, discord_watch, cryptidkeep (MCP), railway
   kazper/setup_google.py        one-time Google login helper
 ../supabase/kazper.sql          memory schema (run once)
 ```
@@ -74,6 +74,14 @@ Generator → `bot` scope, *Read Message History* permission). **Message Content
 ### CryptidKeep
 Create a token for Kazper in CryptidKeep and set `CRYPTIDKEEP_TOKEN`. Kazper connects as an MCP
 client and exposes only the read tools (list/get/search). The write tools are filtered out.
+
+### Railway
+1. https://railway.com/account/tokens → new token → pick your **workspace** (not "No workspace").
+2. Set it as `RAILWAY_API_TOKEN`.
+
+Kazper sees deploy status, deploy history and build/runtime logs, and the briefing flags failed or
+crashed deploys. Railway tokens can't be made read-only, so Tier 0 lives in `tools/railway.py`: it
+only sends fixed GraphQL queries, never mutations. A workspace token keeps a leak inside one workspace.
 
 ## Deploy to Railway
 1. Railway → **New Project → Deploy from GitHub repo** → `Kazper-Kreative/KazperKreative.com`.
