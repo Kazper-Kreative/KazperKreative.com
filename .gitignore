@@ -51,3 +51,8 @@ next-env.d.ts
 # Local Claude Code settings & stray assets
 .claude/
 mason.jpg
+
+# Kazper runtime (Python)
+/kazper/.venv/
+/kazper/data/
+__pycache__/
