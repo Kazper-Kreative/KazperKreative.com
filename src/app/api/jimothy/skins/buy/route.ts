@@ -5,7 +5,7 @@
 // mid-night), but that is the game's rule, not the server's.
 
 import { NextResponse } from "next/server";
-import { skinPrice } from "@/lib/jimothy/catalog";
+import { findSkin } from "@/lib/jimothy/catalog";
 import { sessionFrom } from "@/lib/jimothy/session";
 import { buySkin, fail, wallet } from "@/lib/jimothy/store";
 
@@ -21,11 +21,11 @@ export async function POST(req: Request) {
   } catch {
     return fail("bad_request", 400);
   }
-  const price = skinPrice(skin);
-  if (!price || typeof skin !== "string") return fail("not_for_sale", 400);
+  const forSale = findSkin(skin);
+  if (!forSale) return fail("not_for_sale", 400);
 
   try {
-    const result = await buySkin(steamId, skin, price);
+    const result = await buySkin(steamId, forSale.id, forSale.price);
     if ("error" in result) return fail(result.error, 409);
     const { owned } = await wallet(steamId);
     return NextResponse.json({ balance: result.balance, owned });
