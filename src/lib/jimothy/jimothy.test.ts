@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { findPack, RACOIN_PACKS, skinPrice } from "./catalog";
+import { findPack, findSkin, RACOIN_PACKS, SKIN_PRICES, skinPrice } from "./catalog";
 import { issueSession, readSession } from "./session";
 import { isSandbox, purchaseLanguage } from "./steam";
 
@@ -65,6 +65,41 @@ describe("jimothy catalog", () => {
   it("sells nothing that is not priced", () => {
     expect(skinPrice("Moonlight")).toBeUndefined();
     expect(skinPrice(undefined)).toBeUndefined();
+  });
+
+  it("sells the packs at Kazper's 27 Oct prices", () => {
+    expect(RACOIN_PACKS.map((p) => [p.id, p.racoins, p.priceCents])).toEqual([
+      ["pouch", 500, 499],
+      ["bag", 1200, 999],
+      ["bin", 2500, 1999],
+    ]);
+  });
+
+  it("finds a pack whatever case the game's FName sends", () => {
+    // The game has a component named "Bag", so FName("bag") prints "Bag".
+    expect(findPack("Bag")?.id).toBe("bag");
+    expect(findPack("BIN")?.id).toBe("bin");
+    expect(findPack("Pouch")?.racoins).toBe(500);
+  });
+
+  it("describes every pack within Steam's limit, with its own amount", () => {
+    for (const p of RACOIN_PACKS) {
+      expect(p.description.length).toBeLessThanOrEqual(128);
+      expect(p.description).toContain(p.racoins.toLocaleString("en-US"));
+      expect(Number.isInteger(p.itemId) && p.itemId > 0).toBe(true);
+    }
+  });
+
+  it("prices the skins at Kazper's 27 Oct prices", () => {
+    expect(SKIN_PRICES).toEqual({ NightShift: 500, Undercover: 800, NeonAlley: 1200 });
+  });
+
+  it("finds a skin in any case and returns the catalog's spelling", () => {
+    expect(findSkin("undercover")).toEqual({ id: "Undercover", price: 800 });
+    expect(findSkin("NEONALLEY")).toEqual({ id: "NeonAlley", price: 1200 });
+    expect(skinPrice("nightshift")).toBe(500);
+    expect(findSkin("Moonlight")).toBeUndefined();
+    expect(findSkin(42)).toBeUndefined();
   });
 });
 
