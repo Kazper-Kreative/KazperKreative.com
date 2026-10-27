@@ -36,9 +36,13 @@ class Config:
     llm_api_key: str
     llm_model: str
     reasoning_effort: str
-    history_limit: int
+    deep_reasoning_effort: str
+    provider_order: tuple[str, ...]
+    recent_turns: int
     timezone: str
     briefing_time: time | None
+    review_day: int | None  # 0 = Monday … 6 = Sunday
+    review_time: time
     identity_path: Path
     data_dir: Path
     # memory
@@ -55,17 +59,34 @@ class Config:
     railway_api_token: str
 
 
+DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+
+
+def _hhmm(raw: str) -> time:
+    hour, minute = raw.split(":")
+    return time(int(hour), int(minute))
+
+
 def _briefing_time() -> time | None:
     raw = _opt("BRIEFING_TIME", "07:00")
     if raw.lower() in ("", "off", "none"):
         return None
-    hour, minute = raw.split(":")
-    return time(int(hour), int(minute))
+    return _hhmm(raw)
+
+
+def _review_day() -> int | None:
+    raw = _opt("REVIEW_DAY", "sun").lower()[:3]
+    if raw in ("", "off", "non"):
+        return None
+    if raw not in DAYS:
+        raise SystemExit(f"REVIEW_DAY must be one of {', '.join(DAYS)} or off")
+    return DAYS.index(raw)
 
 
 def load_config() -> Config:
     data_dir = ROOT / "data"
     data_dir.mkdir(exist_ok=True)
+    effort = _opt("LLM_REASONING_EFFORT")
     keywords = tuple(k.strip().lower() for k in _opt("DISCORD_WATCH_KEYWORDS").split(",") if k.strip())
     return Config(
         discord_token=_require("DISCORD_TOKEN"),
@@ -73,10 +94,15 @@ def load_config() -> Config:
         llm_base_url=_require("LLM_BASE_URL"),
         llm_api_key=_require("LLM_API_KEY"),
         llm_model=_require("LLM_MODEL"),
-        reasoning_effort=_opt("LLM_REASONING_EFFORT"),
-        history_limit=int(_opt("HISTORY_LIMIT", "20")),
+        reasoning_effort=effort,
+        # Briefings and weekly reviews juggle several sources, so they get to think harder.
+        deep_reasoning_effort=_opt("LLM_DEEP_REASONING_EFFORT", "medium" if effort else ""),
+        provider_order=tuple(p.strip() for p in _opt("LLM_PROVIDER_ORDER").split(",") if p.strip()),
+        recent_turns=int(_opt("RECENT_TURNS", "6")),
         timezone=_opt("TIMEZONE", "America/New_York"),
         briefing_time=_briefing_time(),
+        review_day=_review_day(),
+        review_time=_hhmm(_opt("REVIEW_TIME", "18:00")),
         identity_path=ROOT / "identity" / "kazper_identity.md",
         data_dir=data_dir,
         supabase_url=_opt("SUPABASE_URL").rstrip("/"),

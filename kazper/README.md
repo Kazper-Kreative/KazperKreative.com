@@ -4,8 +4,8 @@ Kazper lives alongside the Kazper Kreative site but runs separately:
 
 | Piece | Where | What |
 |---|---|---|
-| Runtime (this folder) | **Railway**, always on | Discord line, senses, daily briefing |
-| Memory | **Supabase** (same project as the site), `kazper_*` tables | Conversations, facts, feedback, events |
+| Runtime (this folder) | **Railway**, always on | Discord line, senses, daily briefing, weekly review |
+| Memory | **Supabase** (same project as the site), `kazper_*` tables | Conversations (+ cost), facts, pointers, feedback, events |
 | Dashboard | kazperkreative.com/kazper — *not built yet* | Briefings, activity log, v2 approvals |
 
 The site never imports this code and Vercel ignores it; Railway builds only this folder.
@@ -20,6 +20,33 @@ The one exception is its own memory: with the `remember` tool Kazper saves durab
 from you. Each one is tagged as Kazper's (`source = 'kazper'`), ranked below what you told it, capped
 at 3 per reply, and DMed to you as `📝 Noted #id` so nothing lands in memory unseen.
 
+## How Kazper remembers (and stays cheap)
+
+- **Short window, deep recall.** Each message replays only the last `RECENT_TURNS` chat turns (default 6).
+  Older conversation stays in `kazper_exchanges`, and Kazper looks it up only when needed:
+  `history_search` (Postgres full-text) finds it, then `history_read` pulls just those exchanges.
+- **Pointers.** Kazper leaves short working notes to itself (`leave_pointer`, e.g. "open: send Dana the
+  1099s"). Each one links to the exchange it came from, and the newest 12 ride along in every prompt.
+  `!pointers` lists them.
+- **Cache-friendly prompt.** The parts that rarely change come first and the current time rides on the
+  newest message, so providers can reuse the start of the prompt at a fraction of the price.
+- **Effort by task.** Chat uses `LLM_REASONING_EFFORT`. Briefings and reviews use
+  `LLM_DEEP_REASONING_EFFORT` and skip the chat window entirely.
+- **Every reply is costed.** Tokens, cached tokens, reasoning tokens, dollars and provider are stored on
+  each exchange. `!stats` sums them. `LLM_PROVIDER_ORDER` pins preferred OpenRouter providers once
+  the data says which are worth it.
+
+## How Kazper learns
+
+- `!fix` stores the correction, and Kazper also turns it into a lasting 📝 note right away when it
+  reflects a real preference.
+- Pushing back in plain chat ("no, I meant…") is logged as a `redirect` on the previous reply.
+- **Weekly review** (`REVIEW_DAY` / `REVIEW_TIME`, default Sunday 18:00, or `!review`): Kazper reads the
+  week's 👎s, corrections and pushbacks and saves up to 3 lessons as 📝 notes. Weeks with nothing to
+  learn from cost nothing.
+- `python -m kazper.export_dataset` writes `data/sft.jsonl` (👍 replies) and `data/dpo.jsonl`
+  (corrections as preference pairs) for the v4 LoRA. `!stats` shows progress toward ~500 examples.
+
 ```
 kazper/
   identity/kazper_identity.example.md   public blank template; your real profile is the gitignored
@@ -27,7 +54,9 @@ kazper/
   kazper/brain.py               prompt + LLM + tool-calling loop
   kazper/bot.py                 Discord DM line, Discord sense, 7 AM briefing
   kazper/memory.py              Supabase memory (SQLite fallback locally)
-  kazper/tools/                 senses: google, slack, discord_watch, cryptidkeep (MCP), railway
+  kazper/tools/                 senses: google, slack, discord_watch, cryptidkeep (MCP), railway;
+                                memory: remember, recall (history search + pointers)
+  kazper/export_dataset.py      feedback → fine-tuning JSONL
   kazper/setup_google.py        one-time Google login helper
 ../supabase/kazper.sql          memory schema (run once)
 ```
@@ -104,11 +133,15 @@ only sends fixed GraphQL queries, never mutations. A workspace token keeps a lea
 |---|---|
 | `!brief` | Briefing now (also automatic at `BRIEFING_TIME`) |
 | `!senses` | What's connected |
+| `!stats` | Cost (7/30 days, per reply), memory size, feedback, fine-tune dataset progress |
+| `!review` | Run the weekly self-review now |
+| `!pointers` / `!forget p4` | Kazper's working notes / clear one |
 | `!remember I hate morning meetings` | Permanent fact, in every prompt |
 | `!facts` / `!forget 3` | Review / remove facts |
 | React 🗑️ on a `📝 Noted #7` message | Delete a note Kazper saved itself |
 | React 👍 or 👎 | Rates that reply |
-| Reply to a Kazper message with `!fix <what you'd say>` | Correction, the best training signal |
+| Reply to a Kazper message with `!fix <what you'd say>` | Correction, the best training signal; may become a 📝 note |
+| "no, I meant…" in plain chat | Logged as pushback for the weekly review |
 
 ## Roadmap
 - v0 core + Discord line ✔

@@ -2,14 +2,17 @@
 
 - Talks only to its owner (DMs, or @mentions from the owner in a server).
 - Watches the servers it's in for mentions of you / watch keywords (Tier 0: records, never replies).
-- Sends the daily briefing at BRIEFING_TIME.
+- Sends the daily briefing at BRIEFING_TIME and a weekly self-review at REVIEW_DAY/REVIEW_TIME.
 
 Commands (DM):
   !brief             briefing right now
   !senses            what Kazper is connected to
+  !stats             cost, memory and how close the fine-tune dataset is
+  !review            run the weekly self-review now
   !remember <fact>   save a permanent fact about you
   !facts             list saved facts
-  !forget <id>       delete a fact
+  !pointers          list Kazper's working notes to itself
+  !forget <id|pN>    delete a fact (or pointer pN)
   !fix <better>      (as a Discord *reply* to a Kazper message) record what it should have said
   !help              show this list
 React 👍 / 👎 on any Kazper message to rate it.
@@ -17,37 +20,62 @@ Kazper can save its own notes ("📝 Noted #id"); react 🗑️ on one to delete
 """
 
 import asyncio
+import json
 import logging
+import re
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import discord
 from discord.ext import tasks
 
 from .brain import Brain
-from .config import Config
+from .config import DAYS, Config
 from .memory import open_memory
-from .tools import Toolbox, cryptidkeep, discord_watch, google, railway, remember, slack
+from .tools import Toolbox, cryptidkeep, discord_watch, google, railway, recall, remember, slack
 
 log = logging.getLogger("kazper")
 
 DISCORD_LIMIT = 1900  # Discord caps messages at 2000 chars; leave headroom
 GOOD, BAD, TRASH = "👍", "👎", "🗑️"
+DATASET_GOAL = 500  # rated examples before a LoRA fine-tune is worth it
 
 BRIEFING_PROMPT = (
     "[Scheduled] Morning briefing time. Use your tools to check: today's calendar, email from the last "
     "day that likely needs me, my Slack DMs, Discord mentions, my CryptidKeep tasks that are due "
     "soon or in progress, and Railway deploys that failed or crashed. Then give me a short, skimmable "
     "briefing in my voice: what needs me today, what can wait, and anything that looks off. Skip sources "
-    "that aren't connected without fuss."
+    "that aren't connected without fuss. Leave a pointer for anything I'll need to follow up on."
 )
+
+REVIEW_PROMPT = (
+    "[Weekly review] Below is this week's feedback on your replies: 👎 ratings, corrections (what I said "
+    "you should have said), and 'redirect' moments where I pushed back in chat (these can be false alarms). "
+    "👍s show what to keep doing. Look for patterns in how you should behave differently. Save at most 3 "
+    "lasting lessons with `remember`, phrased as instructions to yourself (e.g. 'Lead briefings with what "
+    "needs action'), skipping anything already in your notes. Then reply with a short summary: what went "
+    "wrong, what you saved, and anything you're unsure about.\n\n"
+    '<untrusted_data source="feedback">\n{data}\n</untrusted_data>'
+)
+
+# You pushing back in plain chat ("no, I meant…") is an implicit correction of the previous reply.
+REDIRECT = re.compile(
+    r"^\s*(no\b|nope\b|nah\b|wrong\b|not (quite|really|what)\b|that'?s (not|wrong)\b|i meant\b|"
+    r"you misunderstood\b|that isn'?t\b)", re.IGNORECASE,
+)
+NOT_REDIRECT = re.compile(r"^\s*no\b[,.!]?\s*(thanks|thank you|worries|problem|need|that'?s (all|it|fine))", re.IGNORECASE)
+REDIRECT_WINDOW = timedelta(minutes=30)
 
 HELP = (
     "**Kazper commands**\n"
     "`!brief` — briefing right now\n"
     "`!senses` — what I'm connected to\n"
+    "`!stats` — what I cost and how much I've learned\n"
+    "`!review` — review my 👎s and corrections now\n"
     "`!remember <fact>` — save a fact about you\n"
     "`!facts` — list saved facts\n"
-    "`!forget <id>` — delete a fact\n"
+    "`!pointers` — my working notes to myself\n"
+    "`!forget <id>` / `!forget p<id>` — delete a fact / pointer\n"
     "`!fix <better reply>` — reply to one of my messages with what I should have said\n"
     f"React {GOOD} / {BAD} on my messages to rate them, {TRASH} on a 📝 note to delete it."
 )
@@ -65,6 +93,11 @@ def _chunks(text: str) -> list[str]:
     return chunks
 
 
+def _parse_ts(value: str) -> datetime:
+    ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
+
+
 async def build_toolbox(cfg: Config, memory) -> Toolbox:
     box = Toolbox()
     if cfg.google_client_id and cfg.google_client_secret and cfg.google_refresh_token:
@@ -78,6 +111,7 @@ async def build_toolbox(cfg: Config, memory) -> Toolbox:
         railway.register(box, railway.Railway(cfg.railway_api_token))
     discord_watch.register(box, memory)
     remember.register(box, memory)
+    recall.register(box, memory)
     return box
 
 
@@ -95,25 +129,52 @@ class KazperBot(discord.Client):
         tools = await build_toolbox(self.cfg, self.memory)
         self.brain = Brain(self.cfg, self.memory, tools)
         log.info("Memory: %s. Senses: %s", self.memory.backend, "; ".join(tools.senses) or "none")
+        tz = ZoneInfo(self.cfg.timezone)
         if self.cfg.briefing_time:
-            self.daily_briefing.change_interval(
-                time=self.cfg.briefing_time.replace(tzinfo=ZoneInfo(self.cfg.timezone))
-            )
+            self.daily_briefing.change_interval(time=self.cfg.briefing_time.replace(tzinfo=tz))
             self.daily_briefing.start()
+        if self.cfg.review_day is not None:
+            self.weekly_review.change_interval(time=self.cfg.review_time.replace(tzinfo=tz))
+            self.weekly_review.start()
 
     async def on_ready(self):
         log.info("Kazper is online as %s (id %s); owner id %s", self.user, self.user.id, self.cfg.owner_id)
 
     # --- heartbeat --------------------------------------------------------
 
+    async def owner_dm(self) -> discord.abc.Messageable:
+        owner = await self.fetch_user(self.cfg.owner_id)
+        return owner.dm_channel or await owner.create_dm()
+
     @tasks.loop(hours=24)  # real schedule set in setup_hook from BRIEFING_TIME
     async def daily_briefing(self):
-        owner = await self.fetch_user(self.cfg.owner_id)
-        await self.think_and_reply(owner.dm_channel or await owner.create_dm(), BRIEFING_PROMPT)
+        await self.think_and_reply(await self.owner_dm(), BRIEFING_PROMPT, kind="briefing")
+
+    @tasks.loop(hours=24)  # fires daily at REVIEW_TIME; only acts on REVIEW_DAY
+    async def weekly_review(self):
+        if datetime.now(ZoneInfo(self.cfg.timezone)).weekday() != self.cfg.review_day:
+            return
+        await self.run_review(await self.owner_dm(), quiet_if_empty=True)
 
     @daily_briefing.before_loop
+    @weekly_review.before_loop
     async def _wait_until_ready(self):
         await self.wait_until_ready()
+
+    async def run_review(self, channel: discord.abc.Messageable, quiet_if_empty: bool = False):
+        feedback = await asyncio.to_thread(self.memory.feedback_since, 7)
+        if not any(f["kind"] != "good" for f in feedback):
+            # Nothing to learn from — don't spend a model call on it.
+            if not quiet_if_empty:
+                await channel.send("No 👎, corrections or pushback in the last 7 days — nothing to review.")
+            return
+        items = [
+            {"kind": f["kind"], "correction_or_pushback": f["correction"], "exchange_id": f["exchange"]["id"],
+             "you_were_asked": f["exchange"]["user_text"][:1500], "you_replied": f["exchange"]["reply_text"][:1500]}
+            for f in feedback
+        ]
+        data = json.dumps(items, ensure_ascii=False, indent=1)
+        await self.think_and_reply(channel, REVIEW_PROMPT.format(data=data), kind="review")
 
     # --- messages ---------------------------------------------------------
 
@@ -140,20 +201,37 @@ class KazperBot(discord.Client):
         if text.startswith("!"):
             await self.handle_command(message, text, channel)
             return
+        await self.note_redirect(text)
         await self.think_and_reply(channel, text)
 
-    async def think_and_reply(self, channel: discord.abc.Messageable, text: str):
+    async def note_redirect(self, text: str):
+        """If you push back on Kazper's last reply in plain chat, log it as feedback for the weekly review."""
+        if not REDIRECT.match(text) or NOT_REDIRECT.match(text):
+            return
+        last = await asyncio.to_thread(self.memory.recent_exchanges, 1)
+        if last and datetime.now(timezone.utc) - _parse_ts(last[0]["created_at"]) < REDIRECT_WINDOW:
+            await asyncio.to_thread(self.memory.add_feedback, last[0], "redirect", text[:1000])
+
+    async def think_and_reply(self, channel: discord.abc.Messageable, text: str, kind: str = "chat"):
         turn_notes: list[dict] = []
+        turn_pointers: list[int] = []
         remember.noted.set(turn_notes)
+        recall.left.set(turn_pointers)
         async with channel.typing():
             try:
-                reply, prompt_messages = await self.brain.respond(text)
+                reply, prompt_messages, usage = await self.brain.respond(text, kind)
             except Exception as e:
                 log.exception("LLM call failed")
                 await channel.send(f"⚠️ My brain didn't answer ({type(e).__name__}). Details are in the server logs.")
                 await self.announce_notes(channel, turn_notes)
                 return
-        exchange_id = await asyncio.to_thread(self.memory.save_exchange, text, reply, prompt_messages)
+        exchange_id = await asyncio.to_thread(
+            self.memory.save_exchange, text, reply, prompt_messages, kind, usage
+        )
+        log.info("Exchange #%s (%s): %s calls, %s in (%s cached) / %s out tokens, $%s via %s", exchange_id, kind,
+                 usage["llm_calls"], usage["prompt_tokens"], usage["cached_tokens"], usage["completion_tokens"],
+                 usage["cost_usd"], usage["providers"])
+        await asyncio.to_thread(self.memory.link_pointers, turn_pointers, exchange_id)
         for chunk in _chunks(reply):
             sent = await channel.send(chunk, suppress_embeds=True)
             await asyncio.to_thread(self.memory.link_reply_message, sent.id, exchange_id)
@@ -185,11 +263,19 @@ class KazperBot(discord.Client):
         if cmd == "!help":
             await channel.send(HELP)
         elif cmd == "!brief":
-            await self.think_and_reply(channel, BRIEFING_PROMPT.replace("[Scheduled] Morning", "[On demand]"))
+            await self.think_and_reply(channel, BRIEFING_PROMPT.replace("[Scheduled] Morning", "[On demand]"),
+                                       kind="briefing")
+        elif cmd == "!review":
+            await self.run_review(channel)
         elif cmd == "!senses":
             senses = "\n".join(f"• {s}" for s in self.brain.tools.senses) or "• nothing yet"
             when = self.cfg.briefing_time.strftime("%H:%M") if self.cfg.briefing_time else "off"
-            await channel.send(f"**Connected:**\n{senses}\nMemory: {mem.backend} · Daily briefing: {when} {self.cfg.timezone}")
+            review = (f"{DAYS[self.cfg.review_day].title()} {self.cfg.review_time.strftime('%H:%M')}"
+                      if self.cfg.review_day is not None else "off")
+            await channel.send(f"**Connected:**\n{senses}\nMemory: {mem.backend} · Daily briefing: {when} · "
+                               f"Weekly review: {review} ({self.cfg.timezone})")
+        elif cmd == "!stats":
+            await channel.send(self.format_stats(await asyncio.to_thread(mem.stats)))
         elif cmd == "!remember" and arg:
             fact_id = await asyncio.to_thread(mem.add_fact, arg)
             await channel.send(f"Got it — fact #{fact_id} saved.")
@@ -202,6 +288,17 @@ class KazperBot(discord.Client):
                 body += "\n📝 = noted by me, not told by you"
             for chunk in _chunks(body):
                 await channel.send(chunk)
+        elif cmd == "!pointers":
+            pointers = await asyncio.to_thread(mem.recent_pointers, 50)
+            body = "\n".join(
+                f"`p{p['id']}` {p['text']}" + (f" (#{p['exchange_id']})" if p.get("exchange_id") else "")
+                for p in pointers
+            ) or "No pointers right now."
+            for chunk in _chunks(body):
+                await channel.send(chunk)
+        elif cmd == "!forget" and arg.lower().startswith("p") and arg[1:].isdigit():
+            ok = await asyncio.to_thread(mem.forget_pointer, int(arg[1:]))
+            await channel.send("Pointer cleared." if ok else f"No pointer {arg}.")
         elif cmd == "!forget" and arg.isdigit():
             ok = await asyncio.to_thread(mem.forget_fact, int(arg))
             await channel.send("Forgotten." if ok else f"No fact #{arg}.")
@@ -213,8 +310,38 @@ class KazperBot(discord.Client):
                 return
             await asyncio.to_thread(mem.add_feedback, exchange, "correction", arg)
             await channel.send("Noted — I'll learn from that.")
+            await self.learn_from_fix(channel, exchange, arg)
         else:
             await channel.send(HELP)
+
+    async def learn_from_fix(self, channel: discord.abc.Messageable, exchange: dict, correction: str):
+        """Distil a correction into a lasting 📝 note right away, instead of waiting for a fine-tune."""
+        try:
+            lesson = await self.brain.distil_lesson(exchange, correction)
+        except Exception:
+            log.exception("Lesson distillation failed")
+            return
+        if lesson:
+            fact_id = await asyncio.to_thread(self.memory.add_fact, lesson, "kazper")
+            await self.announce_notes(channel, [{"id": fact_id, "text": lesson}])
+
+    @staticmethod
+    def format_stats(s: dict) -> str:
+        def usd(x: float) -> str:
+            return f"${x:.2f}" if x >= 1 else f"${x:.4f}"
+
+        examples = s["rated_good"] + s["corrections"]
+        avg = usd(s["avg_cost_per_reply_usd"]) if s["avg_cost_per_reply_usd"] is not None else "n/a yet"
+        return (
+            "**Kazper stats**\n"
+            f"Cost: {usd(s['cost_7d_usd'])} last 7 days · {usd(s['cost_30d_usd'])} last 30 days "
+            f"({s['replies_30d']} replies, avg {avg} each)\n"
+            f"Memory: {s['exchanges']} exchanges · {s['facts']} facts from you · {s['kazper_notes']} 📝 notes · "
+            f"{s['pointers']} pointers\n"
+            f"Feedback: {s['rated_good']} {GOOD} · {s['rated_bad']} {BAD} · {s['corrections']} corrections · "
+            f"{s['redirects']} pushbacks\n"
+            f"Fine-tune dataset: {examples}/{DATASET_GOAL} examples ({100 * examples // DATASET_GOAL}%)"
+        )
 
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         if payload.user_id != self.cfg.owner_id:

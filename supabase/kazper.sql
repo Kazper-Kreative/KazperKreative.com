@@ -59,3 +59,44 @@ alter table public.kazper_reply_messages enable row level security;
 alter table public.kazper_facts          enable row level security;
 alter table public.kazper_feedback       enable row level security;
 alter table public.kazper_events         enable row level security;
+
+-- ---------------------------------------------------------------------------
+-- 2026-10-27: efficiency + learning. Safe to re-run.
+
+-- What kind of turn an exchange was. Only 'chat' is replayed as conversation
+-- history; briefings and weekly reviews stay searchable but out of the window.
+alter table public.kazper_exchanges
+  add column if not exists kind text not null default 'chat' check (kind in ('chat', 'briefing', 'review'));
+update public.kazper_exchanges set kind = 'briefing'
+  where kind = 'chat' and (user_text like '[Scheduled]%' or user_text like '[On demand]%');
+
+-- What each exchange cost, summed over every LLM round in it (OpenRouter usage accounting).
+alter table public.kazper_exchanges
+  add column if not exists llm_calls         int,
+  add column if not exists prompt_tokens     int,
+  add column if not exists cached_tokens     int,
+  add column if not exists completion_tokens int,
+  add column if not exists reasoning_tokens  int,
+  add column if not exists cost_usd          numeric(12, 6),
+  add column if not exists providers         text;
+
+-- Full-text search over past conversation, so Kazper can recall instead of replaying.
+alter table public.kazper_exchanges
+  add column if not exists search tsvector
+  generated always as (to_tsvector('english', coalesce(user_text, '') || ' ' || coalesce(reply_text, ''))) stored;
+create index if not exists kazper_exchanges_search_idx on public.kazper_exchanges using gin (search);
+create index if not exists kazper_exchanges_created_at_idx on public.kazper_exchanges (created_at desc);
+
+-- Kazper's working notes to itself ("open: Dana's tax docs, see #42"), linked to the exchange they came from.
+create table if not exists public.kazper_pointers (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+  text         text not null,
+  exchange_id  bigint references public.kazper_exchanges(id) on delete set null
+);
+alter table public.kazper_pointers enable row level security;
+
+-- 'redirect': you pushed back in plain chat ("no, I meant…") — an implicit correction.
+alter table public.kazper_feedback drop constraint if exists kazper_feedback_kind_check;
+alter table public.kazper_feedback
+  add constraint kazper_feedback_kind_check check (kind in ('good', 'bad', 'correction', 'redirect'));
