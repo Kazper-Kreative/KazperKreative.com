@@ -18,7 +18,8 @@ post or edit anything. That starts in v2, with your approval on each action.
 
 ```
 kazper/
-  identity/kazper_identity.md   who you are (edit this; live-reloaded)
+  identity/kazper_identity.example.md   public blank template; your real profile is the gitignored
+                                        kazper_identity.md locally, KAZPER_IDENTITY on Railway
   kazper/brain.py               prompt + LLM + tool-calling loop
   kazper/bot.py                 Discord DM line, Discord sense, 7 AM briefing
   kazper/memory.py              Supabase memory (SQLite fallback locally)

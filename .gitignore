@@ -56,3 +56,5 @@ mason.jpg
 /kazper/.venv/
 /kazper/data/
 __pycache__/
+# Kazper's real identity is personal; only the .example template is public
+/kazper/identity/kazper_identity.md

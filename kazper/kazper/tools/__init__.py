@@ -54,7 +54,8 @@ class Toolbox:
         text = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False, default=str)
         if len(text) > MAX_RESULT_CHARS:
             text = text[:MAX_RESULT_CHARS] + "\n…(truncated)"
-        return text
+        # Fence it: mail/Slack/Discord/task text is written by other people (see brain.TIER_0_RULES).
+        return f'<untrusted_data source="{name}">\n{text}\n</untrusted_data>'
 
 
 def schema(properties: dict | None = None, required: list[str] | None = None) -> dict:

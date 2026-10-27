@@ -126,10 +126,15 @@ class KazperBot(discord.Client):
         if not text:
             log.warning("Owner message had no text; is Message Content Intent enabled in the Developer Portal?")
             return
+        # Replies can contain private data (mail, calendar, Slack), so they only ever go to a DM.
+        channel = message.channel
+        if message.guild is not None:
+            channel = message.author.dm_channel or await message.author.create_dm()
+            await message.add_reaction("📬")
         if text.startswith("!"):
-            await self.handle_command(message, text)
+            await self.handle_command(message, text, channel)
             return
-        await self.think_and_reply(message.channel, text)
+        await self.think_and_reply(channel, text)
 
     async def think_and_reply(self, channel: discord.abc.Messageable, text: str):
         async with channel.typing():
@@ -137,11 +142,11 @@ class KazperBot(discord.Client):
                 reply, prompt_messages = await self.brain.respond(text)
             except Exception as e:
                 log.exception("LLM call failed")
-                await channel.send(f"⚠️ My brain didn't answer: `{type(e).__name__}: {e}`")
+                await channel.send(f"⚠️ My brain didn't answer ({type(e).__name__}). Details are in the server logs.")
                 return
         exchange_id = await asyncio.to_thread(self.memory.save_exchange, text, reply, prompt_messages)
         for chunk in _chunks(reply):
-            sent = await channel.send(chunk)
+            sent = await channel.send(chunk, suppress_embeds=True)
             await asyncio.to_thread(self.memory.link_reply_message, sent.id, exchange_id)
 
     async def notice(self, message: discord.Message):
@@ -156,10 +161,9 @@ class KazperBot(discord.Client):
         data = {"jump_url": message.jump_url, "guild": str(message.guild), "channel": str(message.channel)}
         await asyncio.to_thread(self.memory.add_event, "discord", summary, data)
 
-    async def handle_command(self, message: discord.Message, text: str):
+    async def handle_command(self, message: discord.Message, text: str, channel: discord.abc.Messageable):
         cmd, _, arg = text.partition(" ")
         arg = arg.strip()
-        channel = message.channel
         mem = self.memory
 
         if cmd == "!help":
