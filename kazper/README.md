@@ -82,6 +82,9 @@ client and exposes only the read tools (list/get/search). The write tools are fi
 3. Add every variable from your `.env` under **Variables**. Set `SUPABASE_*` so memory persists
    across deploys; the SQLite fallback would be wiped on each deploy.
 4. Stop any local copy first. Two Kazpers on one token both answer every message.
+5. Auto-deploy on push needs the **Railway GitHub App** installed on the `Kazper-Kreative` org
+   (github.com/apps/railway-app) with access to this repo. Without it Railway can still build
+   the public repo, but pushes won't trigger deploys.
 
 ## Teaching Kazper (Discord DM)
 
