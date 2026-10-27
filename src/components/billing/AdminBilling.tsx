@@ -57,7 +57,7 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
     }
   };
 
-  const Feedback = ({ where }: { where: string }) =>
+  const feedback = (where: string) =>
     fb && fb.where === where ? (
       <p style={{ margin: "8px 0 0", fontSize: 13, color: fb.ok ? "var(--good,#39d98a)" : "var(--bad,#ff5d6c)" }}>
         {fb.text}
@@ -86,7 +86,7 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
           >
             {busy ? "Working…" : "Create client"}
           </button>
-          <Feedback where="client" />
+          {feedback("client")}
         </div>
       </div>
 
@@ -123,7 +123,7 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
             >
               {busy ? "Working…" : "Create invoice"}
             </button>
-            <Feedback where="invoice" />
+            {feedback("invoice")}
           </div>
         )}
       </div>
@@ -153,7 +153,7 @@ export default function AdminBilling({ clients }: { clients: AdminClient[] }) {
             >
               {busy ? "Working…" : "Add access"}
             </button>
-            <Feedback where="invite" />
+            {feedback("invite")}
           </div>
         )}
       </div>

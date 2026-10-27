@@ -23,8 +23,9 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(raw, sig, secret);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "invalid";
-    return NextResponse.json({ error: `Bad signature: ${msg}` }, { status: 400 });
+    // Log the reason server-side; don't tell callers why verification failed.
+    console.error("Stripe webhook signature check failed:", e instanceof Error ? e.message : e);
+    return NextResponse.json({ error: "Bad signature." }, { status: 400 });
   }
 
   // Only checkout.session.* carries an invoice to settle. Cards settle
