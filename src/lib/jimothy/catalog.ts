@@ -4,13 +4,16 @@
 // returns and never sends a price, so a modified client cannot buy a skin for
 // less than this file says.
 //
-// Starter table proposed 25 Oct 2026, to be signed off by Kazper and Tim
-// before the sandbox is switched off. Prices are set in USD and, per currency,
+// Starter table proposed 25 Oct 2026; packs and skins repriced by Kazper,
+// 27 Oct 2026. To be signed off by Kazper and Tim before the sandbox is
+// switched off. Prices are set in USD and, per currency,
 // in LOCAL_PRICES below; a player whose currency has no row is charged USD and
 // Steam converts at finalize.
 
 export interface RacoinPack {
-  /** Our id, sent by the game. */
+  /** Our id, sent by the game. Matched without regard to case: the game holds
+   *  it in an FName, which comes back in whatever case the engine registered
+   *  the name first ("bag" arrives as "Bag", the component name). */
   id: string;
   /** The itemid Steam records against the purchase. Never reuse one. */
   itemId: number;
@@ -23,8 +26,10 @@ export interface RacoinPack {
 
 export const RACOIN_PACKS: readonly RacoinPack[] = [
   { id: "pouch", itemId: 1001, racoins: 500, priceCents: 499, description: "500 Racoins" },
-  { id: "bag", itemId: 1002, racoins: 1100, priceCents: 999, description: "1,100 Racoins (10% bonus)" },
-  { id: "bin", itemId: 1003, racoins: 2400, priceCents: 1999, description: "2,400 Racoins (20% bonus)" },
+  // 1002 was 1,100 Racoins and 1003 was 2,400 until 27 Oct 2026; an item id
+  // names what was sold, so the new amounts took new ids.
+  { id: "bag", itemId: 1004, racoins: 1200, priceCents: 999, description: "1,200 Racoins (20% bonus)" },
+  { id: "bin", itemId: 1005, racoins: 2500, priceCents: 1999, description: "2,500 Racoins (25% bonus)" },
 ];
 
 /**
@@ -79,20 +84,32 @@ export function localPrice(pack: RacoinPack, currency: string | undefined): Pack
 /**
  * Skins sold for Racoins, by the game's SkinId (UJimothySkin::SkinId).
  * A skin not listed here is not for sale: the free ones are found in the
- * world. The first two (Kazper, 26 Oct 2026), priced so the $4.99 pouch buys
- * Night Shift and the $9.99 bag buys both.
+ * world. Kazper, 27 Oct 2026: the $4.99 pouch buys Night Shift, the $9.99
+ * bag buys Neon Alley or Undercover, and the $19.99 bin buys all three.
  */
 export const SKIN_PRICES: Readonly<Record<string, number>> = {
   NightShift: 500,
-  NeonAlley: 600,
+  Undercover: 800,
+  NeonAlley: 1200,
 };
 
+/** The pack the game asked for, by id in any case (see RacoinPack.id). */
 export function findPack(id: unknown): RacoinPack | undefined {
-  return typeof id === "string" ? RACOIN_PACKS.find((p) => p.id === id) : undefined;
+  if (typeof id !== "string") return undefined;
+  const wanted = id.toLowerCase();
+  return RACOIN_PACKS.find((p) => p.id.toLowerCase() === wanted);
+}
+
+/** A skin for sale, by SkinId in any case (it is an FName in the game too),
+ *  with the id spelled as this file spells it, for the database. */
+export function findSkin(id: unknown): { id: string; price: number } | undefined {
+  if (typeof id !== "string") return undefined;
+  const wanted = id.toLowerCase();
+  const key = Object.keys(SKIN_PRICES).find((k) => k.toLowerCase() === wanted);
+  const price = key ? SKIN_PRICES[key] : undefined;
+  return key && Number.isInteger(price) && (price as number) > 0 ? { id: key, price: price as number } : undefined;
 }
 
 export function skinPrice(id: unknown): number | undefined {
-  if (typeof id !== "string") return undefined;
-  const price = SKIN_PRICES[id];
-  return Number.isInteger(price) && price > 0 ? price : undefined;
+  return findSkin(id)?.price;
 }
