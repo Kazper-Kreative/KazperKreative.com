@@ -23,12 +23,14 @@ import asyncio
 import json
 import logging
 import re
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import discord
 from discord.ext import tasks
 
+from . import api
 from .brain import Brain
 from .config import DAYS, Config
 from .memory import open_memory
@@ -93,6 +95,18 @@ def _chunks(text: str) -> list[str]:
     return chunks
 
 
+@dataclass
+class Turn:
+    """One answered message, whichever door it came through (Discord or the web app)."""
+    kind: str
+    reply: str | None = None
+    error: str | None = None
+    exchange_id: int | None = None
+    notes: list[dict] = field(default_factory=list)  # 📝 facts Kazper saved this turn
+    tools: list[str] = field(default_factory=list)   # tools it called, in order
+    usage: dict | None = None
+
+
 def _parse_ts(value: str) -> datetime:
     ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
@@ -124,6 +138,7 @@ class KazperBot(discord.Client):
         self.memory = open_memory(cfg)
         self.brain: Brain | None = None
         self.note_messages: dict[int, int] = {}  # Discord message id of a 📝 note -> fact id (for 🗑️)
+        self.api_runner = None
 
     async def setup_hook(self):
         tools = await build_toolbox(self.cfg, self.memory)
@@ -136,6 +151,12 @@ class KazperBot(discord.Client):
         if self.cfg.review_day is not None:
             self.weekly_review.change_interval(time=self.cfg.review_time.replace(tzinfo=tz))
             self.weekly_review.start()
+        self.api_runner = await api.start(self, self.cfg.api_secret)
+
+    async def close(self):
+        if self.api_runner is not None:
+            await self.api_runner.cleanup()
+        await super().close()
 
     async def on_ready(self):
         log.info("Kazper is online as %s (id %s); owner id %s", self.user, self.user.id, self.cfg.owner_id)
@@ -150,6 +171,10 @@ class KazperBot(discord.Client):
     async def daily_briefing(self):
         await self.think_and_reply(await self.owner_dm(), BRIEFING_PROMPT, kind="briefing")
 
+    @staticmethod
+    def on_demand_briefing() -> str:
+        return BRIEFING_PROMPT.replace("[Scheduled] Morning", "[On demand]")
+
     @tasks.loop(hours=24)  # fires daily at REVIEW_TIME; only acts on REVIEW_DAY
     async def weekly_review(self):
         if datetime.now(ZoneInfo(self.cfg.timezone)).weekday() != self.cfg.review_day:
@@ -161,20 +186,27 @@ class KazperBot(discord.Client):
     async def _wait_until_ready(self):
         await self.wait_until_ready()
 
-    async def run_review(self, channel: discord.abc.Messageable, quiet_if_empty: bool = False):
+    async def review_turn(self, channel: str) -> "Turn | None":
+        """The weekly self-review as a turn, or None when there's nothing to learn from (no model call)."""
         feedback = await asyncio.to_thread(self.memory.feedback_since, 7)
         if not any(f["kind"] != "good" for f in feedback):
-            # Nothing to learn from — don't spend a model call on it.
-            if not quiet_if_empty:
-                await channel.send("No 👎, corrections or pushback in the last 7 days — nothing to review.")
-            return
+            return None
         items = [
             {"kind": f["kind"], "correction_or_pushback": f["correction"], "exchange_id": f["exchange"]["id"],
              "you_were_asked": f["exchange"]["user_text"][:1500], "you_replied": f["exchange"]["reply_text"][:1500]}
             for f in feedback
         ]
         data = json.dumps(items, ensure_ascii=False, indent=1)
-        await self.think_and_reply(channel, REVIEW_PROMPT.format(data=data), kind="review")
+        return await self.converse(REVIEW_PROMPT.format(data=data), kind="review", channel=channel)
+
+    async def run_review(self, channel: discord.abc.Messageable, quiet_if_empty: bool = False):
+        async with channel.typing():
+            turn = await self.review_turn(channel="discord")
+        if turn is None:
+            if not quiet_if_empty:
+                await channel.send("No 👎, corrections or pushback in the last 7 days — nothing to review.")
+            return
+        await self.deliver(channel, turn)
 
     # --- messages ---------------------------------------------------------
 
@@ -201,7 +233,6 @@ class KazperBot(discord.Client):
         if text.startswith("!"):
             await self.handle_command(message, text, channel)
             return
-        await self.note_redirect(text)
         await self.think_and_reply(channel, text)
 
     async def note_redirect(self, text: str):
@@ -212,30 +243,54 @@ class KazperBot(discord.Client):
         if last and datetime.now(timezone.utc) - _parse_ts(last[0]["created_at"]) < REDIRECT_WINDOW:
             await asyncio.to_thread(self.memory.add_feedback, last[0], "redirect", text[:1000])
 
-    async def think_and_reply(self, channel: discord.abc.Messageable, text: str, kind: str = "chat"):
-        turn_notes: list[dict] = []
+    async def converse(self, text: str, kind: str = "chat", channel: str = "discord") -> Turn:
+        """Run one message through the brain and save it. Shared by Discord and the web app."""
+        turn = Turn(kind=kind)
         turn_pointers: list[int] = []
-        remember.noted.set(turn_notes)
+        remember.noted.set(turn.notes)
         recall.left.set(turn_pointers)
-        async with channel.typing():
-            try:
-                reply, prompt_messages, usage = await self.brain.respond(text, kind)
-            except Exception as e:
-                log.exception("LLM call failed")
-                await channel.send(f"⚠️ My brain didn't answer ({type(e).__name__}). Details are in the server logs.")
-                await self.announce_notes(channel, turn_notes)
-                return
-        exchange_id = await asyncio.to_thread(
-            self.memory.save_exchange, text, reply, prompt_messages, kind, usage
+        if kind == "chat":
+            await self.note_redirect(text)
+        try:
+            reply, prompt_messages, usage = await self.brain.respond(text, kind, channel)
+        except Exception as e:
+            log.exception("LLM call failed")
+            turn.error = f"My brain didn't answer ({type(e).__name__}). Details are in the server logs."
+            return turn
+        turn.reply, turn.usage = reply, usage
+        turn.tools = [c["function"]["name"] for m in prompt_messages for c in m.get("tool_calls") or []]
+        turn.exchange_id = await asyncio.to_thread(
+            self.memory.save_exchange, text, reply, prompt_messages, kind, usage, channel
         )
-        log.info("Exchange #%s (%s): %s calls, %s in (%s cached) / %s out tokens, $%s via %s", exchange_id, kind,
-                 usage["llm_calls"], usage["prompt_tokens"], usage["cached_tokens"], usage["completion_tokens"],
-                 usage["cost_usd"], usage["providers"])
-        await asyncio.to_thread(self.memory.link_pointers, turn_pointers, exchange_id)
-        for chunk in _chunks(reply):
-            sent = await channel.send(chunk, suppress_embeds=True)
-            await asyncio.to_thread(self.memory.link_reply_message, sent.id, exchange_id)
-        await self.announce_notes(channel, turn_notes)
+        log.info("Exchange #%s (%s via %s): %s calls, %s in (%s cached) / %s out tokens, $%s via %s",
+                 turn.exchange_id, kind, channel, usage["llm_calls"], usage["prompt_tokens"],
+                 usage["cached_tokens"], usage["completion_tokens"], usage["cost_usd"], usage["providers"])
+        await asyncio.to_thread(self.memory.link_pointers, turn_pointers, turn.exchange_id)
+        return turn
+
+    async def think_and_reply(self, channel: discord.abc.Messageable, text: str, kind: str = "chat"):
+        async with channel.typing():
+            turn = await self.converse(text, kind, "discord")
+        await self.deliver(channel, turn)
+
+    async def deliver(self, channel: discord.abc.Messageable, turn: Turn):
+        if turn.error:
+            await channel.send(f"⚠️ {turn.error}")
+        else:
+            for chunk in _chunks(turn.reply):
+                sent = await channel.send(chunk, suppress_embeds=True)
+                await asyncio.to_thread(self.memory.link_reply_message, sent.id, turn.exchange_id)
+        await self.announce_notes(channel, turn.notes)
+
+    async def record_feedback(self, exchange_id: int, kind: str, correction: str | None = None):
+        """Feedback from the web app. Returns the 📝 lesson saved from a correction, None, or False if no such exchange."""
+        found = await asyncio.to_thread(self.memory.get_exchanges, [exchange_id])
+        if not found:
+            return False
+        await asyncio.to_thread(self.memory.add_feedback, found[0], kind, correction)
+        if kind == "correction" and correction:
+            return await self.lesson_from_fix(found[0], correction)
+        return None
 
     async def announce_notes(self, channel: discord.abc.Messageable, notes: list[dict]):
         """Show the owner every fact Kazper saved this turn, so nothing lands in memory unseen."""
@@ -263,8 +318,7 @@ class KazperBot(discord.Client):
         if cmd == "!help":
             await channel.send(HELP)
         elif cmd == "!brief":
-            await self.think_and_reply(channel, BRIEFING_PROMPT.replace("[Scheduled] Morning", "[On demand]"),
-                                       kind="briefing")
+            await self.think_and_reply(channel, self.on_demand_briefing(), kind="briefing")
         elif cmd == "!review":
             await self.run_review(channel)
         elif cmd == "!senses":
@@ -314,16 +368,22 @@ class KazperBot(discord.Client):
         else:
             await channel.send(HELP)
 
-    async def learn_from_fix(self, channel: discord.abc.Messageable, exchange: dict, correction: str):
+    async def lesson_from_fix(self, exchange: dict, correction: str) -> dict | None:
         """Distil a correction into a lasting 📝 note right away, instead of waiting for a fine-tune."""
         try:
             lesson = await self.brain.distil_lesson(exchange, correction)
         except Exception:
             log.exception("Lesson distillation failed")
-            return
-        if lesson:
-            fact_id = await asyncio.to_thread(self.memory.add_fact, lesson, "kazper")
-            await self.announce_notes(channel, [{"id": fact_id, "text": lesson}])
+            return None
+        if not lesson:
+            return None
+        fact_id = await asyncio.to_thread(self.memory.add_fact, lesson, "kazper")
+        return {"id": fact_id, "text": lesson}
+
+    async def learn_from_fix(self, channel: discord.abc.Messageable, exchange: dict, correction: str):
+        note = await self.lesson_from_fix(exchange, correction)
+        if note:
+            await self.announce_notes(channel, [note])
 
     @staticmethod
     def format_stats(s: dict) -> str:

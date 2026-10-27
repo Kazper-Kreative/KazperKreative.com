@@ -6,7 +6,7 @@ Kazper lives alongside the Kazper Kreative site but runs separately:
 |---|---|---|
 | Runtime (this folder) | **Railway**, always on | Discord line, senses, daily briefing, weekly review |
 | Memory | **Supabase** (same project as the site), `kazper_*` tables | Conversations (+ cost), facts, pointers, feedback, events |
-| Dashboard | kazperkreative.com/kazper — *not built yet* | Briefings, activity log, v2 approvals |
+| App | **kazperkreative.com/kazper** (installable PWA: phone + desktop) | Chat, memory, history, stats; v2 approvals next |
 
 The site never imports this code and Vercel ignores it; Railway builds only this folder.
 
@@ -115,6 +115,25 @@ client and exposes only the read tools (list/get/search). The write tools are fi
 Kazper sees deploy status, deploy history and build/runtime logs, and the briefing flags failed or
 crashed deploys. Railway tokens can't be made read-only, so Tier 0 lives in `tools/railway.py`: it
 only sends fixed GraphQL queries, never mutations. A workspace token keeps a leak inside one workspace.
+
+## The web app (`/kazper`)
+
+Kazper's home outside Discord, at `kazperkreative.com/kazper`. It's the same brain and the same
+conversation: Discord and the app share one history, and each message records which door it came
+through (`channel`). Install it from the browser ("Add to Home Screen" on a phone, "Install app" in
+Chrome/Edge) and it runs in its own window from its own icon.
+
+```
+browser ──► /api/kazper/* (Next.js on Vercel) ──► Kazper runtime /v1/* (Railway) ──► brain + memory
+            checks you're the owner              shared-secret bearer auth
+browser ──► Supabase directly for reads (history, memory, stats), via RLS is_kazper_owner()
+```
+
+- **Who can open it:** only users in `kazper_owners` (seeded by SQL, separate from billing staff).
+- **Runtime side:** `kazper/api.py` runs inside the bot process when `KAZPER_API_SECRET` is set,
+  on Railway's `PORT`. The service needs a public domain (Railway → Settings → Networking).
+- **Site side:** set `KAZPER_RUNTIME_URL` (that domain, https) and the same `KAZPER_API_SECRET` on Vercel.
+- Code: `src/app/kazper/*`, `src/components/kazper/*`, `src/lib/kazper/*`, `src/app/api/kazper/[action]`.
 
 ## Deploy to Railway
 1. Railway → **New Project → Deploy from GitHub repo** → `Kazper-Kreative/KazperKreative.com`.

@@ -100,3 +100,49 @@ alter table public.kazper_pointers enable row level security;
 alter table public.kazper_feedback drop constraint if exists kazper_feedback_kind_check;
 alter table public.kazper_feedback
   add constraint kazper_feedback_kind_check check (kind in ('good', 'bad', 'correction', 'redirect'));
+
+-- ---------------------------------------------------------------------------
+-- 2026-10-27: the /kazper web app. Safe to re-run.
+
+-- Which door a message came through. Discord and the web app share one conversation.
+alter table public.kazper_exchanges
+  add column if not exists channel text not null default 'discord' check (channel in ('discord', 'web'));
+
+-- Who may open /kazper. Deliberately separate from app_staff: billing staff don't get Kazper.
+-- Seeded by SQL only, never from the app.
+create table if not exists public.kazper_owners (
+  user_id uuid primary key references auth.users(id) on delete cascade
+);
+alter table public.kazper_owners enable row level security;
+insert into public.kazper_owners (user_id)
+  select id from auth.users where email = 'kazperkreative@gmail.com'
+  on conflict do nothing;
+
+create or replace function public.is_kazper_owner() returns boolean
+  language sql security definer stable set search_path = public as $$
+    select exists (select 1 from public.kazper_owners where user_id = auth.uid());
+$$;
+revoke all on function public.is_kazper_owner() from public;
+grant execute on function public.is_kazper_owner() to authenticated;
+
+-- The owner reads Kazper's memory with their normal login (no service key in the browser).
+-- Writes are limited to curating memory: editing/deleting facts and pointers, adding facts.
+drop policy if exists "owner reads" on public.kazper_owners;
+create policy "owner reads" on public.kazper_owners for select using (user_id = auth.uid());
+
+drop policy if exists "owner reads" on public.kazper_exchanges;
+create policy "owner reads" on public.kazper_exchanges for select using (public.is_kazper_owner());
+
+drop policy if exists "owner curates" on public.kazper_facts;
+create policy "owner curates" on public.kazper_facts for all
+  using (public.is_kazper_owner()) with check (public.is_kazper_owner());
+
+drop policy if exists "owner curates" on public.kazper_pointers;
+create policy "owner curates" on public.kazper_pointers for all
+  using (public.is_kazper_owner()) with check (public.is_kazper_owner());
+
+drop policy if exists "owner reads" on public.kazper_feedback;
+create policy "owner reads" on public.kazper_feedback for select using (public.is_kazper_owner());
+
+drop policy if exists "owner reads" on public.kazper_events;
+create policy "owner reads" on public.kazper_events for select using (public.is_kazper_owner());

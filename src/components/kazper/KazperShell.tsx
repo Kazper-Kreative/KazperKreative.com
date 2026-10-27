@@ -1,0 +1,48 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { getSupabase } from "@/lib/supabase/client";
+
+const TABS = [
+  { href: "/kazper", label: "Chat", icon: "💬" },
+  { href: "/kazper/memory", label: "Memory", icon: "🧠" },
+  { href: "/kazper/history", label: "History", icon: "🗂️" },
+  { href: "/kazper/stats", label: "Stats", icon: "📈" },
+];
+
+// Kazper's app chrome: top bar on desktop, bottom tab bar on phones (and in the
+// installed PWA), so it feels like an app rather than a page of the website.
+export default function KazperShell({ children }: { children: React.ReactNode }) {
+  const path = usePathname();
+  const active = (href: string) => (href === "/kazper" ? path === "/kazper" : path.startsWith(href));
+
+  const signOut = async () => {
+    const sb = getSupabase();
+    if (sb) await sb.auth.signOut();
+    window.location.href = "/kazper";
+  };
+
+  return (
+    <div className="kz-shell">
+      <header className="kz-bar">
+        <Link href="/kazper" className="kz-brand">
+          <img src="/assets/k-mark.png" alt="" />
+          <span>Kazper</span>
+        </Link>
+        <nav className="kz-tabs" aria-label="Kazper">
+          {TABS.map((t) => (
+            <Link key={t.href} href={t.href} className={`kz-tab${active(t.href) ? " on" : ""}`}>
+              <span className="kz-tab-icon" aria-hidden>{t.icon}</span>
+              <span>{t.label}</span>
+            </Link>
+          ))}
+        </nav>
+        <button className="btn btn-ghost kz-signout" onClick={() => void signOut()}>
+          Sign out
+        </button>
+      </header>
+      <main className="kz-main">{children}</main>
+    </div>
+  );
+}

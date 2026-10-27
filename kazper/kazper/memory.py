@@ -89,8 +89,9 @@ class SupabaseMemory:
         return list(reversed(rows))
 
     def save_exchange(self, user_text: str, reply_text: str, messages: list[dict], kind: str = "chat",
-                      usage: dict | None = None) -> int:
-        row = {"user_text": user_text, "reply_text": reply_text, "messages": messages, "kind": kind}
+                      usage: dict | None = None, channel: str = "discord") -> int:
+        row = {"user_text": user_text, "reply_text": reply_text, "messages": messages, "kind": kind,
+               "channel": channel}
         row.update({k: v for k, v in (usage or {}).items() if k in USAGE_FIELDS})
         return self._insert("kazper_exchanges", row)["id"]
 
@@ -228,7 +229,7 @@ CREATE TABLE IF NOT EXISTS events (
 SQLITE_ADDED_COLUMNS = {
     "facts": {"source": "TEXT NOT NULL DEFAULT 'owner'"},
     "exchanges": {
-        "kind": "TEXT NOT NULL DEFAULT 'chat'", "llm_calls": "INTEGER", "prompt_tokens": "INTEGER",
+        "kind": "TEXT NOT NULL DEFAULT 'chat'", "channel": "TEXT NOT NULL DEFAULT 'discord'", "llm_calls": "INTEGER", "prompt_tokens": "INTEGER",
         "cached_tokens": "INTEGER", "completion_tokens": "INTEGER", "reasoning_tokens": "INTEGER",
         "cost_usd": "REAL", "providers": "TEXT",
     },
@@ -268,10 +269,10 @@ class SqliteMemory:
         return list(reversed(rows))
 
     def save_exchange(self, user_text: str, reply_text: str, messages: list[dict], kind: str = "chat",
-                      usage: dict | None = None) -> int:
+                      usage: dict | None = None, channel: str = "discord") -> int:
         usage = {k: v for k, v in (usage or {}).items() if k in USAGE_FIELDS}
-        cols = ["ts", "user_text", "reply_text", "messages", "kind", *usage]
-        vals = [_now().isoformat(), user_text, reply_text, json.dumps(messages, ensure_ascii=False), kind,
+        cols = ["ts", "user_text", "reply_text", "messages", "kind", "channel", *usage]
+        vals = [_now().isoformat(), user_text, reply_text, json.dumps(messages, ensure_ascii=False), kind, channel,
                 *usage.values()]
         return self._exec(
             f"INSERT INTO exchanges ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})", tuple(vals)

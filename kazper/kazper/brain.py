@@ -49,9 +49,13 @@ Leave a pointer when a thread will continue (an open question, a promise, someth
 and clear_pointer ones that are done."""
 
 KIND_INTRO = {
-    "chat": "You are talking with your human over Discord DM.",
-    "briefing": "This is a scheduled job; your reply is DMed to your human.",
-    "review": "This is your weekly self-review; your reply is DMed to your human.",
+    "chat": "You are talking with your human.",
+    "briefing": "This is a briefing; your reply goes straight to your human.",
+    "review": "This is your weekly self-review; your reply goes straight to your human.",
+}
+CHANNEL_INTRO = {
+    "discord": "You're on Discord (DM). Discord shows markdown; keep replies compact.",
+    "web": "You're in your web app (the Kazper shell). It renders markdown.",
 }
 
 LESSON_PROMPT = """You are helping an assistant learn from a correction. Below are the user's message, the
@@ -87,7 +91,8 @@ class Brain:
                 return path.read_text(encoding="utf-8")
         return "You are Kazper, the AI version of your human."
 
-    def system_prompt(self, facts: list[dict], pointers: list[dict], kind: str = "chat") -> str:
+    def system_prompt(self, facts: list[dict], pointers: list[dict], kind: str = "chat",
+                      channel: str = "discord") -> str:
         senses = "\n".join(f"- {s}" for s in self.tools.senses) or "- (none connected)"
         told = "\n".join(f"- {f['text']}" for f in facts if f.get("source", "owner") == "owner") or "- (nothing yet)"
         noted = "\n".join(f"- {f['text']}" for f in facts if f.get("source") == "kazper")
@@ -103,10 +108,11 @@ class Brain:
             parts.append(f"## Things you noted yourself (what I tell you directly wins over these)\n{noted}")
         if pointer_lines:
             parts.append(f"## Your pointers (working notes; may be stale)\n{pointer_lines}")
-        parts.append(f"## Right now\n{KIND_INTRO.get(kind, KIND_INTRO['chat'])}")
+        parts.append(f"## Right now\n{KIND_INTRO.get(kind, KIND_INTRO['chat'])} "
+                     f"{CHANNEL_INTRO.get(channel, '')} Discord and the web app share one conversation.")
         return "\n\n".join(parts)
 
-    async def build_messages(self, user_text: str, kind: str = "chat") -> list[dict]:
+    async def build_messages(self, user_text: str, kind: str = "chat", channel: str = "discord") -> list[dict]:
         # Scheduled jobs are self-contained, so they skip the chat window entirely.
         window = self.cfg.recent_turns if kind == "chat" else 0
         facts, pointers, history = await asyncio.gather(
@@ -114,7 +120,7 @@ class Brain:
             asyncio.to_thread(self.memory.recent_pointers, POINTERS_IN_PROMPT),
             asyncio.to_thread(self.memory.recent_exchanges, window) if window else asyncio.sleep(0, []),
         )
-        messages = [{"role": "system", "content": self.system_prompt(facts, pointers, kind)}]
+        messages = [{"role": "system", "content": self.system_prompt(facts, pointers, kind, channel)}]
         for ex in history:
             messages.append({"role": "user", "content": f"[#{ex['id']}] {ex['user_text']}"})
             messages.append({"role": "assistant", "content": ex["reply_text"]})
@@ -133,9 +139,9 @@ class Brain:
             body["provider"] = {"order": list(self.cfg.provider_order), "allow_fallbacks": True}
         return body or None
 
-    async def respond(self, user_text: str, kind: str = "chat") -> tuple[str, list[dict], dict]:
+    async def respond(self, user_text: str, kind: str = "chat", channel: str = "discord") -> tuple[str, list[dict], dict]:
         """Returns the reply, the full message list (including tool calls) and summed usage, for logging."""
-        messages = await self.build_messages(user_text, kind)
+        messages = await self.build_messages(user_text, kind, channel)
         tools = self.tools.schemas()
         effort = self.cfg.reasoning_effort if kind == "chat" else self.cfg.deep_reasoning_effort
         extra_body = self._extra_body(effort)

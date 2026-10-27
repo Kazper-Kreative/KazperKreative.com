@@ -56,6 +56,8 @@ class Config:
     discord_watch_keywords: tuple[str, ...]
     cryptidkeep_url: str
     cryptidkeep_token: str
+    # web app door (kazper/api.py); blank = Discord only
+    api_secret: str
     railway_api_token: str
 
 
@@ -114,5 +116,6 @@ def load_config() -> Config:
         discord_watch_keywords=keywords,
         cryptidkeep_url=_opt("CRYPTIDKEEP_MCP_URL"),
         cryptidkeep_token=_opt("CRYPTIDKEEP_TOKEN"),
+        api_secret=_opt("KAZPER_API_SECRET"),
         railway_api_token=_opt("RAILWAY_API_TOKEN"),
     )

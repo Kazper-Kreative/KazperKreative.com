@@ -65,5 +65,7 @@ export const config = {
     "/auth/:path*",
     "/portal/:path*",
     "/admin/:path*",
+    "/kazper/:path*",
+    "/api/kazper/:path*",
   ],
 };
