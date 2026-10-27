@@ -26,8 +26,12 @@ create table if not exists public.kazper_reply_messages (
 create table if not exists public.kazper_facts (
   id          bigint generated always as identity primary key,
   created_at  timestamptz not null default now(),
-  text        text not null
+  text        text not null,
+  source      text not null default 'owner' check (source in ('owner', 'kazper'))  -- who saved it
 );
+-- Added 2026-10-27 for Kazper's own notes; safe to re-run on an existing table.
+alter table public.kazper_facts
+  add column if not exists source text not null default 'owner' check (source in ('owner', 'kazper'));
 
 create table if not exists public.kazper_feedback (
   id           bigint generated always as identity primary key,

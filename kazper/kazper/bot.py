@@ -13,6 +13,7 @@ Commands (DM):
   !fix <better>      (as a Discord *reply* to a Kazper message) record what it should have said
   !help              show this list
 React 👍 / 👎 on any Kazper message to rate it.
+Kazper can save its own notes ("📝 Noted #id"); react 🗑️ on one to delete it.
 """
 
 import asyncio
@@ -25,12 +26,12 @@ from discord.ext import tasks
 from .brain import Brain
 from .config import Config
 from .memory import open_memory
-from .tools import Toolbox, cryptidkeep, discord_watch, google, railway, slack
+from .tools import Toolbox, cryptidkeep, discord_watch, google, railway, remember, slack
 
 log = logging.getLogger("kazper")
 
 DISCORD_LIMIT = 1900  # Discord caps messages at 2000 chars; leave headroom
-GOOD, BAD = "👍", "👎"
+GOOD, BAD, TRASH = "👍", "👎", "🗑️"
 
 BRIEFING_PROMPT = (
     "[Scheduled] Morning briefing time. Use your tools to check: today's calendar, email from the last "
@@ -48,7 +49,7 @@ HELP = (
     "`!facts` — list saved facts\n"
     "`!forget <id>` — delete a fact\n"
     "`!fix <better reply>` — reply to one of my messages with what I should have said\n"
-    f"React {GOOD} / {BAD} on my messages to rate them."
+    f"React {GOOD} / {BAD} on my messages to rate them, {TRASH} on a 📝 note to delete it."
 )
 
 
@@ -76,6 +77,7 @@ async def build_toolbox(cfg: Config, memory) -> Toolbox:
     if cfg.railway_api_token:
         railway.register(box, railway.Railway(cfg.railway_api_token))
     discord_watch.register(box, memory)
+    remember.register(box, memory)
     return box
 
 
@@ -87,6 +89,7 @@ class KazperBot(discord.Client):
         self.cfg = cfg
         self.memory = open_memory(cfg)
         self.brain: Brain | None = None
+        self.note_messages: dict[int, int] = {}  # Discord message id of a 📝 note -> fact id (for 🗑️)
 
     async def setup_hook(self):
         tools = await build_toolbox(self.cfg, self.memory)
@@ -140,17 +143,27 @@ class KazperBot(discord.Client):
         await self.think_and_reply(channel, text)
 
     async def think_and_reply(self, channel: discord.abc.Messageable, text: str):
+        turn_notes: list[dict] = []
+        remember.noted.set(turn_notes)
         async with channel.typing():
             try:
                 reply, prompt_messages = await self.brain.respond(text)
             except Exception as e:
                 log.exception("LLM call failed")
                 await channel.send(f"⚠️ My brain didn't answer ({type(e).__name__}). Details are in the server logs.")
+                await self.announce_notes(channel, turn_notes)
                 return
         exchange_id = await asyncio.to_thread(self.memory.save_exchange, text, reply, prompt_messages)
         for chunk in _chunks(reply):
             sent = await channel.send(chunk, suppress_embeds=True)
             await asyncio.to_thread(self.memory.link_reply_message, sent.id, exchange_id)
+        await self.announce_notes(channel, turn_notes)
+
+    async def announce_notes(self, channel: discord.abc.Messageable, notes: list[dict]):
+        """Show the owner every fact Kazper saved this turn, so nothing lands in memory unseen."""
+        for note in notes:
+            sent = await channel.send(f"📝 Noted #{note['id']}: {note['text']}  ·  react {TRASH} to delete")
+            self.note_messages[sent.id] = note["id"]
 
     async def notice(self, message: discord.Message):
         """Discord sense: record (never answer) mentions of the owner and keyword hits."""
@@ -182,7 +195,11 @@ class KazperBot(discord.Client):
             await channel.send(f"Got it — fact #{fact_id} saved.")
         elif cmd == "!facts":
             facts = await asyncio.to_thread(mem.list_facts)
-            body = "\n".join(f"`#{f['id']}` {f['text']}" for f in facts) or "I don't have any saved facts yet."
+            body = "\n".join(
+                f"`#{f['id']}` {'📝 ' if f.get('source') == 'kazper' else ''}{f['text']}" for f in facts
+            ) or "I don't have any saved facts yet."
+            if any(f.get("source") == "kazper" for f in facts):
+                body += "\n📝 = noted by me, not told by you"
             for chunk in _chunks(body):
                 await channel.send(chunk)
         elif cmd == "!forget" and arg.isdigit():
@@ -203,6 +220,13 @@ class KazperBot(discord.Client):
         if payload.user_id != self.cfg.owner_id:
             return
         emoji = str(payload.emoji)
+        # Discord may send 🗑 with or without the emoji variation selector, so compare the base character.
+        if emoji.rstrip("️") == TRASH.rstrip("️") and payload.message_id in self.note_messages:
+            fact_id = self.note_messages.pop(payload.message_id)
+            ok = await asyncio.to_thread(self.memory.forget_fact, fact_id)
+            channel = self.get_channel(payload.channel_id) or await self.fetch_channel(payload.channel_id)
+            await channel.send(f"Deleted note #{fact_id}." if ok else f"Note #{fact_id} was already gone.")
+            return
         if emoji not in (GOOD, BAD):
             return
         exchange = await asyncio.to_thread(self.memory.exchange_for_message, payload.message_id)

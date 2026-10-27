@@ -83,11 +83,11 @@ class SupabaseMemory:
 
     # --- facts ----------------------------------------------------------
 
-    def add_fact(self, text: str) -> int:
-        return self._insert("kazper_facts", {"text": text})["id"]
+    def add_fact(self, text: str, source: str = "owner") -> int:
+        return self._insert("kazper_facts", {"text": text, "source": source})["id"]
 
     def list_facts(self) -> list[dict]:
-        return self._get("kazper_facts", select="id,text", order="id")
+        return self._get("kazper_facts", select="id,text,source", order="id")
 
     def forget_fact(self, fact_id: int) -> bool:
         r = self.http.delete("/kazper_facts", params={"id": f"eq.{fact_id}"}, headers={"Prefer": "return=representation"})
@@ -120,7 +120,9 @@ CREATE TABLE IF NOT EXISTS exchanges (
 CREATE TABLE IF NOT EXISTS reply_messages (
     discord_message_id INTEGER PRIMARY KEY, exchange_id INTEGER NOT NULL REFERENCES exchanges(id)
 );
-CREATE TABLE IF NOT EXISTS facts (id INTEGER PRIMARY KEY, ts TEXT NOT NULL, text TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS facts (
+    id INTEGER PRIMARY KEY, ts TEXT NOT NULL, text TEXT NOT NULL, source TEXT NOT NULL DEFAULT 'owner'
+);
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY, ts TEXT NOT NULL, exchange_id INTEGER NOT NULL REFERENCES exchanges(id),
     kind TEXT NOT NULL, correction TEXT
@@ -140,6 +142,9 @@ class SqliteMemory:
         self.db = sqlite3.connect(data_dir / "kazper.db", check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SQLITE_SCHEMA)
+        if "source" not in {r["name"] for r in self.db.execute("PRAGMA table_info(facts)")}:
+            self.db.execute("ALTER TABLE facts ADD COLUMN source TEXT NOT NULL DEFAULT 'owner'")
+            self.db.commit()
         self.lock = threading.Lock()
 
     def _exec(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
@@ -173,11 +178,13 @@ class SqliteMemory:
         )
         return dict(rows[0]) if rows else None
 
-    def add_fact(self, text: str) -> int:
-        return self._exec("INSERT INTO facts (ts, text) VALUES (?, ?)", (_now().isoformat(), text)).lastrowid
+    def add_fact(self, text: str, source: str = "owner") -> int:
+        return self._exec(
+            "INSERT INTO facts (ts, text, source) VALUES (?, ?, ?)", (_now().isoformat(), text, source)
+        ).lastrowid
 
     def list_facts(self) -> list[dict]:
-        return [dict(r) for r in self._rows("SELECT id, text FROM facts ORDER BY id")]
+        return [dict(r) for r in self._rows("SELECT id, text, source FROM facts ORDER BY id")]
 
     def forget_fact(self, fact_id: int) -> bool:
         return self._exec("DELETE FROM facts WHERE id = ?", (fact_id,)).rowcount > 0

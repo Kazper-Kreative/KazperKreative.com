@@ -16,6 +16,10 @@ Kazper **reads** Calendar, Gmail, Slack, Discord mentions, CryptidKeep and Railw
 questions about them, and DMs you a briefing every morning. It can't send, reply,
 post or edit anything. That starts in v2, with your approval on each action.
 
+The one exception is its own memory: with the `remember` tool Kazper saves durable facts it learns
+from you. Each one is tagged as Kazper's (`source = 'kazper'`), ranked below what you told it, capped
+at 3 per reply, and DMed to you as `📝 Noted #id` so nothing lands in memory unseen.
+
 ```
 kazper/
   identity/kazper_identity.example.md   public blank template; your real profile is the gitignored
@@ -102,6 +106,7 @@ only sends fixed GraphQL queries, never mutations. A workspace token keeps a lea
 | `!senses` | What's connected |
 | `!remember I hate morning meetings` | Permanent fact, in every prompt |
 | `!facts` / `!forget 3` | Review / remove facts |
+| React 🗑️ on a `📝 Noted #7` message | Delete a note Kazper saved itself |
 | React 👍 or 👎 | Rates that reply |
 | Reply to a Kazper message with `!fix <what you'd say>` | Correction, the best training signal |
 
