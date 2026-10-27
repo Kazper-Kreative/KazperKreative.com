@@ -118,12 +118,19 @@ insert into public.kazper_owners (user_id)
   select id from auth.users where email = 'kazperkreative@gmail.com'
   on conflict do nothing;
 
+-- Invoker rights: the "owner reads" policy below lets a user see only their own owner row,
+-- which is all this needs. Not callable anonymously.
 create or replace function public.is_kazper_owner() returns boolean
-  language sql security definer stable set search_path = public as $$
+  language sql security invoker stable set search_path = public as $$
     select exists (select 1 from public.kazper_owners where user_id = auth.uid());
 $$;
-revoke all on function public.is_kazper_owner() from public;
+revoke all on function public.is_kazper_owner() from public, anon;
 grant execute on function public.is_kazper_owner() to authenticated;
+
+-- This project doesn't grant table access to signed-in users by default; RLS below still
+-- limits every row to the owner.
+grant select on public.kazper_owners, public.kazper_exchanges, public.kazper_feedback, public.kazper_events to authenticated;
+grant select, insert, update, delete on public.kazper_facts, public.kazper_pointers to authenticated;
 
 -- The owner reads Kazper's memory with their normal login (no service key in the browser).
 -- Writes are limited to curating memory: editing/deleting facts and pointers, adding facts.

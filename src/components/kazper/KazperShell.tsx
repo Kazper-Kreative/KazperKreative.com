@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 
 const TABS = [
@@ -15,12 +15,15 @@ const TABS = [
 // installed PWA), so it feels like an app rather than a page of the website.
 export default function KazperShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
+  const router = useRouter();
   const active = (href: string) => (href === "/kazper" ? path === "/kazper" : path.startsWith(href));
 
+  // After sign-out the server layout re-renders as the login screen.
   const signOut = async () => {
     const sb = getSupabase();
     if (sb) await sb.auth.signOut();
-    window.location.href = "/kazper";
+    router.replace("/kazper");
+    router.refresh();
   };
 
   return (
