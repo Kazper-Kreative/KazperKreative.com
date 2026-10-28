@@ -12,6 +12,7 @@ Reads (history, facts, pointers, costs) go straight from the site to Supabase.
   POST /v1/review          {}                            -> a weekly-review turn (or a "nothing to review" note)
   POST /v1/feedback        {"exchange_id", "kind", "correction"?}  kind: good | bad | correction
   POST /v1/undo            {"action_id"}                 -> reverse one thing Kazper did
+  POST /v1/calendar        {"days_ahead"?, "days_back"?, "include_all"?} -> his deadlines (+ your calendars)
 """
 
 import hmac
@@ -102,6 +103,15 @@ def build_app(bot: "KazperBot", secret: str) -> web.Application:
         ok, message = await bot.undo_action(action_id)
         return web.json_response({"ok": ok, "message": message}, status=200 if ok else 409)
 
+    async def calendar(request: web.Request):
+        data = await body(request)
+        try:
+            days_ahead = max(1, min(int(data.get("days_ahead", 30)), 120))
+            days_back = max(0, min(int(data.get("days_back", 7)), 60))
+        except (TypeError, ValueError):
+            return web.json_response({"error": "days_ahead/days_back must be integers"}, status=400)
+        return web.json_response(await bot.calendar_view(days_ahead, days_back, bool(data.get("include_all"))))
+
     app = web.Application(middlewares=[auth], client_max_size=64 * 1024)
     app.add_routes([
         web.get("/health", health),
@@ -110,6 +120,7 @@ def build_app(bot: "KazperBot", secret: str) -> web.Application:
         web.post("/v1/review", review),
         web.post("/v1/feedback", feedback),
         web.post("/v1/undo", undo),
+        web.post("/v1/calendar", calendar),
     ])
     return app
 

@@ -26,6 +26,15 @@ export interface Pointer {
   exchange_id: number | null;
 }
 
+export interface ActionRow {
+  id: number;
+  created_at: string;
+  kind: string;
+  status: "done" | "undone" | "proposed" | "approved" | "rejected" | "failed";
+  summary: string;
+  destination: string | null;
+}
+
 const EXCHANGE_FIELDS = "id,created_at,kind,channel,user_text,reply_text,cost_usd";
 const DATASET_GOAL = 500;
 
@@ -124,6 +133,18 @@ export async function stats(): Promise<Stats> {
     datasetGoal: DATASET_GOAL,
     daily: [...byDay.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([day, d]) => ({ day, ...d })),
   };
+}
+
+/** Kazper's most recent calendar changes, newest first. */
+export async function recentActions(limit = 12): Promise<ActionRow[]> {
+  const sb = await createSupabaseServer();
+  const { data } = await sb
+    .from("kazper_actions")
+    .select("id,created_at,kind,status,summary,destination")
+    .or("kind.like.deadline.*,kind.like.calendar.*")
+    .order("id", { ascending: false })
+    .limit(limit);
+  return (data ?? []) as ActionRow[];
 }
 
 export function usd(x: number): string {

@@ -243,6 +243,23 @@ class Deadlines:
                 "before": {k: before.get(k) for k in COLOR_FIELDS if before.get(k)},
             })
 
+    def color(self) -> str | None:
+        """The calendar's colour in your list (for the app)."""
+        return self.google._request("GET", self._list_entry_url()).get("backgroundColor")
+
+    def view(self, days_ahead: int = 30, days_back: int = 7, include_all: bool = False) -> dict:
+        """Everything the app's Calendar tab shows, in one call."""
+        result = {"name": self.name, "timezone": self.timezone, "deadlines": self.list(days_ahead, days_back)}
+        result["name"] = self.name  # calendar_id() (via list) refreshes the current name
+        try:
+            result["color"] = self.color()
+        except Exception:
+            result["color"] = None
+        if include_all:
+            result["events"] = [e for e in self.google.calendar_events(days_ahead, days_back)
+                                if e.get("calendar") != self.name]
+        return result
+
     def list(self, days_ahead: int = 60, days_back: int = 7) -> list[dict]:
         today = datetime.now(ZoneInfo(self.timezone)).replace(hour=0, minute=0, second=0, microsecond=0)
         data = self.google._get(
@@ -349,6 +366,7 @@ def register(box: Toolbox, deadlines: Deadlines) -> None:
         }),
         deadlines.settings,
     ))
+    box.calendar = deadlines
     box.undo["deadline"] = deadlines.undo
     box.undo["calendar"] = deadlines.undo
     box.senses.append("Writes: his own deadlines calendar, events and settings (acts freely, you're told, undoable)")

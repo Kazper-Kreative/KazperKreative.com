@@ -290,6 +290,18 @@ class KazperBot(discord.Client):
             sent = await channel.send(f"🗓️ {action['summary']}  ·  react {UNDO} to undo")
             self.action_messages[sent.id] = action["id"]
 
+    async def calendar_view(self, days_ahead: int, days_back: int, include_all: bool) -> dict:
+        """His calendar (and optionally all of yours) for the app's Calendar tab. Read-only."""
+        calendar = self.brain.tools.calendar
+        if calendar is None:
+            return {"connected": False}
+        try:
+            view = await asyncio.to_thread(calendar.view, days_ahead, days_back, include_all)
+        except Exception as e:
+            log.exception("Calendar view failed")
+            return {"connected": True, "error": f"{type(e).__name__}: {e}"}
+        return {"connected": True, **view}
+
     async def undo_action(self, action_id: int) -> tuple[bool, str]:
         """Reverse one logged action (Discord ↩️ or the app's Undo). Returns (ok, message)."""
         action = await asyncio.to_thread(self.memory.get_action, action_id)

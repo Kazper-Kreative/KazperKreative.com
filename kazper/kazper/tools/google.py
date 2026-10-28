@@ -90,6 +90,7 @@ class Google:
                 "start": e.get("start", {}).get("dateTime") or e.get("start", {}).get("date"),
                 "end": e.get("end", {}).get("dateTime") or e.get("end", {}).get("date"),
                 "location": e.get("location"),
+                "all_day": "date" in e.get("start", {}),
                 "attendees": len(e.get("attendees", [])),
                 "my_response": next(
                     (a.get("responseStatus") for a in e.get("attendees", []) if a.get("self")), None

@@ -6,6 +6,7 @@ import { getSupabase } from "@/lib/supabase/client";
 
 const TABS = [
   { href: "/kazper", label: "Chat", icon: "💬" },
+  { href: "/kazper/calendar", label: "Calendar", icon: "📅" },
   { href: "/kazper/memory", label: "Memory", icon: "🧠" },
   { href: "/kazper/history", label: "History", icon: "🗂️" },
   { href: "/kazper/stats", label: "Stats", icon: "📈" },

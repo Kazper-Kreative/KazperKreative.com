@@ -30,6 +30,7 @@ class Toolbox:
         self.senses: list[str] = []  # human-readable list of what's connected
         # How to reverse a logged action, by the prefix of its kind ("deadline" for "deadline.add").
         self.undo: dict[str, Callable[[dict], str]] = {}
+        self.calendar = None  # his Deadlines calendar (tools/deadlines.py), when Google is connected
 
     def add(self, tool: Tool) -> None:
         self.tools[tool.name] = tool

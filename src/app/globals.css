@@ -769,3 +769,29 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
   .kz-row{grid-template-columns:auto 1fr}
   .kz-row-actions{grid-column:2}
 }
+
+/* Kazper shell: calendar tab */
+.kz-cal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.kz-cal-head .kz-h{display:flex;align-items:center;gap:12px}
+.kz-cal-dot{width:14px;height:14px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px var(--surface-2)}
+.kz-segment{display:inline-flex;padding:3px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface)}
+.kz-segment a{padding:7px 14px;border-radius:999px;font-size:13.5px;color:var(--text-dim)}
+.kz-segment a.on{background:var(--surface-3);color:var(--text)}
+.kz-agenda-day + .kz-agenda-day{margin-top:6px}
+.kz-agenda-day h3{font-size:12.5px;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);padding:10px 0 4px;border-top:1px solid var(--line)}
+.kz-agenda-day:first-of-type h3{border-top:0;padding-top:0}
+.kz-agenda-day h3.today{color:var(--accent)}
+.kz-agenda{display:flex;flex-direction:column}
+.kz-agenda-item{display:grid;grid-template-columns:auto 74px 1fr;gap:12px;align-items:start;padding:8px 0}
+.kz-agenda-event .kz-agenda-text{color:var(--text-dim)}
+.kz-swatch{width:10px;height:10px;border-radius:3px;margin-top:6px}
+.kz-swatch.hollow{border:1.5px solid var(--text-faint);background:none}
+.kz-agenda-time{font-size:12.5px;color:var(--text-faint);padding-top:2px}
+.kz-agenda-text{font-size:14.5px;line-height:1.5;overflow-wrap:anywhere}
+.kz-overdue{border-color:rgba(255,107,107,.35)}
+.kz-overdue h2{color:#ffb3b3}
+.kz-undone .kz-row-text{text-decoration:line-through;opacity:.55}
+@media (max-width:760px){
+  .kz-agenda-item{grid-template-columns:auto 58px 1fr;gap:10px}
+  .kz-tab{padding:6px 6px}
+}
