@@ -1,8 +1,8 @@
 """One-time Google login: python -m kazper.setup_google
 
 Opens your browser, asks you to allow read access to your calendars and Gmail,
-plus managing only the calendars Kazper creates himself (his "Kazper · Deadlines"),
-and writes the resulting GOOGLE_REFRESH_TOKEN into kazper/.env. Needs
+plus managing only the calendars Kazper creates himself (his "Kazper · Deadlines")
+and your calendar list (hide/unsubscribe), and writes the resulting GOOGLE_REFRESH_TOKEN into kazper/.env. Needs
 GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env first (see README).
 """
 

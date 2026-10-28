@@ -46,6 +46,12 @@ can only write to calendars he created; your other calendars stay read-only, enf
 He reads all calendars in your list, so share work calendars (e.g. SensorOps) with the connected
 account if you want him to see them.
 
+He also manages your calendar list (`calendar.calendarlist` permission, same undo and reporting):
+`calendar_mute` makes him ignore a calendar without touching Google; `calendar_hide` and
+`calendar_unsubscribe` change what you see in Google Calendar. None of these can edit events on your
+calendars or change their sharing. Adding this permission means re-running `python -m kazper.setup_google`
+and updating `GOOGLE_REFRESH_TOKEN` on Railway.
+
 ## How Kazper learns
 
 - `!fix` stores the correction, and Kazper also turns it into a lasting 📝 note right away when it

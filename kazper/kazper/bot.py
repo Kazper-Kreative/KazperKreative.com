@@ -36,7 +36,7 @@ from . import api
 from .brain import Brain
 from .config import DAYS, Config
 from .memory import open_memory
-from .tools import Toolbox, cryptidkeep, deadlines, discord_watch, google, railway, recall, remember, slack
+from .tools import Toolbox, calendars, cryptidkeep, deadlines, discord_watch, google, railway, recall, remember, slack
 
 log = logging.getLogger("kazper")
 
@@ -121,7 +121,9 @@ async def build_toolbox(cfg: Config, memory) -> Toolbox:
     if cfg.google_client_id and cfg.google_client_secret and cfg.google_refresh_token:
         g = google.Google(cfg.google_client_id, cfg.google_client_secret, cfg.google_refresh_token, cfg.timezone)
         google.register(box, g)
-        deadlines.register(box, deadlines.Deadlines(g, memory, cfg.timezone))
+        own = deadlines.Deadlines(g, memory, cfg.timezone)
+        deadlines.register(box, own)
+        calendars.register(box, calendars.CalendarList(g, memory, own))
     if cfg.slack_user_token:
         slack.register(box, slack.Slack(cfg.slack_user_token))
     if cfg.cryptidkeep_url and cfg.cryptidkeep_token:
