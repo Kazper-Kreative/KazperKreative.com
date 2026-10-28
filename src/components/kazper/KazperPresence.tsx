@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getSupabase } from "@/lib/supabase/client";
+import { getKazperSupabase } from "@/lib/kazper/supabase";
 import {
   createPresence, SENSES, STATE_COLORS, STATE_LABELS,
   type PresenceState, type SenseId,
@@ -65,7 +65,7 @@ export default function KazperPresence() {
 
   useEffect(() => {
     const presence = createPresence(canvasRef.current!);
-    const sb = getSupabase();
+    const sb = getKazperSupabase();
     let lastExchange = 0, lastStep = 0, lastAt = "", current: PresenceState = "resting";
     let live = false, busy = false, failed = false, stopped = false, draining = false;
     let replayTimers: ReturnType<typeof setTimeout>[] = [];

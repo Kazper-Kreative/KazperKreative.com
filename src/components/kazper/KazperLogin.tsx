@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase/client";
+import { getKazperSupabase } from "@/lib/kazper/supabase";
 
 // Owner sign-in for /kazper. One email carries both a link and a 6-digit code.
 // The code is what makes sign-in work inside the installed apps (desktop shell,
@@ -20,7 +20,7 @@ export default function KazperLogin() {
     setErr("");
     const e = email.trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) return setErr("Enter a valid email address.");
-    const sb = getSupabase();
+    const sb = getKazperSupabase();
     if (!sb) return setErr("Sign-in is unavailable right now.");
     setBusy(true);
     const { error } = await sb.auth.signInWithOtp({
@@ -41,7 +41,7 @@ export default function KazperLogin() {
     const token = code.replace(/\D/g, "");
     if (token.length < 6) return setErr("Enter the code from the email.");
     setBusy(true);
-    const { error } = await getSupabase()!.auth.verifyOtp({ email: email.trim(), token, type: "email" });
+    const { error } = await getKazperSupabase()!.auth.verifyOtp({ email: email.trim(), token, type: "email" });
     setBusy(false);
     if (error) return setErr("That code didn't work. Check it, or send a new one.");
     router.refresh();

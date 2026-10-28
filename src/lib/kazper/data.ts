@@ -1,6 +1,6 @@
 // Server-side reads for the /kazper app. They go through the owner's cookie
 // session, so RLS (is_kazper_owner) is what actually grants access.
-import { createSupabaseServer } from "@/lib/supabase/server";
+import { createKazperServer } from "@/lib/kazper/supabase-server";
 
 export interface Exchange {
   id: number;
@@ -40,13 +40,13 @@ const DATASET_GOAL = 500;
 
 /** The newest `limit` exchanges, oldest first (chat order). */
 export async function recentExchanges(limit = 40): Promise<Exchange[]> {
-  const sb = await createSupabaseServer();
+  const sb = await createKazperServer();
   const { data } = await sb.from("kazper_exchanges").select(EXCHANGE_FIELDS).order("id", { ascending: false }).limit(limit);
   return ((data ?? []) as Exchange[]).reverse();
 }
 
 export async function searchExchanges(q: string, beforeId?: number, limit = 25): Promise<Exchange[]> {
-  const sb = await createSupabaseServer();
+  const sb = await createKazperServer();
   let query = sb.from("kazper_exchanges").select(EXCHANGE_FIELDS).order("id", { ascending: false }).limit(limit);
   if (q.trim()) query = query.textSearch("search", q.trim(), { type: "websearch", config: "english" });
   if (beforeId) query = query.lt("id", beforeId);
@@ -55,7 +55,7 @@ export async function searchExchanges(q: string, beforeId?: number, limit = 25):
 }
 
 export async function memory(): Promise<{ facts: Fact[]; pointers: Pointer[] }> {
-  const sb = await createSupabaseServer();
+  const sb = await createKazperServer();
   const [facts, pointers] = await Promise.all([
     sb.from("kazper_facts").select("id,created_at,text,source").order("id"),
     sb.from("kazper_pointers").select("id,created_at,text,exchange_id").order("id", { ascending: false }),
@@ -83,7 +83,7 @@ export interface Stats {
 }
 
 export async function stats(): Promise<Stats> {
-  const sb = await createSupabaseServer();
+  const sb = await createKazperServer();
   const since30 = new Date(Date.now() - 30 * 864e5).toISOString();
   const since7 = new Date(Date.now() - 7 * 864e5).toISOString();
   const count = async (table: string, filter?: [string, string]) => {
@@ -137,7 +137,7 @@ export async function stats(): Promise<Stats> {
 
 /** Kazper's most recent calendar changes, newest first. */
 export async function recentActions(limit = 12): Promise<ActionRow[]> {
-  const sb = await createSupabaseServer();
+  const sb = await createKazperServer();
   const { data } = await sb
     .from("kazper_actions")
     .select("id,created_at,kind,status,summary,destination")

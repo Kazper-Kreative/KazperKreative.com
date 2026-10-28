@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import LocalTime from "@/components/kazper/LocalTime";
 import Markdown from "@/components/kazper/Markdown";
-import { getSupabase } from "@/lib/supabase/client";
+import { getKazperSupabase } from "@/lib/kazper/supabase";
 import type { Exchange } from "@/lib/kazper/data";
 
 interface Note {
@@ -200,7 +200,7 @@ export default function KazperChat({ initial }: { initial: Exchange[] }) {
   };
 
   const deleteNote = async (exId: number, note: Note) => {
-    const sb = getSupabase();
+    const sb = getKazperSupabase();
     if (!sb) return;
     const { error: err } = await sb.from("kazper_facts").delete().eq("id", note.id);
     if (!err) {
