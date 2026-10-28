@@ -3,8 +3,9 @@
 One read per provider, each independent (one failing never hides the others),
 cached for a minute:
 - OpenRouter: the prepaid balance every reply draws from, and this key's monthly cap.
-- Railway: this billing period's projected resource use, priced at Railway's
-  published rates, against the Hobby plan's included $5.
+- Railway: resource use so far this billing period and a monthly run-rate from
+  the last day's average, both priced at Railway's published rates, against the
+  Hobby plan's included $5.
 - Supabase (Kazper Mind): database size against the free plan's 500 MB.
 Nothing here writes anywhere.
 """
@@ -13,6 +14,7 @@ import asyncio
 import logging
 import os
 import time
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -21,14 +23,24 @@ log = logging.getLogger("kazper.limits")
 CACHE_SECONDS = 60
 RAILWAY_API = "https://backboard.railway.com/graphql/v2"
 # Railway's published container rates (docs.railway.com/pricing/plans, checked 2026-10-28).
-# estimatedUsage reports CPU in vCPU-minutes, memory in GB-minutes and egress in GB.
+# estimatedUsage reports what's been used so far this billing period (checked against the
+# service's metrics on 2026-10-28): CPU in vCPU-minutes, memory in GB-minutes, egress in GB.
 RAILWAY_PRICES = {"CPU_USAGE": 0.000463, "MEMORY_USAGE_GB": 0.000231, "NETWORK_TX_GB": 0.05}
 RAILWAY_INCLUDED_USD = 5.0  # Hobby
+MINUTES_PER_MONTH = 30 * 24 * 60
 SUPABASE_FREE_DB_BYTES = 500 * 1024 * 1024
 
 ESTIMATED_USAGE = """
 query est($projectId: String!, $measurements: [MetricMeasurement!]!) {
   estimatedUsage(projectId: $projectId, measurements: $measurements) { measurement estimatedValue }
+}"""
+
+# Samples of the project's CPU (vCPU) and memory (GB) and cumulative egress (GB), for the run-rate.
+METRICS = """
+query m($projectId: String!, $startDate: DateTime!, $measurements: [MetricMeasurement!]!) {
+  metrics(projectId: $projectId, startDate: $startDate, measurements: $measurements, sampleRateSeconds: 600) {
+    measurement values { value }
+  }
 }"""
 
 
@@ -47,22 +59,46 @@ def openrouter(base_url: str, api_key: str) -> dict:
     }
 
 
-def railway(api_token: str, project_id: str) -> dict:
+def _railway_query(api_token: str, query: str, variables: dict) -> dict:
     resp = httpx.post(RAILWAY_API, timeout=20, headers={"Authorization": f"Bearer {api_token}"},
-                      json={"query": ESTIMATED_USAGE,
-                            "variables": {"projectId": project_id, "measurements": list(RAILWAY_PRICES)}})
+                      json={"query": query, "variables": variables})
     resp.raise_for_status()
     body = resp.json()
     if body.get("errors"):
         raise RuntimeError(body["errors"][0].get("message", "Railway API error"))
-    usage = {u["measurement"]: float(u["estimatedValue"]) for u in body["data"]["estimatedUsage"]}
+    return body["data"]
+
+
+def _avg(xs: list[float]) -> float:
+    return sum(xs) / len(xs) if xs else 0.0
+
+
+def _railway_monthly_rate(api_token: str, project_id: str) -> float:
+    """What a month costs at the last 24 hours' average CPU and memory, plus that day's egress x 30."""
+    since = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    data = _railway_query(api_token, METRICS, {"projectId": project_id, "startDate": since,
+                                              "measurements": ["CPU_USAGE", "MEMORY_USAGE_GB", "NETWORK_TX_GB"]})
+    series = {m["measurement"]: [float(v["value"]) for v in m["values"]] for m in data["metrics"]}
+    tx = series.get("NETWORK_TX_GB") or [0.0]
+    return (_avg(series.get("CPU_USAGE", [])) * MINUTES_PER_MONTH * RAILWAY_PRICES["CPU_USAGE"]
+            + _avg(series.get("MEMORY_USAGE_GB", [])) * MINUTES_PER_MONTH * RAILWAY_PRICES["MEMORY_USAGE_GB"]
+            + max(max(tx) - min(tx), 0.0) * 30 * RAILWAY_PRICES["NETWORK_TX_GB"])
+
+
+def railway(api_token: str, project_id: str) -> dict:
+    data = _railway_query(api_token, ESTIMATED_USAGE, {"projectId": project_id, "measurements": list(RAILWAY_PRICES)})
+    usage = {u["measurement"]: float(u["estimatedValue"]) for u in data["estimatedUsage"]}
     cost = {m: round(usage.get(m, 0.0) * price, 4) for m, price in RAILWAY_PRICES.items()}
     total = round(sum(cost.values()), 2)
-    log.info("Railway estimated usage this period: %s -> $%s", usage, total)
+    try:
+        monthly = round(_railway_monthly_rate(api_token, project_id), 2)
+    except Exception as e:  # the run-rate is a bonus; the period total still stands
+        log.warning("Railway run-rate unavailable (%s: %s)", type(e).__name__, e)
+        monthly = None
+    log.info("Railway usage so far this period: %s -> $%s; run-rate $%s/month", usage, total, monthly)
     return {
         "provider": "railway", "ok": True, "plan": "Hobby",
-        "projected_usd": total, "included_usd": RAILWAY_INCLUDED_USD,
-        "over_usd": round(max(0.0, total - RAILWAY_INCLUDED_USD), 2),
+        "used_usd": total, "monthly_rate_usd": monthly, "included_usd": RAILWAY_INCLUDED_USD,
         "breakdown_usd": {"cpu": cost["CPU_USAGE"], "memory": cost["MEMORY_USAGE_GB"], "network": cost["NETWORK_TX_GB"]},
     }
 
