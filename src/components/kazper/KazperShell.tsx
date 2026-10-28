@@ -32,6 +32,16 @@ export default function KazperShell({ children }: { children: React.ReactNode })
   return (
     <div className="kz-shell">
       <header className="kz-bar">
+        {/* The installed app has no browser reload: this re-fetches the current tab's data. */}
+        <button
+          className="btn btn-ghost kz-refresh"
+          onClick={() => startRefresh(() => router.refresh())}
+          disabled={refreshing}
+          aria-label="Refresh"
+          title="Refresh"
+        >
+          <span className={refreshing ? "kz-spin" : undefined} aria-hidden>↻</span>
+        </button>
         <Link href="/kazper" className="kz-brand">
           <img src="/assets/k-mark.png" alt="" />
           <span>Kazper</span>
@@ -44,16 +54,6 @@ export default function KazperShell({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </nav>
-        {/* The installed app has no browser reload: this re-fetches the current tab's data. */}
-        <button
-          className="btn btn-ghost kz-refresh"
-          onClick={() => startRefresh(() => router.refresh())}
-          disabled={refreshing}
-          aria-label="Refresh"
-          title="Refresh"
-        >
-          <span className={refreshing ? "kz-spin" : undefined} aria-hidden>↻</span>
-        </button>
         <button className="btn btn-ghost kz-signout" onClick={() => void signOut()}>
           Sign out
         </button>

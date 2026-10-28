@@ -9,10 +9,10 @@ import {
 
 // Kazper, seen. The runtime records each step of a turn as it happens (heard you,
 // thinking, every tool call, replying: kazper/presence.py), and this plays them
-// live: the senses he reaches for, the changes he makes, his reply. On open it
-// replays his last exchange. Between turns he rests, and sleeps after an hour of
-// quiet. If the live feed isn't there, it falls back to replaying each exchange
-// once it's finished.
+// live: the senses he reaches for, the changes he makes, his reply. It only shows
+// what happens while it's open; nothing old is replayed. Between turns he rests,
+// and sleeps after an hour of quiet. If the live feed isn't there, it falls back
+// to replaying each new exchange once it's finished.
 
 const LIVE_POLL_MS = 1500;
 const POLL_MS = 5000;
@@ -89,7 +89,7 @@ export default function KazperPresence() {
       setLog((l) => [{ key, at: clock(at), text: `${tool} → ${senseLabel(sense)}`, write }, ...l].slice(0, 5));
     }
 
-    // Play a finished exchange back as a short sequence (on open, and when the live feed is unavailable).
+    // Play a finished exchange back as a short sequence (only when the live feed is unavailable).
     function replay(row: Row) {
       replayTimers.forEach(clearTimeout); replayTimers = [];
       busy = true;
@@ -180,9 +180,11 @@ export default function KazperPresence() {
       live = !error;
       lastStep = (data?.[0] as { id: number } | undefined)?.id ?? 0;
       try {
-        const row = await latest(true);
+        // Only note when he was last active; what already happened isn't played again.
+        const head = await latest(false);
         if (stopped) return;
-        if (row) replay(row); else idle();
+        if (head) { lastExchange = head.id; lastAt = head.created_at; }
+        idle();
       } catch {
         show("error", "Can't reach his memory right now. Retrying.");
       }
