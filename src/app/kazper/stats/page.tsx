@@ -1,8 +1,21 @@
+import ProviderLimits, { type Provider } from "@/components/kazper/ProviderLimits";
 import { stats, usd } from "@/lib/kazper/data";
+import { callRuntime, runtimeConfigured } from "@/lib/kazper/runtime";
 
-// What Kazper costs and how much he's learned. Same numbers as !stats on Discord.
+// Balances and limits come from the runtime (it holds the provider keys); null if it can't be reached.
+async function providerLimits(): Promise<Provider[] | null> {
+  if (!runtimeConfigured()) return null;
+  try {
+    const { status, data } = await callRuntime("/v1/limits", {});
+    return status === 200 ? ((data as { providers: Provider[] }).providers ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+// What Kazper costs, what he has left to spend, and how much he's learned.
 export default async function KazperStatsPage() {
-  const s = await stats();
+  const [s, providers] = await Promise.all([stats(), providerLimits()]);
   const examples = s.good + s.corrections;
   const pct = Math.min(100, Math.round((100 * examples) / s.datasetGoal));
   const maxDay = Math.max(...s.daily.map((d) => d.cost), 0);
@@ -17,6 +30,8 @@ export default async function KazperStatsPage() {
   return (
     <div className="kz-page">
       <h1 className="kz-h">Stats</h1>
+
+      <ProviderLimits providers={providers} s={s} />
 
       <div className="kz-tiles">
         {tiles.map((t) => (

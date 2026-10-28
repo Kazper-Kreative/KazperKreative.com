@@ -13,6 +13,7 @@ Reads (history, facts, pointers, costs) go straight from the site to Supabase.
   POST /v1/feedback        {"exchange_id", "kind", "correction"?}  kind: good | bad | correction
   POST /v1/undo            {"action_id"}                 -> reverse one thing Kazper did
   POST /v1/calendar        {"days_ahead"?, "days_back"?, "include_all"?} -> his deadlines (+ your calendars)
+  POST /v1/limits          {}                            -> balances and limits at OpenRouter, Railway, Supabase
 """
 
 import hmac
@@ -112,6 +113,9 @@ def build_app(bot: "KazperBot", secret: str) -> web.Application:
             return web.json_response({"error": "days_ahead/days_back must be integers"}, status=400)
         return web.json_response(await bot.calendar_view(days_ahead, days_back, bool(data.get("include_all"))))
 
+    async def limits(_):
+        return web.json_response({"providers": await bot.limits.snapshot()})
+
     app = web.Application(middlewares=[auth], client_max_size=64 * 1024)
     app.add_routes([
         web.get("/health", health),
@@ -121,6 +125,7 @@ def build_app(bot: "KazperBot", secret: str) -> web.Application:
         web.post("/v1/feedback", feedback),
         web.post("/v1/undo", undo),
         web.post("/v1/calendar", calendar),
+        web.post("/v1/limits", limits),
     ])
     return app
 

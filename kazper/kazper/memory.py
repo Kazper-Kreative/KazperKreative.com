@@ -197,6 +197,12 @@ class SupabaseMemory:
     def prune_activity(self, before_iso: str) -> None:
         self.http.delete("/kazper_activity", params={"created_at": f"lt.{before_iso}"}).raise_for_status()
 
+    def db_size(self) -> int:
+        """Bytes used by the database (for the Stats tab's free-plan meter)."""
+        r = self.http.post("/rpc/kazper_db_size", json={})
+        r.raise_for_status()
+        return int(r.json())
+
     # --- feedback -------------------------------------------------------
 
     def add_feedback(self, exchange: dict, kind: str, correction: str | None = None) -> None:

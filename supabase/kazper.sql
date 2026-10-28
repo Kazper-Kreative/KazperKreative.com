@@ -191,3 +191,12 @@ alter table public.kazper_activity enable row level security;
 drop policy if exists "owner reads" on public.kazper_activity;
 create policy "owner reads" on public.kazper_activity for select using (public.is_kazper_owner());
 grant select on public.kazper_activity to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 2026-10-28: database size for the Stats tab's free-plan meter. Runtime only (service role).
+create or replace function public.kazper_db_size() returns bigint
+  language sql security definer stable set search_path = public as $$
+    select pg_database_size(current_database());
+$$;
+revoke all on function public.kazper_db_size() from public, anon, authenticated;
+grant execute on function public.kazper_db_size() to service_role;

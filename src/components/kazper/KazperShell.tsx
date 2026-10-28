@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getKazperSupabase } from "@/lib/kazper/supabase";
 
@@ -17,6 +18,7 @@ const TABS = [
 export default function KazperShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const router = useRouter();
+  const [refreshing, startRefresh] = useTransition();
   const active = (href: string) => (href === "/kazper" ? path === "/kazper" : path.startsWith(href));
 
   // After sign-out the server layout re-renders as the login screen.
@@ -42,6 +44,16 @@ export default function KazperShell({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </nav>
+        {/* The installed app has no browser reload: this re-fetches the current tab's data. */}
+        <button
+          className="btn btn-ghost kz-refresh"
+          onClick={() => startRefresh(() => router.refresh())}
+          disabled={refreshing}
+          aria-label="Refresh"
+          title="Refresh"
+        >
+          <span className={refreshing ? "kz-spin" : undefined} aria-hidden>↻</span>
+        </button>
         <button className="btn btn-ghost kz-signout" onClick={() => void signOut()}>
           Sign out
         </button>
