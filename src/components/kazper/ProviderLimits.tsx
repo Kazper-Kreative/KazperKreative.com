@@ -6,8 +6,8 @@ import { usd, type Stats } from "@/lib/kazper/data";
 export type Provider =
   | { provider: "openrouter"; ok: true; balance_usd: number; purchased_usd: number; used_usd: number;
       key_limit_usd: number | null; key_remaining_usd: number | null; key_resets: string | null; free_tier: boolean }
-  | { provider: "railway"; ok: true; plan: string; projected_usd: number; included_usd: number; over_usd: number;
-      breakdown_usd: { cpu: number; memory: number; network: number } }
+  | { provider: "railway"; ok: true; plan: string; used_usd: number; monthly_rate_usd: number | null;
+      included_usd: number; breakdown_usd: { cpu: number; memory: number; network: number } }
   | { provider: "supabase"; ok: true; project: string; plan: string; db_bytes: number; db_limit_bytes: number }
   | { provider: string; ok: false; error: string };
 
@@ -59,10 +59,10 @@ function Card({ p, s }: { p: Provider; s: Stats }) {
     return (
       <div className="kz-limit">
         {head}
-        <div className="kz-limit-value">{usd(p.balance_usd)} <span className="dim">left of {usd(p.purchased_usd)}</span></div>
-        <Meter value={pctOf(p.balance_usd, p.purchased_usd)} warn={p.balance_usd < 2} />
+        <div className="kz-limit-value">{usd(p.used_usd)} <span className="dim">used of {usd(p.purchased_usd)} in credits</span></div>
+        <Meter value={pctOf(p.used_usd, p.purchased_usd)} warn={p.balance_usd < 2} />
         <p className="dim kz-help">
-          {replies !== null ? `~${replies.toLocaleString()} more replies at ${usd(s.avgCost!)} each, ` : ""}
+          {usd(p.balance_usd)} left: {replies !== null ? `~${replies.toLocaleString()} more replies at ${usd(s.avgCost!)} each, ` : ""}
           {perDay > 0 ? span(p.balance_usd / perDay) : span(Infinity)}.
           {p.key_limit_usd !== null && p.key_remaining_usd !== null &&
             ` This key is also capped at ${usd(p.key_limit_usd)}/${p.key_resets === "monthly" ? "month" : p.key_resets ?? "period"} (${usd(p.key_remaining_usd)} left).`}
@@ -71,18 +71,21 @@ function Card({ p, s }: { p: Provider; s: Stats }) {
     );
   }
 
-  if (p.provider === "railway" && "projected_usd" in p) {
-    const over = p.over_usd > 0;
+  if (p.provider === "railway" && "used_usd" in p) {
+    const rate = p.monthly_rate_usd;
+    const over = rate !== null && rate > p.included_usd;
     return (
       <div className="kz-limit">
         {head}
-        <div className="kz-limit-value">{usd(p.projected_usd)} <span className="dim">projected this month · {usd(p.included_usd)} included</span></div>
-        <Meter value={pctOf(p.projected_usd, p.included_usd)} warn={over} />
+        <div className="kz-limit-value">{usd(p.used_usd)} <span className="dim">used of {usd(p.included_usd)} included this period</span></div>
+        <Meter value={pctOf(p.used_usd, p.included_usd)} warn={over || p.used_usd > p.included_usd} />
         <p className="dim kz-help">
-          {over
-            ? `About ${usd(p.over_usd)} over the ${p.plan} plan's included usage; that's billed on top of the $5 subscription.`
-            : `Within the ${p.plan} plan's included usage.`}{" "}
-          Memory {usd(p.breakdown_usd.memory)} · CPU {usd(p.breakdown_usd.cpu)} · network {usd(p.breakdown_usd.network)}.
+          {rate === null
+            ? "Couldn't work out the monthly rate just now."
+            : over
+              ? `Running at about ${usd(rate)}/month, ${usd(rate - p.included_usd)} over the ${p.plan} plan's included ${usd(p.included_usd)}; the difference is billed on top of the subscription.`
+              : `Running at about ${usd(rate)}/month, inside the ${p.plan} plan's included ${usd(p.included_usd)}.`}{" "}
+          So far: memory {usd(p.breakdown_usd.memory)} · CPU {usd(p.breakdown_usd.cpu)} · network {usd(p.breakdown_usd.network)}.
         </p>
       </div>
     );
