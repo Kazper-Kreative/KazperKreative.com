@@ -3,7 +3,7 @@
  */
 import { findPack, findSkin, RACOIN_PACKS, SKIN_PRICES, skinPrice } from "./catalog";
 import { issueSession, readSession } from "./session";
-import { isSandbox, purchaseLanguage } from "./steam";
+import { isSandbox, liveAt, purchaseLanguage } from "./steam";
 
 const STEAM_ID = "76561198000000001";
 
@@ -114,6 +114,18 @@ describe("jimothy steam settings", () => {
     delete process.env.STEAM_MTX_SANDBOX;
   });
 
+  it("goes live by itself at release, Friday 30 Oct 8:00 ET", () => {
+    const live = Date.parse("2026-10-30T12:00:00Z");
+    expect(liveAt()).toBe(live);
+    expect(isSandbox(live - 1)).toBe(true);
+    expect(isSandbox(live)).toBe(false);
+    process.env.STEAM_MTX_LIVE_AT = "2026-11-02T12:00:00Z";
+    expect(isSandbox(live)).toBe(true);
+    process.env.STEAM_MTX_LIVE_AT = "not a date";
+    expect(isSandbox(live + 1e12)).toBe(true);
+    delete process.env.STEAM_MTX_LIVE_AT;
+  });
+
   it("falls back to English for languages Steam does not take", () => {
     expect(purchaseLanguage("fr")).toBe("fr");
     expect(purchaseLanguage("xx")).toBe("en");
@@ -147,7 +159,7 @@ describe("jimothy steam responses", () => {
   it("rejects a purchase call whose result is not OK", async () => {
     answer({ response: { result: "Failure", params: {}, error: { errorcode: 3 } } });
     const { finalizeTxn } = await import("./steam");
-    await expect(finalizeTxn("100001")).rejects.toThrow();
+    await expect(finalizeTxn("100001", true)).rejects.toThrow();
   });
 });
 

@@ -14,7 +14,7 @@ import { NextResponse } from "next/server";
 import { findPack } from "@/lib/jimothy/catalog";
 import { playerPrice } from "@/lib/jimothy/pricing";
 import { sessionFrom } from "@/lib/jimothy/session";
-import { initTxn, purchaseLanguage, userCurrency } from "@/lib/jimothy/steam";
+import { initTxn, isSandbox, purchaseLanguage, userCurrency } from "@/lib/jimothy/steam";
 import { createOrder, fail, markOrderFailed } from "@/lib/jimothy/store";
 
 export const runtime = "nodejs";
@@ -42,9 +42,11 @@ export async function POST(req: Request) {
     return fail("price_changed", 409);
   }
 
+  // Decided once, so the order and Steam agree even across the go-live moment.
+  const sandbox = isSandbox();
   let orderId: string;
   try {
-    orderId = await createOrder(steamId, pack, price);
+    orderId = await createOrder(steamId, pack, price, sandbox);
   } catch {
     return fail("unavailable", 503);
   }
@@ -54,7 +56,8 @@ export async function POST(req: Request) {
       orderId,
       steamId,
       { itemId: pack.itemId, amountCents: price.amount, currency: price.currency, description: pack.description },
-      purchaseLanguage(body.language)
+      purchaseLanguage(body.language),
+      sandbox
     );
   } catch (e) {
     await markOrderFailed(orderId);

@@ -10,7 +10,7 @@
 
 import { NextResponse } from "next/server";
 import { sessionFrom } from "@/lib/jimothy/session";
-import { finalizeTxn, queryTxn } from "@/lib/jimothy/steam";
+import { finalizeTxn, isSandbox, queryTxn } from "@/lib/jimothy/steam";
 import { creditOrder, fail, findOrder, markOrderFailed, wallet } from "@/lib/jimothy/store";
 
 export const runtime = "nodejs";
@@ -35,17 +35,19 @@ export async function POST(req: Request) {
   if (order.status === "finalized") {
     return NextResponse.json({ balance: (await wallet(steamId)).balance });
   }
-  if (body.authorized !== true) {
+  // A sandbox order still open once the store is live is closed, not credited:
+  // no money moved for it, and live Racoins come from live purchases only.
+  if (body.authorized !== true || (order.sandbox && !isSandbox())) {
     await markOrderFailed(orderId);
     return NextResponse.json({ balance: (await wallet(steamId)).balance, declined: true });
   }
 
   let transId: string;
   try {
-    transId = (await finalizeTxn(orderId)).transid;
+    transId = (await finalizeTxn(orderId, order.sandbox)).transid;
   } catch (finalizeError) {
     try {
-      const known = await queryTxn(orderId);
+      const known = await queryTxn(orderId, order.sandbox);
       if (known.status !== "Succeeded" || known.steamid !== steamId) throw finalizeError;
       transId = known.transid;
     } catch (e) {
