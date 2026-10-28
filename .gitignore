@@ -59,3 +59,8 @@ __pycache__/
 # Kazper's real identity is personal; only the .example template is public
 # (Kazper moved to the private Dyvynyty repo; these keep any local leftovers out of git.)
 /kazper/identity/kazper_identity.md
+
+# Kazper now lives in the private Kazper-Kreative/Dyvynyty repo. Anything left in these
+# folders locally (.env, identity, data, build output) must never be committed here.
+/kazper/
+/kazper-desktop/
