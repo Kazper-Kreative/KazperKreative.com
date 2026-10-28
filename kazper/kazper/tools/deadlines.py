@@ -32,6 +32,13 @@ AREAS = {
     "Other": "8",            # graphite
 }
 SNAPSHOT_FIELDS = ("summary", "description", "start", "end", "colorId", "extendedProperties")
+# Google Calendar's named colours, for the calendar's own colour in your list. Any #RRGGBB works too.
+CALENDAR_COLORS = {
+    "tomato": "#d50000", "flamingo": "#e67c73", "tangerine": "#f4511e", "banana": "#f6bf26",
+    "sage": "#33b679", "basil": "#0b8043", "peacock": "#039be5", "blueberry": "#3f51b5",
+    "lavender": "#7986cb", "grape": "#8e24aa", "graphite": "#616161",
+}
+COLOR_FIELDS = ("colorId", "backgroundColor", "foregroundColor")
 MAX_PER_TURN = 10
 
 # Changes made during the current turn; bot.py reports them to you once the reply is out.
@@ -130,6 +137,22 @@ class Deadlines:
             raise RuntimeError(f"at most {MAX_PER_TURN} deadline changes per reply")
 
     @staticmethod
+    def _hex(color: str) -> str:
+        c = color.strip().lower()
+        c = CALENDAR_COLORS.get(c, c)
+        if len(c) == 7 and c[0] == "#" and all(ch in "0123456789abcdef" for ch in c[1:]):
+            return c
+        raise ValueError(f"color must be #RRGGBB or one of: {', '.join(CALENDAR_COLORS)}")
+
+    @staticmethod
+    def _text_on(bg: str) -> str:
+        r, g, b = (int(bg[i:i + 2], 16) for i in (1, 3, 5))
+        return "#000000" if 0.299 * r + 0.587 * g + 0.114 * b > 150 else "#ffffff"
+
+    def _list_entry_url(self) -> str:
+        return f"{CALENDAR_API}/users/me/calendarList/{quote(self.calendar_id(), safe='')}"
+
+    @staticmethod
     def _area(area: str | None) -> str:
         match = next((a for a in AREAS if a.lower() == (area or "Other").strip().lower()), None)
         if match is None:
@@ -175,8 +198,15 @@ class Deadlines:
             return self._record("deadline.remove", f"Removed {before.get('summary')}",
                                 {"event_id": event_id, "before": {k: before.get(k) for k in SNAPSHOT_FIELDS}})
 
-    def settings(self, name: str | None = None, description: str | None = None) -> str:
-        """Rename or re-describe his calendar."""
+    def settings(self, name: str | None = None, description: str | None = None, color: str | None = None) -> str:
+        """Rename, re-describe or recolour his calendar."""
+        results = []
+        if color is not None:
+            results.append(self._recolor(color))
+        if name is None and description is None:
+            if results:
+                return results[0]
+            raise ValueError("give a new name, description and/or color")
         changes = {}
         if name is not None:
             name = " ".join(name.split())[:100]
@@ -185,8 +215,6 @@ class Deadlines:
             changes["summary"] = name
         if description is not None:
             changes["description"] = description[:1000]
-        if not changes:
-            raise ValueError("give a new name and/or description")
         with _lock:
             self._check_turn()
             url = f"{CALENDAR_API}/calendars/{quote(self.calendar_id(), safe='')}"
@@ -194,10 +222,25 @@ class Deadlines:
             after = self.google._request("PATCH", url, json=changes)
             self.name = after.get("summary") or self.name
             what = f"Renamed his calendar to '{self.name}'" if name else f"Updated the description of '{self.name}'"
-            return self._record("calendar.update", what, {
+            results.append(self._record("calendar.update", what, {
                 "calendar_id": self._calendar_id,
                 "before": {k: before.get(k) for k in changes},
                 "after": {k: after.get(k) for k in changes},
+            }))
+        return "; ".join(results)
+
+    def _recolor(self, color: str) -> str:
+        bg = self._hex(color)
+        with _lock:
+            self._check_turn()
+            url = self._list_entry_url()
+            before = self.google._request("GET", url)
+            self.google._request("PATCH", url, params={"colorRgbFormat": "true"},
+                                 json={"backgroundColor": bg, "foregroundColor": self._text_on(bg)})
+            label = color.strip().lower() if color.strip().lower() in CALENDAR_COLORS else bg
+            return self._record("calendar.color", f"Coloured '{self.name}' {label}", {
+                "calendar_id": self._calendar_id,
+                "before": {k: before.get(k) for k in COLOR_FIELDS if before.get(k)},
             })
 
     def list(self, days_ahead: int = 60, days_back: int = 7) -> list[dict]:
@@ -222,6 +265,16 @@ class Deadlines:
             if kind == "deadline.update":
                 self.google._request("PATCH", self._events_url(event_id), json=payload["before"])
                 return "restored the previous version"
+            if kind == "calendar.color":
+                url = f"{CALENDAR_API}/users/me/calendarList/{quote(payload['calendar_id'], safe='')}"
+                before = payload["before"]
+                if before.get("backgroundColor"):
+                    self.google._request("PATCH", url, params={"colorRgbFormat": "true"}, json={
+                        "backgroundColor": before["backgroundColor"],
+                        "foregroundColor": before.get("foregroundColor", "#000000")})
+                elif before.get("colorId"):
+                    self.google._request("PATCH", url, json={"colorId": before["colorId"]})
+                return "put the old colour back"
             if kind == "calendar.update":
                 url = f"{CALENDAR_API}/calendars/{quote(payload['calendar_id'], safe='')}"
                 restored = self.google._request("PATCH", url, json=payload["before"])
@@ -286,11 +339,13 @@ def register(box: Toolbox, deadlines: Deadlines) -> None:
     ))
     box.add(Tool(
         "deadline_calendar_settings",
-        "Rename your deadlines calendar or change its description. It's yours; do this whenever it helps "
-        "(I'm told and can undo it). It's tracked by id, so renaming never loses it.",
+        "Rename your deadlines calendar, change its description, or change its colour in my calendar list. "
+        "It's yours; do this whenever it helps (I'm told and can undo it). It's tracked by id, so renaming "
+        "never loses it.",
         schema({
             "name": {"type": "string", "description": "New calendar name."},
             "description": {"type": "string", "description": "New calendar description (plain text)."},
+            "color": {"type": "string", "description": f"#RRGGBB or one of: {', '.join(CALENDAR_COLORS)}."},
         }),
         deadlines.settings,
     ))
