@@ -4,7 +4,8 @@
 
 import { NextResponse } from "next/server";
 import { createSupabaseService } from "@/lib/supabase/server";
-import { localPrice, RACOIN_PACKS, SKIN_PRICES, type PackPrice, type RacoinPack } from "./catalog";
+import { RACOIN_PACKS, SKIN_PRICES, type PackPrice, type RacoinPack } from "./catalog";
+import { playerPrices } from "./pricing";
 import { isSandbox, userCurrency } from "./steam";
 
 export function db() {
@@ -26,15 +27,16 @@ export async function wallet(steamId: string) {
     supabase.from("jimothy_owned_skins").select("skin_id").eq("steam_id", steamId),
     userCurrency(steamId),
   ]);
+  // The same prices /racoins/start charges: one currency lookup, one day's rates.
+  const prices = await playerPrices(currency);
   return {
     balance: row?.balance ?? 0,
     owned: (owned ?? []).map((r) => r.skin_id as string),
     // priceCents stays USD for older builds; currency and amount are what the
     // player is charged, in hundredths.
-    packs: RACOIN_PACKS.map((pack) => {
-      const price = localPrice(pack, currency);
-      return { id: pack.id, racoins: pack.racoins, priceCents: pack.priceCents, ...price };
-    }),
+    packs: RACOIN_PACKS.map((pack, i) => ({
+      id: pack.id, racoins: pack.racoins, priceCents: pack.priceCents, ...prices[i],
+    })),
     skins: Object.entries(SKIN_PRICES).map(([id, price]) => ({ id, price })),
     sandbox: isSandbox(),
   };

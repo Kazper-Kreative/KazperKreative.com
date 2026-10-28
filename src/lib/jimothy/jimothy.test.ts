@@ -192,3 +192,179 @@ describe("jimothy local prices", () => {
     }
   });
 });
+
+describe("jimothy regional prices", () => {
+  // Fixed, made-up markets: nothing here touches the network.
+  const STEP: Record<string, number> = {
+    CLP: 100, COP: 100, CRC: 500, IDR: 100, INR: 100, JPY: 100, KRW: 1000,
+    KZT: 100, TWD: 100, UAH: 100, UYU: 100, VND: 50000,
+  };
+  const RATES: Record<string, number> = {
+    AED: 3.67, AUD: 1.42, BRL: 5.35, CAD: 1.4, CHF: 0.83, CLP: 990, CNY: 6.7, COP: 3140, CRC: 455,
+    EUR: 0.9, GBP: 0.75, HKD: 7.84, ILS: 3.06, IDR: 18160, INR: 95, JPY: 158, KRW: 1330, KWD: 0.31,
+    KZT: 456, MXN: 18.7, MYR: 4.09, NOK: 9.33, NZD: 1.76, PEN: 3.45, PHP: 64, PLN: 3.95, QAR: 3.64,
+    RUB: 80.6, SAR: 3.75, SGD: 1.28, THB: 33.8, TWD: 32.4, UAH: 45.6, UYU: 40.1, VND: 25800, ZAR: 16.6,
+  };
+
+  function expectSane(currency: string, fxRate: number, amounts: number[] | undefined) {
+    expect(amounts).toHaveLength(3);
+    const list = amounts as number[];
+    list.forEach((amount, i) => {
+      expect(Number.isInteger(amount)).toBe(true);
+      expect(amount % (STEP[currency] ?? 1)).toBe(0);
+      // Never more than a rounding hair over the straight conversion.
+      expect(amount).toBeLessThanOrEqual(RACOIN_PACKS[i].priceCents * fxRate * 1.02);
+      if (i > 0) {
+        expect(amount).toBeGreaterThan(list[i - 1]);
+        // A bigger pack is never dearer per Racoin.
+        expect(amount * RACOIN_PACKS[i - 1].racoins).toBeLessThanOrEqual(list[i - 1] * RACOIN_PACKS[i].racoins);
+      }
+    });
+  }
+
+  it("clamps the regional factor to [0.35, 1] and treats no figure as 1", async () => {
+    const { regionalFactor } = await import("./catalog");
+    expect(regionalFactor(undefined)).toBe(1);
+    expect(regionalFactor(Number.NaN)).toBe(1);
+    expect(regionalFactor(0)).toBe(1);
+    expect(regionalFactor(1.12)).toBe(1);
+    expect(regionalFactor(0.83)).toBe(0.83);
+    expect(regionalFactor(0.23)).toBe(0.35);
+  });
+
+  it("rounds to .99 where prices have cents", async () => {
+    const { regionalPrices } = await import("./catalog");
+    // 4.99 x 1.4 x 0.83 = 5.80 -> 5.99; 11.61 -> 11.99; 23.23 -> 22.99
+    expect(regionalPrices("CAD", { fxRate: 1.4, priceLevel: 0.83 })).toEqual([599, 1199, 2299]);
+    // No price level: a straight conversion, 6.99 / 13.99 / 27.99.
+    expect(regionalPrices("CAD", { fxRate: 1.4 })).toEqual([699, 1399, 2799]);
+  });
+
+  it("rounds whole-unit currencies to natural numbers", async () => {
+    const { regionalPrices } = await import("./catalog");
+    // JPY 486.5 / 974 / 1,949 -> 490 / 970 / 1,900 yen, in hundredths.
+    expect(regionalPrices("JPY", { fxRate: 150, priceLevel: 0.65 })).toEqual([49000, 97000, 190000]);
+    expect(regionalPrices("KRW", { fxRate: 1400, priceLevel: 0.6 })).toEqual([420000, 840000, 1700000]);
+    // INR ends in 9: 4.99 x 88 x 0.35 = 153.7 -> 159.
+    expect(regionalPrices("INR", { fxRate: 88, priceLevel: 0.2 })).toEqual([15900, 30900, 61900]);
+  });
+
+  it("never charges above the straight conversion or below the 35% floor", async () => {
+    const { regionalPrices } = await import("./catalog");
+    expect(regionalPrices("CAD", { fxRate: 1.4, priceLevel: 1.6 })).toEqual(regionalPrices("CAD", { fxRate: 1.4 }));
+    expect(regionalPrices("INR", { fxRate: 88, priceLevel: 0.05 }))
+      .toEqual(regionalPrices("INR", { fxRate: 88, priceLevel: 0.35 }));
+  });
+
+  it("gives every Steam currency a valid, ordered price list at realistic rates", async () => {
+    const { regionalPrices, STEAM_CURRENCIES } = await import("./catalog");
+    for (const currency of STEAM_CURRENCIES) {
+      if (currency === "USD") continue;
+      for (const priceLevel of [undefined, 0.2, 0.35, 0.5, 0.75, 0.9, 1, 1.3]) {
+        const fxRate = RATES[currency];
+        expectSane(currency, fxRate, regionalPrices(currency, { fxRate, priceLevel }));
+      }
+    }
+  });
+
+  it("returns only valid lists, or none, at any rate", async () => {
+    const { regionalPrices, STEAM_CURRENCIES } = await import("./catalog");
+    for (const currency of STEAM_CURRENCIES) {
+      for (const fxRate of [0.3, 0.9, 1.4, 3.7, 7, 18, 33, 95, 158, 456, 990, 1327, 3143, 18158, 25806]) {
+        const amounts = regionalPrices(currency, { fxRate, priceLevel: 0.6 });
+        if (amounts) expectSane(currency, fxRate, amounts);
+      }
+    }
+  });
+
+  it("leaves USD alone and falls back to it when a price cannot be worked out", async () => {
+    const { localPrice, regionalPrices } = await import("./catalog");
+    const market = { fxRate: 1.4, priceLevel: 0.83 };
+    expect(RACOIN_PACKS.map((p) => localPrice(p, "USD", market).amount)).toEqual([499, 999, 1999]);
+    expect(regionalPrices("USD", { fxRate: 1 })).toBeUndefined();
+    const usd = { currency: "USD", amount: 499 };
+    expect(localPrice(RACOIN_PACKS[0], "CAD", undefined)).toEqual(usd);
+    expect(localPrice(RACOIN_PACKS[0], "CAD", { fxRate: Number.NaN })).toEqual(usd);
+    expect(localPrice(RACOIN_PACKS[0], "CAD", { fxRate: 0 })).toEqual(usd);
+    expect(localPrice(RACOIN_PACKS[0], "XXX", market)).toEqual(usd);
+    expect(localPrice(RACOIN_PACKS[0], undefined, market)).toEqual(usd);
+    // VND at a nonsense rate has no price Steam's 500-dong step accepts.
+    expect(localPrice(RACOIN_PACKS[0], "VND", { fxRate: 0.3 })).toEqual(usd);
+    expect(localPrice(RACOIN_PACKS[1], "CAD", market)).toEqual({ currency: "CAD", amount: 1199 });
+  });
+
+  it("lets a hand-set LOCAL_PRICES row win over the computed price", async () => {
+    const catalog = await import("./catalog");
+    const table = catalog.LOCAL_PRICES as Record<string, readonly [number, number, number]>;
+    table.CAD = [649, 1299, 2599];
+    table.JPY = [55050, 110000, 220000]; // the pouch breaks Steam's whole-yen step
+    try {
+      const cad = { fxRate: 1.4, priceLevel: 0.83 };
+      expect(catalog.localPrice(RACOIN_PACKS[1], "CAD", cad)).toEqual({ currency: "CAD", amount: 1299 });
+      const jpy = { fxRate: 150, priceLevel: 0.65 };
+      expect(catalog.localPrice(RACOIN_PACKS[0], "JPY", jpy)).toEqual({ currency: "JPY", amount: 49000 });
+      expect(catalog.localPrice(RACOIN_PACKS[1], "JPY", jpy)).toEqual({ currency: "JPY", amount: 110000 });
+    } finally {
+      delete table.CAD;
+      delete table.JPY;
+    }
+  });
+});
+
+describe("jimothy player prices", () => {
+  const realFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = realFetch;
+  });
+
+  function feed(rates: Record<string, number>) {
+    const fn = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        result: "success", rates: { USD: 1, ...rates }, time_next_update_unix: Date.now() / 1000 + 3600,
+      }),
+    });
+    global.fetch = fn as unknown as typeof fetch;
+    return fn;
+  }
+
+  it("prices the wallet and the purchase from the same cached rates", async () => {
+    const pricing = await import("./pricing");
+    const { PRICE_LEVELS } = await import("./price-levels");
+    const { regionalPrices } = await import("./catalog");
+    pricing.resetFxCacheForTests();
+    const fetchMock = feed({ CAD: 1.4 });
+    const prices = await pricing.playerPrices("CAD");
+    const expected = regionalPrices("CAD", { fxRate: 1.4, priceLevel: PRICE_LEVELS.CAD?.level }) as number[];
+    expect(prices).toEqual(expected.map((amount) => ({ currency: "CAD", amount })));
+    expect(await pricing.playerPrice(RACOIN_PACKS[2], "CAD")).toEqual(prices[2]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("charges USD players USD without asking for rates", async () => {
+    const pricing = await import("./pricing");
+    pricing.resetFxCacheForTests();
+    const fetchMock = feed({});
+    expect((await pricing.playerPrices("USD")).map((p) => p.amount)).toEqual([499, 999, 1999]);
+    expect((await pricing.playerPrices(undefined)).map((p) => p.currency)).toEqual(["USD", "USD", "USD"]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to USD when the rate feed is down or lacks the currency", async () => {
+    const pricing = await import("./pricing");
+    pricing.resetFxCacheForTests();
+    const error = jest.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 503 }) as unknown as typeof fetch;
+      expect(await pricing.playerPrices("CAD")).toEqual([
+        { currency: "USD", amount: 499 }, { currency: "USD", amount: 999 }, { currency: "USD", amount: 1999 },
+      ]);
+      pricing.resetFxCacheForTests();
+      feed({ EUR: 0.9 });
+      expect((await pricing.playerPrices("CAD"))[0]).toEqual({ currency: "USD", amount: 499 });
+      expect((await pricing.playerPrices("EUR"))[0].currency).toBe("EUR");
+    } finally {
+      error.mockRestore();
+    }
+  });
+});
