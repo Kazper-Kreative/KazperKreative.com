@@ -1,9 +1,11 @@
 """Google Calendar + Gmail via a refresh token from setup_google.py.
 
-Reads: every calendar you can see, and Gmail. The one write Google lets Kazper
-make is on calendars *he created* (calendar.app.created), which is how his own
-"Kazper · Deadlines" calendar works (tools/deadlines.py). Your other calendars
-and Gmail stay read-only: Google itself refuses anything else.
+Reads: every calendar you can see, and Gmail. Writes Google lets Kazper make:
+calendars *he created* (calendar.app.created), which is how his own "Kazper ·
+Deadlines" calendar works (tools/deadlines.py), and your calendar list
+(calendar.calendarlist: hide, unhide, unsubscribe; tools/calendars.py). Events
+on your other calendars, their sharing, and Gmail stay read-only: Google itself
+refuses anything else.
 """
 
 import base64
@@ -19,6 +21,7 @@ from . import Tool, Toolbox, schema
 SCOPES = [
     "https://www.googleapis.com/auth/calendar.readonly",
     "https://www.googleapis.com/auth/calendar.app.created",  # only calendars Kazper creates
+    "https://www.googleapis.com/auth/calendar.calendarlist",  # your list: hide/unsubscribe, not events or sharing
     "https://www.googleapis.com/auth/gmail.readonly",
 ]
 CALENDAR_API = "https://www.googleapis.com/calendar/v3"
@@ -35,6 +38,7 @@ class Google:
         self.http = httpx.Client(timeout=20)
         self._access_token = ""
         self._expires_at = 0.0
+        self.muted: set[str] = set()  # calendar ids Kazper ignores (tools/calendars.py)
 
     def _token(self) -> str:
         if _time.time() < self._expires_at - 60:
@@ -63,10 +67,14 @@ class Google:
         r.raise_for_status()
         return r.json() if r.content else {}
 
+    def all_calendars(self) -> list[dict]:
+        """Every entry in your calendar list, hidden ones included."""
+        return self._get(f"{CALENDAR_API}/users/me/calendarList", maxResults=250, showHidden="true").get("items", [])
+
     def calendars(self) -> list[dict]:
-        """Every calendar in your list that isn't hidden (yours, shared with you, subscribed)."""
+        """The calendars Kazper reads: in your list, not hidden, not muted."""
         items = self._get(f"{CALENDAR_API}/users/me/calendarList", maxResults=100).get("items", [])
-        return [c for c in items if not c.get("hidden")][:MAX_CALENDARS]
+        return [c for c in items if not c.get("hidden") and c["id"] not in self.muted][:MAX_CALENDARS]
 
     # --- calendar -------------------------------------------------------
 
@@ -100,8 +108,9 @@ class Google:
         ]
 
     def list_calendars(self) -> list[dict]:
-        return [{"name": c.get("summaryOverride") or c.get("summary"), "access": c.get("accessRole"),
-                 "primary": bool(c.get("primary"))} for c in self.calendars()]
+        return [{"id": c["id"], "name": c.get("summaryOverride") or c.get("summary"), "access": c.get("accessRole"),
+                 "primary": bool(c.get("primary")), "hidden": bool(c.get("hidden")), "muted": c["id"] in self.muted}
+                for c in self.all_calendars()]
 
     # --- gmail ----------------------------------------------------------
 
@@ -156,7 +165,8 @@ def register(box: Toolbox, google: Google) -> None:
     ))
     box.add(Tool(
         "calendar_list",
-        "List the Google calendars I can see (mine, shared with me, subscribed), with my access level.",
+        "List every Google calendar in my list (mine, shared with me, subscribed) with its id, my access level, "
+        "and whether it's hidden in Google or muted by you.",
         schema(),
         google.list_calendars,
     ))

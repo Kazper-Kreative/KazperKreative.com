@@ -710,6 +710,18 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 .kz-md pre code{padding:0;background:none}
 
 /* Memory / history / stats pages */
+/* Presence: Kazper as an energy core (KazperPresence + presence-engine) */
+.kz-presence{position:relative;flex:1 1 auto;min-height:calc(100dvh - var(--kz-bar));overflow:hidden;background:#07070C}
+.kz-presence-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.kz-presence-hud{position:relative;z-index:1;pointer-events:none;display:grid;gap:6px;max-width:560px;padding:20px clamp(16px,4vw,28px) 0}
+.kz-presence-eyebrow{display:flex;align-items:center;gap:10px;font:500 11px/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+.kz-presence-dot{width:7px;height:7px;border-radius:50%;background:var(--kz-live,var(--ir-violet));box-shadow:0 0 10px var(--kz-live,var(--ir-violet));transition:background .6s,box-shadow .6s}
+.kz-presence-state{font-family:var(--font-display);font-size:clamp(30px,6vw,48px);font-weight:600;line-height:1.05;letter-spacing:-.025em}
+.kz-presence-caption{font:400 13px/1.5 var(--font-mono);color:var(--text-dim);min-height:1.5em;overflow-wrap:anywhere}
+.kz-presence-log{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:3px;font:400 11.5px/1.4 var(--font-mono);color:var(--text-faint)}
+.kz-presence-log li{display:flex;gap:10px;font-variant-numeric:tabular-nums}
+.kz-presence-log li span:first-child{min-width:5.5em;opacity:.75}
+.kz-presence-log .write{color:var(--accent)}
 .kz-page{width:min(860px,100%);margin:0 auto;padding:24px clamp(14px,4vw,28px) 40px;display:flex;flex-direction:column;gap:18px}
 .kz-h{font-family:var(--font-display);font-size:clamp(26px,4vw,34px);font-weight:600;letter-spacing:-.01em}
 .kz-lede{margin-top:-10px}
@@ -758,6 +770,7 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 
 @media (max-width:760px){
   .kz-shell{padding-bottom:calc(var(--kz-tabbar) + env(safe-area-inset-bottom))}
+  .kz-presence{min-height:calc(100dvh - var(--kz-bar) - var(--kz-tabbar) - env(safe-area-inset-bottom))}
   .kz-tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;justify-content:space-around;gap:0;height:calc(var(--kz-tabbar) + env(safe-area-inset-bottom));padding:6px 6px env(safe-area-inset-bottom);border-top:1px solid var(--line);background:color-mix(in srgb,var(--ink) 92%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
   .kz-tab{flex-direction:column;gap:2px;padding:6px 10px;font-size:11px;border-radius:12px}
   .kz-tab.on{background:none;box-shadow:none;color:var(--text)}
