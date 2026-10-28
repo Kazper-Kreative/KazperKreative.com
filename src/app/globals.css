@@ -646,7 +646,7 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 .kz-tab.on{color:var(--text);background:var(--surface-3);box-shadow:inset 0 0 0 1px var(--line-2)}
 .kz-tab-icon{font-size:15px}
 .kz-signout{padding:8px 14px;font-size:13px}
-.kz-refresh{padding:6px 12px;font-size:17px;line-height:1}
+.kz-refresh{padding:6px 10px;font-size:17px;line-height:1;margin-right:-6px}
 .kz-refresh span{display:inline-block}
 .kz-spin{animation:kz-spin .8s linear infinite}
 @keyframes kz-spin{to{transform:rotate(360deg)}}
@@ -800,7 +800,7 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
   .kz-tab{flex-direction:column;gap:2px;padding:6px 10px;font-size:11px;border-radius:12px}
   .kz-tab.on{background:none;box-shadow:none;color:var(--text)}
   .kz-tab-icon{font-size:20px}
-  .kz-refresh{margin-left:auto}
+  .kz-signout{margin-left:auto}
   .kz-composer{bottom:calc(var(--kz-tabbar) + env(safe-area-inset-bottom))}
   .kz-tiles{grid-template-columns:repeat(2,1fr)}
   .kz-dl{grid-template-columns:repeat(2,1fr)}
