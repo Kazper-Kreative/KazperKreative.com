@@ -36,6 +36,7 @@ from . import api
 from .brain import Brain
 from .config import DAYS, Config
 from . import presence
+from .limits import Limits
 from .memory import open_memory
 from .tools import Toolbox, calendars, cryptidkeep, deadlines, discord_watch, google, railway, recall, remember, slack
 
@@ -153,6 +154,7 @@ class KazperBot(discord.Client):
         self.notice_log: dict[int, deque] = defaultdict(deque)  # author id -> recent notice times
         self.memory = open_memory(cfg)
         presence.attach(self.memory)
+        self.limits = Limits(cfg, self.memory)
         self.brain: Brain | None = None
         self.note_messages: dict[int, int] = {}  # Discord message id of a 📝 note -> fact id (for 🗑️)
         self.action_messages: dict[int, int] = {}  # Discord message id of a reported action -> action id (for ↩️)
