@@ -35,6 +35,7 @@ from discord.ext import tasks
 from . import api
 from .brain import Brain
 from .config import DAYS, Config
+from . import presence
 from .memory import open_memory
 from .tools import Toolbox, calendars, cryptidkeep, deadlines, discord_watch, google, railway, recall, remember, slack
 
@@ -151,6 +152,7 @@ class KazperBot(discord.Client):
         self.cfg = cfg
         self.notice_log: dict[int, deque] = defaultdict(deque)  # author id -> recent notice times
         self.memory = open_memory(cfg)
+        presence.attach(self.memory)
         self.brain: Brain | None = None
         self.note_messages: dict[int, int] = {}  # Discord message id of a 📝 note -> fact id (for 🗑️)
         self.action_messages: dict[int, int] = {}  # Discord message id of a reported action -> action id (for ↩️)
@@ -287,6 +289,7 @@ class KazperBot(discord.Client):
         remember.noted.set(turn.notes)
         recall.left.set(turn_pointers)
         deadlines.done.set(turn.actions)
+        presence.emit("heard", {"briefing": "Morning briefing", "review": "Weekly self-review"}.get(kind, text))
         if kind == "chat":
             await self.note_redirect(text)
         try:
@@ -294,8 +297,10 @@ class KazperBot(discord.Client):
         except Exception as e:
             log.exception("LLM call failed")
             turn.error = f"My brain didn't answer ({type(e).__name__}). Details are in the server logs."
+            presence.emit("error", "My brain didn't answer")
             return turn
         turn.reply, turn.usage = reply, usage
+        presence.emit("speaking", reply)
         turn.tools = [c["function"]["name"] for m in prompt_messages for c in m.get("tool_calls") or []]
         turn.exchange_id = await asyncio.to_thread(
             self.memory.save_exchange, text, reply, prompt_messages, kind, usage, channel

@@ -7,12 +7,16 @@ import {
   type PresenceState, type SenseId,
 } from "./presence-engine";
 
-// Kazper, seen. Every few seconds this checks for a new exchange (from Discord or
-// the app, briefings included) and plays back what he actually did in it: what
-// you said, the senses he reached for, the changes he made, his reply. Between
-// turns he rests, and sleeps once he's been quiet for an hour.
+// Kazper, seen. The runtime records each step of a turn as it happens (heard you,
+// thinking, every tool call, replying: kazper/presence.py), and this plays them
+// live: the senses he reaches for, the changes he makes, his reply. On open it
+// replays his last exchange. Between turns he rests, and sleeps after an hour of
+// quiet. If the live feed isn't there, it falls back to replaying each exchange
+// once it's finished.
 
+const LIVE_POLL_MS = 1500;
 const POLL_MS = 5000;
+const STUCK_MS = 120_000;
 const ASLEEP_AFTER_MS = 60 * 60 * 1000;
 // Tools that change something (deadlines, calendar list, memory): drawn as a burst.
 const WRITES = /^(deadline_(add|update|remove|calendar_settings)|calendar_(mute|unmute|hide|unhide|unsubscribe)|remember|leave_pointer|clear_pointer)$/;
@@ -26,6 +30,8 @@ interface Row {
   reply_text: string;
   messages?: { tool_calls?: { function?: { name?: string } }[] }[];
 }
+
+interface Step { id: number; created_at: string; kind: "heard" | "thinking" | "tool" | "speaking" | "error"; text: string }
 
 interface LogLine { key: string; at: string; text: string; write?: boolean }
 
@@ -60,21 +66,33 @@ export default function KazperPresence() {
   useEffect(() => {
     const presence = createPresence(canvasRef.current!);
     const sb = getSupabase();
-    let lastId = 0, lastAt = "", stopped = false, replaying = false, failed = false;
-    let timers: ReturnType<typeof setTimeout>[] = [];
+    let lastExchange = 0, lastStep = 0, lastAt = "", current: PresenceState = "resting";
+    let live = false, busy = false, failed = false, stopped = false, draining = false;
+    let replayTimers: ReturnType<typeof setTimeout>[] = [];
+    let stepTimer: ReturnType<typeof setTimeout> | undefined, watchdog: ReturnType<typeof setTimeout> | undefined;
+    const queue: Step[] = [];
 
-    const show = (s: PresenceState, text: string) => { presence.setState(s); setState(s); setCaption(text); };
+    const show = (s: PresenceState, text: string) => { current = s; presence.setState(s); setState(s); setCaption(text); };
     const idle = () => {
-      replaying = false;
+      busy = false;
       if (!lastAt) return show("resting", "Waiting for you.");
       const quiet = Date.now() - new Date(lastAt).getTime() > ASLEEP_AFTER_MS;
       show(quiet ? "asleep" : "resting", `Last active ${ago(lastAt)}.`);
     };
+    const settleIn = (ms: number) => { clearTimeout(watchdog); watchdog = setTimeout(idle, ms); };
 
-    // Play one exchange back as a short sequence of states.
+    function toolStep(tool: string, at: string, key: string) {
+      const sense = senseOf(tool), write = WRITES.test(tool);
+      if (write) presence.act(sense); else presence.reach(sense);
+      if (current !== "thinking") { current = "thinking"; presence.setState("thinking"); setState("thinking"); }
+      setCaption(`${tool} → ${senseLabel(sense)}`);
+      setLog((l) => [{ key, at: clock(at), text: `${tool} → ${senseLabel(sense)}`, write }, ...l].slice(0, 5));
+    }
+
+    // Play a finished exchange back as a short sequence (on open, and when the live feed is unavailable).
     function replay(row: Row) {
-      timers.forEach(clearTimeout); timers = [];
-      replaying = true;
+      replayTimers.forEach(clearTimeout); replayTimers = [];
+      busy = true;
       const tools = (row.messages ?? []).flatMap((m) => m.tool_calls ?? []).map((c) => c.function?.name).filter(Boolean) as string[];
       const asked = row.kind === "briefing" ? "Morning briefing" : row.kind === "review" ? "Weekly self-review"
         : `You${row.channel === "discord" ? " on Discord" : ""}: “${clip(plain(row.user_text), 80)}”`;
@@ -82,17 +100,45 @@ export default function KazperPresence() {
         [0, () => show("listening", asked)],
         [1300, () => show("thinking", "Working it out.")],
       ];
-      tools.forEach((tool) => steps.push([900, () => {
-        const sense = senseOf(tool), write = WRITES.test(tool);
-        if (write) presence.act(sense); else presence.reach(sense);
-        setCaption(`${tool} → ${senseLabel(sense)}`);
-        setLog((l) => [{ key: `${row.id}-${l.length}-${tool}`, at: clock(row.created_at), text: `${tool} → ${senseLabel(sense)}`, write }, ...l].slice(0, 5));
-      }]));
+      tools.forEach((tool, i) => steps.push([900, () => toolStep(tool, row.created_at, `x${row.id}-${i}`)]));
       steps.push([tools.length ? 1100 : 900, () => show("speaking", `“${clip(plain(row.reply_text), 110)}”`)]);
       steps.push([2800, idle]);
       let t = 0;
-      for (const [delay, fn] of steps) { t += delay; timers.push(setTimeout(fn, t)); }
-      lastId = row.id; lastAt = row.created_at;
+      for (const [delay, fn] of steps) { t += delay; replayTimers.push(setTimeout(fn, t)); }
+      lastExchange = row.id; lastAt = row.created_at;
+    }
+
+    // Live: play each step as it arrives. Returns how long to hold it before the next one.
+    function play(step: Step): number {
+      busy = true; lastAt = step.created_at;
+      settleIn(STUCK_MS); // a turn that never finishes (runtime restarted mid-way) still settles
+      switch (step.kind) {
+        case "heard":
+          show("listening", /^(Morning briefing|Weekly self-review)$/.test(step.text) ? step.text : `You: “${clip(step.text, 80)}”`);
+          return 900;
+        case "thinking":
+          if (current !== "thinking") show("thinking", "Working it out.");
+          return 300;
+        case "tool":
+          toolStep(step.text, step.created_at, `s${step.id}`);
+          return 800;
+        case "speaking":
+          show("speaking", `“${clip(plain(step.text), 110)}”`);
+          settleIn(3200);
+          return queue.length ? 1200 : 3200;
+        case "error":
+          show("error", step.text || "Something went wrong.");
+          settleIn(3000);
+          return 1500;
+      }
+    }
+    function drain() {
+      if (draining || stopped) return;
+      const step = queue.shift();
+      if (!step) return;
+      replayTimers.forEach(clearTimeout); replayTimers = [];
+      draining = true;
+      stepTimer = setTimeout(() => { draining = false; drain(); }, play(step));
     }
 
     async function latest(withMessages: boolean): Promise<Row | null> {
@@ -104,29 +150,51 @@ export default function KazperPresence() {
     }
 
     async function poll() {
-      if (stopped || document.hidden) return;
+      if (stopped || document.hidden || !sb) return;
       try {
-        const head = await latest(false);
-        if (head && head.id !== lastId) {
-          const row = await latest(true);
-          if (row && !stopped) replay(row);
-        } else if (failed && !replaying) {
-          idle();
+        if (live) {
+          const { data, error } = await sb.from("kazper_activity").select("id,created_at,kind,text")
+            .gt("id", lastStep).order("id", { ascending: true }).limit(50);
+          if (error) throw error;
+          const steps = (data ?? []) as Step[];
+          if (steps.length) { lastStep = steps[steps.length - 1].id; queue.push(...steps); drain(); }
+        } else {
+          const head = await latest(false);
+          if (head && head.id !== lastExchange) {
+            const row = await latest(true);
+            if (row && !stopped) replay(row);
+          }
         }
+        if (failed && !busy) idle();
         failed = false;
       } catch {
         failed = true;
-        if (!stopped && !replaying) show("error", "Can't reach his memory right now. Retrying.");
+        if (!stopped && !busy) show("error", "Can't reach his memory right now. Retrying.");
       }
     }
 
-    void poll();
-    const interval = setInterval(poll, POLL_MS);
-    const tick = setInterval(() => { if (!replaying) idle(); }, 60000); // keeps "x min ago" fresh, and falls asleep
+    async function start() {
+      if (!sb) return show("error", "Not connected to his memory.");
+      // Where the live feed ends right now, so only new steps play. No table yet: fall back to replays.
+      const { data, error } = await sb.from("kazper_activity").select("id").order("id", { ascending: false }).limit(1);
+      live = !error;
+      lastStep = (data?.[0] as { id: number } | undefined)?.id ?? 0;
+      try {
+        const row = await latest(true);
+        if (stopped) return;
+        if (row) replay(row); else idle();
+      } catch {
+        show("error", "Can't reach his memory right now. Retrying.");
+      }
+    }
+
+    let interval: ReturnType<typeof setInterval> | undefined;
+    void start().then(() => { if (!stopped) interval = setInterval(poll, live ? LIVE_POLL_MS : POLL_MS); });
+    const tick = setInterval(() => { if (!busy) idle(); }, 60000); // keeps "x min ago" fresh, and falls asleep
     return () => {
       stopped = true;
       clearInterval(interval); clearInterval(tick);
-      timers.forEach(clearTimeout);
+      replayTimers.forEach(clearTimeout); clearTimeout(stepTimer); clearTimeout(watchdog);
       presence.destroy();
     };
   }, []);

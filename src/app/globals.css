@@ -712,6 +712,18 @@ html.reveal-fallback [data-reveal]{opacity:1!important;transform:none!important;
 /* Memory / history / stats pages */
 /* Presence: Kazper as an energy core (KazperPresence + presence-engine) */
 .kz-presence{position:relative;flex:1 1 auto;min-height:calc(100dvh - var(--kz-bar));overflow:hidden;background:#07070C}
+/* Chat + presence, side by side: the chat scrolls the page, he stays in view */
+.kz-split{flex:1 1 auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-height:0}
+.kz-split>.kz-chat{width:100%;margin:0;min-width:0}
+.kz-split-side{position:sticky;top:var(--kz-bar);align-self:start;height:calc(100dvh - var(--kz-bar));display:flex;border-left:1px solid var(--line)}
+.kz-split-side .kz-presence{min-height:0;height:100%}
+@media (max-width:900px){
+  .kz-split{grid-template-columns:minmax(0,1fr)}
+  .kz-split-side{order:-1;z-index:5;height:34dvh;border-left:0;border-bottom:1px solid var(--line)}
+  .kz-split-side .kz-presence-hud{padding-top:12px;gap:2px}
+  .kz-split-side .kz-presence-state{font-size:24px}
+  .kz-split-side .kz-presence-log{display:none}
+}
 .kz-presence-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .kz-presence-hud{position:relative;z-index:1;pointer-events:none;display:grid;gap:6px;max-width:560px;padding:20px clamp(16px,4vw,28px) 0}
 .kz-presence-eyebrow{display:flex;align-items:center;gap:10px;font:500 11px/1 var(--font-mono);letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}

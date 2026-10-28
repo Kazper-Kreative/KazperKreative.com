@@ -188,6 +188,15 @@ class SupabaseMemory:
                 json={"exchange_id": exchange_id},
             ).raise_for_status()
 
+    # --- live activity (the app's Presence tab; see presence.py) ---------
+
+    def add_activity(self, kind: str, text: str) -> None:
+        self.http.post("/kazper_activity", json={"kind": kind, "text": text},
+                       headers={"Prefer": "return=minimal"}).raise_for_status()
+
+    def prune_activity(self, before_iso: str) -> None:
+        self.http.delete("/kazper_activity", params={"created_at": f"lt.{before_iso}"}).raise_for_status()
+
     # --- feedback -------------------------------------------------------
 
     def add_feedback(self, exchange: dict, kind: str, correction: str | None = None) -> None:
