@@ -17,7 +17,7 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  CURRENCY_ECONOMY, LOCAL_PRICES, RACOIN_PACKS, STEAM_CURRENCIES, localPrice, regionalFactor,
+  CURRENCY_ECONOMY, FACTOR_CEILING, FACTOR_FLOOR, LOCAL_PRICES, RACOIN_PACKS, STEAM_CURRENCIES, localPrice, regionalFactor,
 } from "../src/lib/jimothy/catalog.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -93,12 +93,13 @@ const rows = ordered.map((currency) => {
   else if (!market) note = "no exchange rate: charged USD";
   else if (LOCAL_PRICES[currency]) note = "hand-set LOCAL_PRICES row";
   else if (!lv) note = (notes[currency] ?? "no World Bank figure") + ": straight conversion";
-  else if (lv.level > 1) note = `price level ${lv.level.toFixed(3)} clamped to 1`;
-  else if (lv.level < 0.35) note = `price level ${lv.level.toFixed(3)} clamped to 0.35`;
+  else if (Math.sqrt(lv.level) > FACTOR_CEILING) note = `price level ${lv.level.toFixed(3)}: factor clamped to ${FACTOR_CEILING}`;
+  else if (Math.sqrt(lv.level) < FACTOR_FLOOR) note = `price level ${lv.level.toFixed(3)}: factor clamped to ${FACTOR_FLOOR}`;
   if (prices.some((p) => p.currency !== currency)) note = (note ? note + "; " : "") + "fell back to USD";
   return {
     currency,
     rate: rate ?? "",
+    level: currency === "USD" ? 1 : lv?.level,
     factor: currency === "USD" ? 1 : regionalFactor(lv?.level),
     year: lv?.year ?? "",
     pouch: prices[0], bag: prices[1], bin: prices[2],
@@ -107,12 +108,13 @@ const rows = ordered.map((currency) => {
   };
 });
 
-const header = ["Currency", "USD rate", "Factor", "WB year", "Pouch (500)", "Bag (1,200)", "Bin (2,500)",
+const header = ["Currency", "USD rate", "Price level", "Factor", "WB year", "Pouch (500)", "Bag (1,200)", "Bin (2,500)",
   "Bag straight conversion", "Bag vs straight", "Note"];
 const priceCell = (p, currency) => fmt(p.amount) + (p.currency !== currency ? " USD" : "");
 const table = rows.map((r) => [
   r.currency,
   r.rate === "" ? "" : String(Number(r.rate.toPrecision(6))),
+  r.level === undefined ? "" : r.level.toFixed(3),
   r.factor.toFixed(3),
   String(r.year),
   priceCell(r.pouch, r.currency), priceCell(r.bag, r.currency), priceCell(r.bin, r.currency),
@@ -123,7 +125,7 @@ const table = rows.map((r) => [
 
 const stamp = `Exchange rates: open.er-api.com, ${fx.time_last_update_utc}. ` +
   `Price levels: World Bank PA.NUS.PPP / PA.NUS.FCRF (euro area: NY.GDP.MKTP.CD / NY.GDP.MKTP.PP.CD), ` +
-  `clamped to [0.35, 1]. Prices are what Steam would be charged, in the player's currency.`;
+  `factor = sqrt(price level), clamped to [${FACTOR_FLOOR}, ${FACTOR_CEILING}]. Prices are what Steam would be charged, in the player's currency.`;
 const md = [
   "# Jimothy Racoin packs: regional prices",
   "",

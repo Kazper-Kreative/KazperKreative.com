@@ -9,7 +9,8 @@
 // switched off. Prices are set in USD. A player paying in another currency is
 // charged a price of his own (Kazper, 28 Oct 2026): a hand-set LOCAL_PRICES
 // row if there is one, else regionalPrices() below -- today's exchange rate,
-// scaled down by the World Bank's price level where money buys more, rounded
+// scaled down by the square root of the World Bank's price level where money
+// buys more (softened, Kazper 28 Oct 2026), rounded
 // to a price that reads naturally there. Only when neither can be worked out
 // is he charged USD, and Steam converts at finalize.
 //
@@ -84,8 +85,8 @@ export interface Market {
 }
 
 /** The regional factor never charges more than the straight conversion, nor
- *  less than 35% of it (Kazper, 28 Oct 2026). */
-export const FACTOR_FLOOR = 0.35;
+ *  less than 40% of it (Kazper, 28 Oct 2026). */
+export const FACTOR_FLOOR = 0.4;
 export const FACTOR_CEILING = 1;
 
 /** How far rounding may land above the straight conversion: a natural price a
@@ -107,10 +108,12 @@ export const CURRENCY_ECONOMY: Readonly<Record<string, string>> = {
   SAR: "SAU", SGD: "SGP", THB: "THA", UAH: "UKR", UYU: "URY", VND: "VNM", ZAR: "ZAF",
 };
 
-/** The price level, clamped to [FACTOR_FLOOR, FACTOR_CEILING]; 1 without one. */
+/** The square root of the price level, a softer discount than the ratio
+ *  itself (euro area 0.74 -> 0.86, India 0.23 -> 0.48; Kazper, 28 Oct 2026),
+ *  clamped to [FACTOR_FLOOR, FACTOR_CEILING]; 1 without a figure. */
 export function regionalFactor(priceLevel: number | undefined): number {
   if (priceLevel === undefined || !Number.isFinite(priceLevel) || priceLevel <= 0) return 1;
-  return Math.min(FACTOR_CEILING, Math.max(FACTOR_FLOOR, priceLevel));
+  return Math.min(FACTOR_CEILING, Math.max(FACTOR_FLOOR, Math.sqrt(priceLevel)));
 }
 
 /**
@@ -153,11 +156,11 @@ export function naturalPrices(currency: string, lo: number, hi: number): number[
 
 /**
  * The three packs' prices in `currency`, in hundredths, RACOIN_PACKS order:
- * USD price x exchange rate x regional factor, moved to the nearest natural
+ * USD price x exchange rate x regional factor (see regionalFactor), moved to the nearest natural
  * price no more than 2% over the straight conversion and, where one exists,
- * no less than 35% of it. A bigger pack is never dearer per Racoin than a
+ * no less than 40% of it. A bigger pack is never dearer per Racoin than a
  * smaller one: where rounding would make it so, the bigger pack steps down,
- * below the 35% line only if nothing above it is fair. Undefined when it
+ * below the 40% line only if nothing above it is fair. Undefined when it
  * cannot be worked out (no rate, not a Steam currency): the caller charges USD.
  */
 export function regionalPrices(currency: string, market: Market | undefined): number[] | undefined {

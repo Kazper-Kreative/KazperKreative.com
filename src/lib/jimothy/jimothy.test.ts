@@ -222,45 +222,51 @@ describe("jimothy regional prices", () => {
     });
   }
 
-  it("clamps the regional factor to [0.35, 1] and treats no figure as 1", async () => {
+  it("takes the square root of the price level, clamped to [0.4, 1], and 1 without a figure", async () => {
     const { regionalFactor } = await import("./catalog");
     expect(regionalFactor(undefined)).toBe(1);
     expect(regionalFactor(Number.NaN)).toBe(1);
     expect(regionalFactor(0)).toBe(1);
     expect(regionalFactor(1.12)).toBe(1);
-    expect(regionalFactor(0.83)).toBe(0.83);
-    expect(regionalFactor(0.23)).toBe(0.35);
+    expect(regionalFactor(0.81)).toBeCloseTo(0.9, 10);
+    expect(regionalFactor(0.25)).toBeCloseTo(0.5, 10);
+    expect(regionalFactor(0.16)).toBeCloseTo(0.4, 10);
+    expect(regionalFactor(0.1)).toBe(0.4); // sqrt 0.316, under the floor
   });
 
   it("rounds to .99 where prices have cents", async () => {
     const { regionalPrices } = await import("./catalog");
-    // 4.99 x 1.4 x 0.83 = 5.80 -> 5.99; 11.61 -> 11.99; 23.23 -> 22.99
-    expect(regionalPrices("CAD", { fxRate: 1.4, priceLevel: 0.83 })).toEqual([599, 1199, 2299]);
+    // Factor sqrt(0.81) = 0.9: 4.99 x 1.4 x 0.9 = 6.29 -> 6.49; 12.59 -> 12.99; 25.19 -> 24.99
+    expect(regionalPrices("CAD", { fxRate: 1.4, priceLevel: 0.81 })).toEqual([649, 1299, 2499]);
     // No price level: a straight conversion, 6.99 / 13.99 / 27.99.
     expect(regionalPrices("CAD", { fxRate: 1.4 })).toEqual([699, 1399, 2799]);
   });
 
   it("rounds whole-unit currencies to natural numbers", async () => {
     const { regionalPrices } = await import("./catalog");
-    // JPY 486.5 / 974 / 1,949 -> 490 / 970 / 1,900 yen, in hundredths.
-    expect(regionalPrices("JPY", { fxRate: 150, priceLevel: 0.65 })).toEqual([49000, 97000, 190000]);
-    expect(regionalPrices("KRW", { fxRate: 1400, priceLevel: 0.6 })).toEqual([420000, 840000, 1700000]);
-    // INR ends in 9: 4.99 x 88 x 0.35 = 153.7 -> 159.
-    expect(regionalPrices("INR", { fxRate: 88, priceLevel: 0.2 })).toEqual([15900, 30900, 61900]);
+    // Factor sqrt(0.64) = 0.8: JPY 599 / 1,199 / 2,399 -> 600 / 1,200 / 2,400 yen, in hundredths.
+    expect(regionalPrices("JPY", { fxRate: 150, priceLevel: 0.64 })).toEqual([60000, 120000, 240000]);
+    // KRW 5,389 / 10,789 / 21,589 -> 5,400 / 11,000 / 22,000.
+    expect(regionalPrices("KRW", { fxRate: 1350, priceLevel: 0.64 })).toEqual([540000, 1100000, 2200000]);
+    // INR ends in 9: factor sqrt(0.25) = 0.5, 4.99 x 88 x 0.5 = 219.6 -> 219.
+    expect(regionalPrices("INR", { fxRate: 88, priceLevel: 0.25 })).toEqual([21900, 43900, 87900]);
   });
 
-  it("never charges above the straight conversion or below the 35% floor", async () => {
+  it("never charges above the straight conversion or below the 40% floor", async () => {
     const { regionalPrices } = await import("./catalog");
     expect(regionalPrices("CAD", { fxRate: 1.4, priceLevel: 1.6 })).toEqual(regionalPrices("CAD", { fxRate: 1.4 }));
     expect(regionalPrices("INR", { fxRate: 88, priceLevel: 0.05 }))
-      .toEqual(regionalPrices("INR", { fxRate: 88, priceLevel: 0.35 }));
+      .toEqual(regionalPrices("INR", { fxRate: 88, priceLevel: 0.16 }));
+    // At the floor: 4.99 x 88 x 0.4 = 175.6 -> 179, never under 40% of straight.
+    const floor = regionalPrices("INR", { fxRate: 88, priceLevel: 0.01 }) as number[];
+    floor.forEach((amount, i) => expect(amount).toBeGreaterThanOrEqual(RACOIN_PACKS[i].priceCents * 88 * 0.4));
   });
 
   it("gives every Steam currency a valid, ordered price list at realistic rates", async () => {
     const { regionalPrices, STEAM_CURRENCIES } = await import("./catalog");
     for (const currency of STEAM_CURRENCIES) {
       if (currency === "USD") continue;
-      for (const priceLevel of [undefined, 0.2, 0.35, 0.5, 0.75, 0.9, 1, 1.3]) {
+      for (const priceLevel of [undefined, 0.05, 0.16, 0.2, 0.35, 0.5, 0.75, 0.9, 1, 1.3]) {
         const fxRate = RATES[currency];
         expectSane(currency, fxRate, regionalPrices(currency, { fxRate, priceLevel }));
       }
@@ -279,7 +285,7 @@ describe("jimothy regional prices", () => {
 
   it("leaves USD alone and falls back to it when a price cannot be worked out", async () => {
     const { localPrice, regionalPrices } = await import("./catalog");
-    const market = { fxRate: 1.4, priceLevel: 0.83 };
+    const market = { fxRate: 1.4, priceLevel: 0.81 };
     expect(RACOIN_PACKS.map((p) => localPrice(p, "USD", market).amount)).toEqual([499, 999, 1999]);
     expect(regionalPrices("USD", { fxRate: 1 })).toBeUndefined();
     const usd = { currency: "USD", amount: 499 };
@@ -290,19 +296,19 @@ describe("jimothy regional prices", () => {
     expect(localPrice(RACOIN_PACKS[0], undefined, market)).toEqual(usd);
     // VND at a nonsense rate has no price Steam's 500-dong step accepts.
     expect(localPrice(RACOIN_PACKS[0], "VND", { fxRate: 0.3 })).toEqual(usd);
-    expect(localPrice(RACOIN_PACKS[1], "CAD", market)).toEqual({ currency: "CAD", amount: 1199 });
+    expect(localPrice(RACOIN_PACKS[1], "CAD", market)).toEqual({ currency: "CAD", amount: 1299 });
   });
 
   it("lets a hand-set LOCAL_PRICES row win over the computed price", async () => {
     const catalog = await import("./catalog");
     const table = catalog.LOCAL_PRICES as Record<string, readonly [number, number, number]>;
-    table.CAD = [649, 1299, 2599];
+    table.CAD = [699, 1399, 2799];
     table.JPY = [55050, 110000, 220000]; // the pouch breaks Steam's whole-yen step
     try {
-      const cad = { fxRate: 1.4, priceLevel: 0.83 };
-      expect(catalog.localPrice(RACOIN_PACKS[1], "CAD", cad)).toEqual({ currency: "CAD", amount: 1299 });
-      const jpy = { fxRate: 150, priceLevel: 0.65 };
-      expect(catalog.localPrice(RACOIN_PACKS[0], "JPY", jpy)).toEqual({ currency: "JPY", amount: 49000 });
+      const cad = { fxRate: 1.4, priceLevel: 0.81 };
+      expect(catalog.localPrice(RACOIN_PACKS[1], "CAD", cad)).toEqual({ currency: "CAD", amount: 1399 });
+      const jpy = { fxRate: 150, priceLevel: 0.64 };
+      expect(catalog.localPrice(RACOIN_PACKS[0], "JPY", jpy)).toEqual({ currency: "JPY", amount: 60000 });
       expect(catalog.localPrice(RACOIN_PACKS[1], "JPY", jpy)).toEqual({ currency: "JPY", amount: 110000 });
     } finally {
       delete table.CAD;
