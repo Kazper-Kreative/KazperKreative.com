@@ -184,7 +184,8 @@ class KazperBot(discord.Client):
         """Stay only in servers on DISCORD_ALLOWED_GUILDS. With no list set, stay but watch nothing."""
         allowed = self.cfg.discord_allowed_guilds
         if guild.id in allowed:
-            log.info("In server %s (%s): allowed, watching", guild.name, guild.id)
+            log.info("In server %s (%s): allowed%s", guild.name, guild.id,
+                     ", watching for mentions" if self.cfg.discord_watch_others else "")
         elif allowed:
             log.warning("Leaving server %s (%s): not in DISCORD_ALLOWED_GUILDS", guild.name, guild.id)
             await guild.leave()
