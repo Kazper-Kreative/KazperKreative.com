@@ -34,12 +34,12 @@ from . import api
 from .brain import Brain
 from .config import DAYS, Config
 from .memory import open_memory
-from .tools import Toolbox, cryptidkeep, discord_watch, google, railway, recall, remember, slack
+from .tools import Toolbox, cryptidkeep, deadlines, discord_watch, google, railway, recall, remember, slack
 
 log = logging.getLogger("kazper")
 
 DISCORD_LIMIT = 1900  # Discord caps messages at 2000 chars; leave headroom
-GOOD, BAD, TRASH = "👍", "👎", "🗑️"
+GOOD, BAD, TRASH, UNDO = "👍", "👎", "🗑️", "↩️"
 DATASET_GOAL = 500  # rated examples before a LoRA fine-tune is worth it
 
 BRIEFING_PROMPT = (
@@ -103,6 +103,7 @@ class Turn:
     error: str | None = None
     exchange_id: int | None = None
     notes: list[dict] = field(default_factory=list)  # 📝 facts Kazper saved this turn
+    actions: list[dict] = field(default_factory=list)  # things he did this turn (undoable)
     tools: list[str] = field(default_factory=list)   # tools it called, in order
     usage: dict | None = None
 
@@ -115,8 +116,9 @@ def _parse_ts(value: str) -> datetime:
 async def build_toolbox(cfg: Config, memory) -> Toolbox:
     box = Toolbox()
     if cfg.google_client_id and cfg.google_client_secret and cfg.google_refresh_token:
-        google.register(box, google.Google(cfg.google_client_id, cfg.google_client_secret,
-                                           cfg.google_refresh_token, cfg.timezone))
+        g = google.Google(cfg.google_client_id, cfg.google_client_secret, cfg.google_refresh_token, cfg.timezone)
+        google.register(box, g)
+        deadlines.register(box, deadlines.Deadlines(g, memory, cfg.timezone))
     if cfg.slack_user_token:
         slack.register(box, slack.Slack(cfg.slack_user_token))
     if cfg.cryptidkeep_url and cfg.cryptidkeep_token:
@@ -138,6 +140,7 @@ class KazperBot(discord.Client):
         self.memory = open_memory(cfg)
         self.brain: Brain | None = None
         self.note_messages: dict[int, int] = {}  # Discord message id of a 📝 note -> fact id (for 🗑️)
+        self.action_messages: dict[int, int] = {}  # Discord message id of a reported action -> action id (for ↩️)
         self.api_runner = None
 
     async def setup_hook(self):
@@ -249,6 +252,7 @@ class KazperBot(discord.Client):
         turn_pointers: list[int] = []
         remember.noted.set(turn.notes)
         recall.left.set(turn_pointers)
+        deadlines.done.set(turn.actions)
         if kind == "chat":
             await self.note_redirect(text)
         try:
@@ -266,6 +270,7 @@ class KazperBot(discord.Client):
                  turn.exchange_id, kind, channel, usage["llm_calls"], usage["prompt_tokens"],
                  usage["cached_tokens"], usage["completion_tokens"], usage["cost_usd"], usage["providers"])
         await asyncio.to_thread(self.memory.link_pointers, turn_pointers, turn.exchange_id)
+        await asyncio.to_thread(self.memory.link_actions, [a["id"] for a in turn.actions], turn.exchange_id)
         return turn
 
     async def think_and_reply(self, channel: discord.abc.Messageable, text: str, kind: str = "chat"):
@@ -281,6 +286,28 @@ class KazperBot(discord.Client):
                 sent = await channel.send(chunk, suppress_embeds=True)
                 await asyncio.to_thread(self.memory.link_reply_message, sent.id, turn.exchange_id)
         await self.announce_notes(channel, turn.notes)
+        for action in turn.actions:
+            sent = await channel.send(f"🗓️ {action['summary']}  ·  react {UNDO} to undo")
+            self.action_messages[sent.id] = action["id"]
+
+    async def undo_action(self, action_id: int) -> tuple[bool, str]:
+        """Reverse one logged action (Discord ↩️ or the app's Undo). Returns (ok, message)."""
+        action = await asyncio.to_thread(self.memory.get_action, action_id)
+        if action is None:
+            return False, f"No action #{action_id}."
+        if action["status"] != "done":
+            return False, f"Action #{action_id} is already {action['status']}."
+        undoer = self.brain.tools.undo.get(action["kind"].split(".")[0])
+        if undoer is None:
+            return False, f"I don't know how to undo a {action['kind']}."
+        try:
+            result = await asyncio.to_thread(undoer, action)
+        except Exception as e:
+            log.exception("Undo of action #%s failed", action_id)
+            return False, f"Couldn't undo #{action_id} ({type(e).__name__}: {e})."
+        await asyncio.to_thread(self.memory.update_action, action_id, status="undone",
+                                decided_at=datetime.now(timezone.utc).isoformat())
+        return True, f"Undid #{action_id}: {action['summary']} ({result})."
 
     async def record_feedback(self, exchange_id: int, kind: str, correction: str | None = None):
         """Feedback from the web app. Returns the 📝 lesson saved from a correction, None, or False if no such exchange."""
@@ -407,6 +434,11 @@ class KazperBot(discord.Client):
         if payload.user_id != self.cfg.owner_id:
             return
         emoji = str(payload.emoji)
+        if emoji.rstrip("\ufe0f") == UNDO.rstrip("\ufe0f") and payload.message_id in self.action_messages:
+            ok, message = await self.undo_action(self.action_messages.pop(payload.message_id))
+            channel = self.get_channel(payload.channel_id) or await self.fetch_channel(payload.channel_id)
+            await channel.send(message if ok else f"⚠️ {message}")
+            return
         # Discord may send 🗑 with or without the emoji variation selector, so compare the base character.
         if emoji.rstrip("️") == TRASH.rstrip("️") and payload.message_id in self.note_messages:
             fact_id = self.note_messages.pop(payload.message_id)

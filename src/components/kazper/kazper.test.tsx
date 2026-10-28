@@ -98,6 +98,25 @@ describe("KazperChat", () => {
     await waitFor(() => expect(screen.getByText(/Noted #30: Keep it short/)).toBeInTheDocument());
   });
 
+  it("shows what Kazper did to his calendar and undoes it", async () => {
+    const calls = mockFetch({
+      chat: { exchange_id: 12, reply: "Added it.", error: null, kind: "chat", tools: ["deadline_add"], notes: [],
+        actions: [{ id: 7, kind: "deadline.add", summary: "Added [SensorOps] Q4 update · 2026-11-07" }],
+        usage: null },
+      undo: { ok: true, message: "Undid #7" },
+    });
+    render(<KazperChat initial={[]} />);
+    fireEvent.change(screen.getByPlaceholderText("Message Kazper…"), { target: { value: "Q4 update due Nov 7" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    await screen.findByText(/Added \[SensorOps\] Q4 update/);
+    expect(screen.getByText("updated his calendar")).toBeInTheDocument();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Undo" })));
+    expect(calls[1]).toEqual({ url: "/api/kazper/undo", body: { action_id: 7 } });
+    expect(screen.getByText("undone")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Undo" })).toBeNull();
+  });
+
   it("shows an empty review as a notice, not a message", async () => {
     mockFetch({ review: { exchange_id: null, reply: "Nothing to review.", error: null, kind: "review", notes: [],
       tools: [], usage: null } });

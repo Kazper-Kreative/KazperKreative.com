@@ -13,6 +13,7 @@ const ACTIONS: Record<string, string> = {
   brief: "/v1/brief",
   review: "/v1/review",
   feedback: "/v1/feedback",
+  undo: "/v1/undo",
 };
 
 export async function POST(request: Request, { params }: { params: Promise<{ action: string }> }) {

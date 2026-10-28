@@ -36,6 +36,16 @@ at 3 per reply, and DMed to you as `📝 Noted #id` so nothing lands in memory u
   each exchange. `!stats` sums them. `LLM_PROVIDER_ORDER` pins preferred OpenRouter providers once
   the data says which are worth it.
 
+## Kazper's calendar ("Kazper · Deadlines")
+
+Kazper keeps one calendar of his own in your Google account: every deadline across SensorOps,
+Nexxverse, SoB, Kazper Kreative and life, colour-coded by area. He adds, moves and removes deadlines
+himself (`deadline_*` tools). Every change is posted to you (Discord: react ↩️; app: **Undo**) and
+logged in `kazper_actions` with what it replaced. Google's `calendar.app.created` permission means he
+can only write to calendars he created; your other calendars stay read-only, enforced by Google.
+He reads all calendars in your list, so share work calendars (e.g. SensorOps) with the connected
+account if you want him to see them.
+
 ## How Kazper learns
 
 - `!fix` stores the correction, and Kazper also turns it into a lasting 📝 note right away when it

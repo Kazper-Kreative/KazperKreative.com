@@ -13,9 +13,18 @@ interface Note {
   deleted?: boolean;
 }
 
+// Something Kazper did this turn (e.g. a deadline on his calendar), with one-tap undo.
+interface Action {
+  id: number;
+  kind: string;
+  summary: string;
+  undone?: string; // the undo result message, once undone
+}
+
 // What only this browser session knows about an exchange (the runtime returns it with the reply).
 interface Extra {
   notes?: Note[];
+  actions?: Action[];
   tools?: string[];
   rating?: "good" | "bad";
   fixed?: boolean;
@@ -27,6 +36,7 @@ interface TurnResponse {
   error: string | null;
   kind: Exchange["kind"];
   notes: Note[];
+  actions?: Action[];
   tools: string[];
   usage: { cost_usd: number | null } | null;
 }
@@ -37,6 +47,12 @@ const TOOL_LABELS: Record<string, string> = {
   leave_pointer: "left a pointer",
   clear_pointer: "cleared a pointer",
   remember: "saved a note",
+  deadline_add: "updated his calendar",
+  deadline_update: "updated his calendar",
+  deadline_remove: "updated his calendar",
+  deadline_list: "checked his calendar",
+  calendar_events: "checked your calendars",
+  calendar_list: "checked your calendars",
 };
 
 function toolLabel(name: string): string {
@@ -124,7 +140,7 @@ export default function KazperChat({ initial }: { initial: Exchange[] }) {
           cost_usd: turn.usage?.cost_usd ?? null,
         };
         setLocal((l) => [...l, ex]);
-        patchExtra(ex.id, { notes: turn.notes, tools: turn.tools });
+        patchExtra(ex.id, { notes: turn.notes, actions: turn.actions ?? [], tools: turn.tools });
       } catch (e) {
         const message = e instanceof Error ? e.message : "Something went wrong.";
         setNotice({ message, tone: "error", retry: () => void runTurn(action, body, label, userText) });
@@ -165,6 +181,21 @@ export default function KazperChat({ initial }: { initial: Exchange[] }) {
     } catch (e) {
       patchExtra(ex.id, { fixed: false });
       setNotice({ message: e instanceof Error ? e.message : "Couldn't save the fix.", tone: "error" });
+    }
+  };
+
+  const undoAction = async (exId: number, action: Action) => {
+    try {
+      const res = (await post("undo", { action_id: action.id })) as { message?: string };
+      setExtras((e) => ({
+        ...e,
+        [exId]: {
+          ...e[exId],
+          actions: (e[exId]?.actions ?? []).map((a) => (a.id === action.id ? { ...a, undone: res.message ?? "Undone" } : a)),
+        },
+      }));
+    } catch (err) {
+      setNotice({ message: err instanceof Error ? err.message : "Couldn't undo that.", tone: "error" });
     }
   };
 
@@ -211,6 +242,14 @@ export default function KazperChat({ initial }: { initial: Exchange[] }) {
                 <div className="kz-bubble">
                   <Markdown text={ex.reply_text} />
                 </div>
+                {extra.actions?.map((a) => (
+                  <div key={a.id} className={`kz-note kz-action${a.undone ? " gone" : ""}`}>
+                    <span>🗓️ {a.summary}{a.undone && <> · <em>undone</em></>}</span>
+                    {!a.undone && (
+                      <button className="kz-link" onClick={() => void undoAction(ex.id, a)}>Undo</button>
+                    )}
+                  </div>
+                ))}
                 {extra.notes?.map((n) => (
                   <div key={n.id} className={`kz-note${n.deleted ? " gone" : ""}`}>
                     <span>📝 {n.deleted ? "Deleted" : "Noted"} #{n.id}: {n.text}</span>

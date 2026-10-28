@@ -153,3 +153,25 @@ create policy "owner reads" on public.kazper_feedback for select using (public.i
 
 drop policy if exists "owner reads" on public.kazper_events;
 create policy "owner reads" on public.kazper_events for select using (public.is_kazper_owner());
+
+-- ---------------------------------------------------------------------------
+-- 2026-10-28: things Kazper does (and, later, proposes). Safe to re-run.
+-- Each row records what changed and what it replaced, so it can be undone;
+-- 'proposed'/'approved'/'rejected' are for the approval queue (drafts, CryptidKeep creates).
+create table if not exists public.kazper_actions (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+  kind         text not null,                -- e.g. deadline.add, deadline.update, deadline.remove
+  status       text not null default 'done'
+               check (status in ('done', 'undone', 'proposed', 'approved', 'rejected', 'failed')),
+  summary      text not null,
+  destination  text,                         -- where it lands, e.g. "Kazper · Deadlines"
+  payload      jsonb not null default '{}'::jsonb,
+  exchange_id  bigint references public.kazper_exchanges(id) on delete set null,
+  decided_at   timestamptz
+);
+create index if not exists kazper_actions_created_at_idx on public.kazper_actions (created_at desc);
+alter table public.kazper_actions enable row level security;
+drop policy if exists "owner reads" on public.kazper_actions;
+create policy "owner reads" on public.kazper_actions for select using (public.is_kazper_owner());
+grant select on public.kazper_actions to authenticated;

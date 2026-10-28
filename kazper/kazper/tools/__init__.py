@@ -28,6 +28,8 @@ class Toolbox:
     def __init__(self):
         self.tools: dict[str, Tool] = {}
         self.senses: list[str] = []  # human-readable list of what's connected
+        # How to reverse a logged action, by the prefix of its kind ("deadline" for "deadline.add").
+        self.undo: dict[str, Callable[[dict], str]] = {}
 
     def add(self, tool: Tool) -> None:
         self.tools[tool.name] = tool

@@ -25,6 +25,7 @@ from .config import Config
 USAGE_FIELDS = ("llm_calls", "prompt_tokens", "cached_tokens", "completion_tokens", "reasoning_tokens",
                 "cost_usd", "providers")
 SUMMARY_FIELDS = "id,created_at,kind,user_text,reply_text"
+ACTION_FIELDS = "id,created_at,kind,status,summary,destination,payload,exchange_id,decided_at"
 
 
 def _now() -> datetime:
@@ -163,6 +164,26 @@ class SupabaseMemory:
         r.raise_for_status()
         return bool(r.json())
 
+    # --- actions (things Kazper did or proposes, with what they replaced) ----
+
+    def add_action(self, kind: str, summary: str, destination: str, payload: dict, status: str = "done") -> int:
+        return self._insert("kazper_actions", {"kind": kind, "summary": summary, "destination": destination,
+                                               "payload": payload, "status": status})["id"]
+
+    def get_action(self, action_id: int) -> dict | None:
+        rows = self._get("kazper_actions", select=ACTION_FIELDS, id=f"eq.{action_id}")
+        return rows[0] if rows else None
+
+    def update_action(self, action_id: int, **fields) -> None:
+        self.http.patch("/kazper_actions", params={"id": f"eq.{action_id}"}, json=fields).raise_for_status()
+
+    def link_actions(self, action_ids: list[int], exchange_id: int) -> None:
+        if action_ids:
+            self.http.patch(
+                "/kazper_actions", params={"id": f"in.({','.join(str(i) for i in action_ids)})"},
+                json={"exchange_id": exchange_id},
+            ).raise_for_status()
+
     # --- feedback -------------------------------------------------------
 
     def add_feedback(self, exchange: dict, kind: str, correction: str | None = None) -> None:
@@ -215,6 +236,11 @@ CREATE TABLE IF NOT EXISTS facts (
 );
 CREATE TABLE IF NOT EXISTS pointers (
     id INTEGER PRIMARY KEY, ts TEXT NOT NULL, text TEXT NOT NULL, exchange_id INTEGER REFERENCES exchanges(id)
+);
+CREATE TABLE IF NOT EXISTS actions (
+    id INTEGER PRIMARY KEY, ts TEXT NOT NULL, kind TEXT NOT NULL, status TEXT NOT NULL, summary TEXT NOT NULL,
+    destination TEXT, payload TEXT NOT NULL DEFAULT '{}', exchange_id INTEGER REFERENCES exchanges(id),
+    decided_at TEXT
 );
 CREATE TABLE IF NOT EXISTS feedback (
     id INTEGER PRIMARY KEY, ts TEXT NOT NULL, exchange_id INTEGER NOT NULL REFERENCES exchanges(id),
@@ -337,6 +363,27 @@ class SqliteMemory:
 
     def forget_pointer(self, pointer_id: int) -> bool:
         return self._exec("DELETE FROM pointers WHERE id = ?", (pointer_id,)).rowcount > 0
+
+    def add_action(self, kind: str, summary: str, destination: str, payload: dict, status: str = "done") -> int:
+        return self._exec(
+            "INSERT INTO actions (ts, kind, status, summary, destination, payload) VALUES (?, ?, ?, ?, ?, ?)",
+            (_now().isoformat(), kind, status, summary, destination, json.dumps(payload, ensure_ascii=False)),
+        ).lastrowid
+
+    def get_action(self, action_id: int) -> dict | None:
+        rows = self._rows("SELECT id, ts AS created_at, kind, status, summary, destination, payload, exchange_id, "
+                          "decided_at FROM actions WHERE id = ?", (action_id,))
+        return {**rows[0], "payload": json.loads(rows[0]["payload"])} if rows else None
+
+    def update_action(self, action_id: int, **fields) -> None:
+        if "payload" in fields:
+            fields["payload"] = json.dumps(fields["payload"], ensure_ascii=False)
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        self._exec(f"UPDATE actions SET {sets} WHERE id = ?", (*fields.values(), action_id))
+
+    def link_actions(self, action_ids: list[int], exchange_id: int) -> None:
+        for aid in action_ids:
+            self._exec("UPDATE actions SET exchange_id = ? WHERE id = ?", (exchange_id, aid))
 
     def add_feedback(self, exchange: dict, kind: str, correction: str | None = None) -> None:
         self._exec(

@@ -11,6 +11,7 @@ Reads (history, facts, pointers, costs) go straight from the site to Supabase.
   POST /v1/brief           {}                            -> a briefing turn
   POST /v1/review          {}                            -> a weekly-review turn (or a "nothing to review" note)
   POST /v1/feedback        {"exchange_id", "kind", "correction"?}  kind: good | bad | correction
+  POST /v1/undo            {"action_id"}                 -> reverse one thing Kazper did
 """
 
 import hmac
@@ -32,7 +33,7 @@ FEEDBACK_KINDS = {"good", "bad", "correction"}
 def _turn_json(turn) -> dict:
     return {
         "exchange_id": turn.exchange_id, "reply": turn.reply, "error": turn.error, "kind": turn.kind,
-        "notes": turn.notes, "tools": turn.tools, "usage": turn.usage,
+        "notes": turn.notes, "actions": turn.actions, "tools": turn.tools, "usage": turn.usage,
     }
 
 
@@ -73,7 +74,7 @@ def build_app(bot: "KazperBot", secret: str) -> web.Application:
         turn = await bot.review_turn(channel="web")
         if turn is None:
             return web.json_response({"reply": "No 👎, corrections or pushback in the last 7 days — nothing to review.",
-                                      "exchange_id": None, "error": None, "kind": "review", "notes": [], "tools": [],
+                                      "exchange_id": None, "error": None, "kind": "review", "notes": [], "actions": [], "tools": [],
                                       "usage": None})
         return web.json_response(_turn_json(turn))
 
@@ -93,6 +94,14 @@ def build_app(bot: "KazperBot", secret: str) -> web.Application:
             return web.json_response({"error": f"no exchange #{exchange_id}"}, status=404)
         return web.json_response({"ok": True, "note": note})
 
+    async def undo(request: web.Request):
+        try:
+            action_id = int((await body(request)).get("action_id"))
+        except (TypeError, ValueError):
+            return web.json_response({"error": "action_id must be an integer"}, status=400)
+        ok, message = await bot.undo_action(action_id)
+        return web.json_response({"ok": ok, "message": message}, status=200 if ok else 409)
+
     app = web.Application(middlewares=[auth], client_max_size=64 * 1024)
     app.add_routes([
         web.get("/health", health),
@@ -100,6 +109,7 @@ def build_app(bot: "KazperBot", secret: str) -> web.Application:
         web.post("/v1/brief", brief),
         web.post("/v1/review", review),
         web.post("/v1/feedback", feedback),
+        web.post("/v1/undo", undo),
     ])
     return app
 
