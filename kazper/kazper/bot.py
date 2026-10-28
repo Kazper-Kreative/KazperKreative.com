@@ -26,7 +26,7 @@ import re
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import discord
@@ -118,6 +118,33 @@ def _parse_ts(value: str) -> datetime:
     return ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc)
 
 
+TOOLS_SEEN = "tools.seen"
+NEW_TOOL_DAYS = 3
+ARRIVED_2026_10_28 = {"forget", "calendar_mute", "calendar_unmute", "calendar_hide", "calendar_unhide",
+                      "calendar_unsubscribe"}
+
+
+def track_new_tools(memory, names: list[str]) -> dict[str, str]:
+    """Remember when each tool first appeared (one state row in kazper_actions), and return the ones
+    added in the last few days, so the prompt can tell Kazper about them over older messages."""
+    today = datetime.now(timezone.utc).date()
+    row = memory.latest_action(TOOLS_SEEN)
+    seen: dict[str, str] = dict(row["payload"].get("tools", {})) if row else {}
+    if not seen:  # first run: these arrived today (2026-10-28); everything else was already there
+        seen = {n: ("2026-10-28" if n in ARRIVED_2026_10_28 else "2026-10-01") for n in names}
+    added = {n: today.isoformat() for n in names if n not in seen}
+    if added:
+        seen.update(added)
+        if row:
+            memory.update_action(row["id"], payload={"tools": seen})
+        else:
+            memory.add_action(TOOLS_SEEN, "Tools Kazper has, and when each appeared", "Kazper", {"tools": seen})
+    elif not row:
+        memory.add_action(TOOLS_SEEN, "Tools Kazper has, and when each appeared", "Kazper", {"tools": seen})
+    cutoff = today - timedelta(days=NEW_TOOL_DAYS)
+    return {n: d for n, d in seen.items() if n in names and date.fromisoformat(d) >= cutoff}
+
+
 async def build_toolbox(cfg: Config, memory) -> Toolbox:
     box = Toolbox()
     if cfg.google_client_id and cfg.google_client_secret and cfg.google_refresh_token:
@@ -163,6 +190,10 @@ class KazperBot(discord.Client):
     async def setup_hook(self):
         tools = await build_toolbox(self.cfg, self.memory)
         self.brain = Brain(self.cfg, self.memory, tools)
+        try:
+            self.brain.new_tools = await asyncio.to_thread(track_new_tools, self.memory, list(tools.tools))
+        except Exception:
+            log.warning("Couldn't work out which tools are new", exc_info=True)
         log.info("Memory: %s. Senses: %s", self.memory.backend, "; ".join(tools.senses) or "none")
         tz = ZoneInfo(self.cfg.timezone)
         if self.cfg.briefing_time:
