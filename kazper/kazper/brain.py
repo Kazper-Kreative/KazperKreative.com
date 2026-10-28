@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 
 from openai import AsyncOpenAI
 
+from . import presence
 from .config import Config
 from .tools import Toolbox
 
@@ -159,6 +160,7 @@ class Brain:
             kwargs = {"model": self.cfg.llm_model, "messages": messages, "extra_body": extra_body}
             if tools:
                 kwargs["tools"] = tools
+            presence.emit("thinking")
             completion = await self.client.chat.completions.create(**kwargs)
             usage.add(completion)
             msg = completion.choices[0].message
@@ -174,6 +176,8 @@ class Brain:
                     for c in msg.tool_calls
                 ],
             })
+            for c in msg.tool_calls:
+                presence.emit("tool", c.function.name)
             results = await asyncio.gather(
                 *(self.tools.run(c.function.name, c.function.arguments) for c in msg.tool_calls)
             )

@@ -175,3 +175,19 @@ alter table public.kazper_actions enable row level security;
 drop policy if exists "owner reads" on public.kazper_actions;
 create policy "owner reads" on public.kazper_actions for select using (public.is_kazper_owner());
 grant select on public.kazper_actions to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 2026-10-28: live activity for the app's Presence tab. Safe to re-run.
+-- The runtime appends one row per step of a turn (heard, thinking, tool, speaking,
+-- error) as it happens and prunes rows older than two days.
+create table if not exists public.kazper_activity (
+  id          bigint generated always as identity primary key,
+  created_at  timestamptz not null default now(),
+  kind        text not null check (kind in ('heard', 'thinking', 'tool', 'speaking', 'error')),
+  text        text not null default ''      -- what you said, the tool's name, or the start of his reply
+);
+create index if not exists kazper_activity_created_at_idx on public.kazper_activity (created_at);
+alter table public.kazper_activity enable row level security;
+drop policy if exists "owner reads" on public.kazper_activity;
+create policy "owner reads" on public.kazper_activity for select using (public.is_kazper_owner());
+grant select on public.kazper_activity to authenticated;
