@@ -9,7 +9,7 @@ you, which Discord forbids.
 from . import Tool, Toolbox, schema
 
 
-def register(box: Toolbox, memory) -> None:
+def register(box: Toolbox, memory, allowed_servers: int = 0) -> None:
     def discord_recent(hours: float = 24) -> list[dict]:
         return memory.recent_events("discord", hours)
 
@@ -20,4 +20,5 @@ def register(box: Toolbox, memory) -> None:
         schema({"hours": {"type": "number", "description": "Look-back window in hours (default 24)."}}),
         discord_recent,
     ))
-    box.senses.append("Discord mentions/keywords in Kazper's servers")
+    box.senses.append(f"Discord mentions/keywords in {allowed_servers} allowed server(s)" if allowed_servers
+                      else "Discord watch: off (no allowed servers)")

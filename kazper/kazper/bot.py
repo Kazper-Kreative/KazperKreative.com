@@ -23,6 +23,8 @@ import asyncio
 import json
 import logging
 import re
+import time
+from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -39,6 +41,7 @@ from .tools import Toolbox, cryptidkeep, deadlines, discord_watch, google, railw
 log = logging.getLogger("kazper")
 
 DISCORD_LIMIT = 1900  # Discord caps messages at 2000 chars; leave headroom
+NOTICE_CAP_PER_HOUR = 10  # per author: someone spamming mentions can't flood Kazper's memory
 GOOD, BAD, TRASH, UNDO = "👍", "👎", "🗑️", "↩️"
 DATASET_GOAL = 500  # rated examples before a LoRA fine-tune is worth it
 
@@ -125,7 +128,7 @@ async def build_toolbox(cfg: Config, memory) -> Toolbox:
         await cryptidkeep.register(box, cfg.cryptidkeep_url, cfg.cryptidkeep_token)
     if cfg.railway_api_token:
         railway.register(box, railway.Railway(cfg.railway_api_token))
-    discord_watch.register(box, memory)
+    discord_watch.register(box, memory, len(cfg.discord_allowed_guilds))
     remember.register(box, memory)
     recall.register(box, memory)
     return box
@@ -133,10 +136,18 @@ async def build_toolbox(cfg: Config, memory) -> Toolbox:
 
 class KazperBot(discord.Client):
     def __init__(self, cfg: Config):
-        intents = discord.Intents.default()
+        # Only the events Kazper uses. No member lists, presences or voice.
+        intents = discord.Intents.none()
+        intents.guilds = True
+        intents.guild_messages = True
+        intents.dm_messages = True
+        intents.guild_reactions = True
+        intents.dm_reactions = True
         intents.message_content = True
-        super().__init__(intents=intents)
+        # Nothing Kazper sends can ping anyone (@everyone, roles, users), whatever the model writes.
+        super().__init__(intents=intents, allowed_mentions=discord.AllowedMentions.none())
         self.cfg = cfg
+        self.notice_log: dict[int, deque] = defaultdict(deque)  # author id -> recent notice times
         self.memory = open_memory(cfg)
         self.brain: Brain | None = None
         self.note_messages: dict[int, int] = {}  # Discord message id of a 📝 note -> fact id (for 🗑️)
@@ -163,6 +174,22 @@ class KazperBot(discord.Client):
 
     async def on_ready(self):
         log.info("Kazper is online as %s (id %s); owner id %s", self.user, self.user.id, self.cfg.owner_id)
+        for guild in list(self.guilds):
+            await self.check_guild(guild)
+
+    async def on_guild_join(self, guild: discord.Guild):
+        await self.check_guild(guild)
+
+    async def check_guild(self, guild: discord.Guild):
+        """Stay only in servers on DISCORD_ALLOWED_GUILDS. With no list set, stay but watch nothing."""
+        allowed = self.cfg.discord_allowed_guilds
+        if guild.id in allowed:
+            log.info("In server %s (%s): allowed, watching", guild.name, guild.id)
+        elif allowed:
+            log.warning("Leaving server %s (%s): not in DISCORD_ALLOWED_GUILDS", guild.name, guild.id)
+            await guild.leave()
+        else:
+            log.warning("In server %s (%s), not watching: set DISCORD_ALLOWED_GUILDS to allow it", guild.name, guild.id)
 
     # --- heartbeat --------------------------------------------------------
 
@@ -338,12 +365,26 @@ class KazperBot(discord.Client):
             self.note_messages[sent.id] = note["id"]
 
     async def notice(self, message: discord.Message):
-        """Discord sense: record (never answer) mentions of the owner and keyword hits."""
+        """Discord sense: record (never answer) mentions of the owner and keyword hits.
+
+        Other people's words only reach Kazper this way, so it's narrow: allowed servers only,
+        humans only, and a per-person hourly cap. What's recorded is shown to the model as untrusted.
+        """
+        if message.guild.id not in self.cfg.discord_allowed_guilds:
+            return
+        if message.author.bot or message.webhook_id is not None:
+            return
         mentioned = any(u.id == self.cfg.owner_id for u in message.mentions)
         content = message.content.lower()
         keyword = next((k for k in self.cfg.discord_watch_keywords if k in content), None)
         if not (mentioned or keyword):
             return
+        recent, now = self.notice_log[message.author.id], time.monotonic()
+        while recent and now - recent[0] > 3600:
+            recent.popleft()
+        if len(recent) >= NOTICE_CAP_PER_HOUR:
+            return
+        recent.append(now)
         reason = "mentioned you" if mentioned else f"keyword '{keyword}'"
         summary = f"[{message.guild} #{message.channel}] {message.author.display_name} ({reason}): {message.content[:500]}"
         data = {"jump_url": message.jump_url, "guild": str(message.guild), "channel": str(message.channel)}

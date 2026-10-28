@@ -109,10 +109,16 @@ python -m kazper
    `search:read`, `users:read`.
 3. **Install to Workspace**, then copy the **User OAuth Token** (`xoxp-…`) into `SLACK_USER_TOKEN`.
 
-### Discord sense
-Kazper flags messages that @mention you or contain `DISCORD_WATCH_KEYWORDS`, but only in servers
-its bot has joined. Invite it to the servers you want watched (Developer Portal → OAuth2 → URL
-Generator → `bot` scope, *Read Message History* permission). **Message Content Intent** must stay on.
+### Discord sense (and who can touch Kazper)
+Only your account (`OWNER_DISCORD_ID`) can talk to Kazper or use his reactions; everyone else's DMs,
+commands and reactions are ignored. Replies go only to your DMs, and nothing he sends can ping anyone.
+
+Other people's words reach him only through this sense: in servers listed in `DISCORD_ALLOWED_GUILDS`,
+messages that @mention you or contain `DISCORD_WATCH_KEYWORDS` are recorded (humans only, at most 10 per
+person per hour) and shown to the model as untrusted data. With the allowlist set, Kazper **leaves any
+other server**, including ones he's invited to later. Unset, he stays put but records nothing.
+**Message Content Intent** must stay on. In the Developer Portal, keep **Public Bot** off, and leave
+**Server Members** and **Presence** intents off.
 
 ### CryptidKeep
 Create a token for Kazper in CryptidKeep and set `CRYPTIDKEEP_TOKEN`. Kazper connects as an MCP
