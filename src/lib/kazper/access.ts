@@ -2,6 +2,7 @@
 // kazper_owners table (seeded by SQL only), deliberately separate from billing
 // staff. RLS on the kazper_* tables uses the same is_kazper_owner() check, so
 // the page and the database agree on who's allowed.
+import { cache } from "react";
 import { createSupabaseServer } from "@/lib/supabase/server";
 
 export interface KazperOwner {
@@ -10,7 +11,8 @@ export interface KazperOwner {
   isOwner: boolean;
 }
 
-export async function getKazperOwner(): Promise<KazperOwner> {
+// cache(): the layout and a page both ask during one request; Supabase is only asked once.
+export const getKazperOwner = cache(async (): Promise<KazperOwner> => {
   const sb = await createSupabaseServer();
   const {
     data: { user },
@@ -24,4 +26,4 @@ export async function getKazperOwner(): Promise<KazperOwner> {
     .maybeSingle();
 
   return { userId: user.id, email: user.email ?? null, isOwner: !!data };
-}
+});
