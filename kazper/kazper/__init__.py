@@ -1,1 +1,0 @@
-"""Kazper — an AI you."""

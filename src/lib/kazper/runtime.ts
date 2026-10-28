@@ -1,4 +1,4 @@
-// Server-only client for the Kazper runtime on Railway (kazper/kazper/api.py).
+// Server-only client for the Kazper runtime on Railway (kazper/kazper/api.py in the private Kazper-Kreative/Dyvynyty repo).
 // The browser never talks to Railway: /api/kazper/* checks the owner session,
 // then calls the runtime with the shared secret.
 
