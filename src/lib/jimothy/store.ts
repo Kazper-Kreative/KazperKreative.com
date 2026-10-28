@@ -42,7 +42,12 @@ export async function wallet(steamId: string) {
   };
 }
 
-export async function createOrder(steamId: string, pack: RacoinPack, price: PackPrice): Promise<string> {
+export async function createOrder(
+  steamId: string,
+  pack: RacoinPack,
+  price: PackPrice,
+  sandbox: boolean
+): Promise<string> {
   const { data, error } = await db()
     .from("jimothy_orders")
     .insert({
@@ -52,7 +57,7 @@ export async function createOrder(steamId: string, pack: RacoinPack, price: Pack
       racoins: pack.racoins,
       amount_cents: price.amount,
       currency: price.currency,
-      sandbox: isSandbox(),
+      sandbox,
     })
     .select("order_id")
     .single();
@@ -63,10 +68,10 @@ export async function createOrder(steamId: string, pack: RacoinPack, price: Pack
 export async function findOrder(orderId: string) {
   const { data } = await db()
     .from("jimothy_orders")
-    .select("order_id,steam_id,status")
+    .select("order_id,steam_id,status,sandbox")
     .eq("order_id", orderId)
     .maybeSingle();
-  return data as { order_id: number; steam_id: string; status: string } | null;
+  return data as { order_id: number; steam_id: string; status: string; sandbox: boolean } | null;
 }
 
 export async function markOrderFailed(orderId: string) {

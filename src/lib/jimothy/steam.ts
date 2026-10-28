@@ -4,7 +4,10 @@
 //   STEAM_PUBLISHER_KEY  the Publisher Web API key (Microtransactions + General)
 //   STEAM_APP_ID         5082200 unless set
 //   STEAM_MTX_SANDBOX    purchases go to ISteamMicroTxnSandbox -- no money
-//                        moves -- unless this is exactly "0"
+//                        moves -- unless this is exactly "0", or it is past
+//                        the go-live time
+//   STEAM_MTX_LIVE_AT    the go-live time (ISO 8601); STORE_LIVE_AT unless set.
+//                        Unreadable means the sandbox, never live by mistake.
 
 const PARTNER = "https://partner.steam-api.com";
 
@@ -16,8 +19,20 @@ export function steamAppId(): string {
   return process.env.STEAM_APP_ID || "5082200";
 }
 
-export function isSandbox(): boolean {
-  return process.env.STEAM_MTX_SANDBOX !== "0";
+/** Release morning: Friday 30 Oct 2026, 8:00 ET (Kazper, 28 Oct). Real money
+ *  from here on, with nobody having to flip anything. Pre-launch rows in the
+ *  database are marked creator gifts against the same moment
+ *  (supabase/jimothy_creator_gifts_2026-10-28.sql); move both together. */
+export const STORE_LIVE_AT = "2026-10-30T12:00:00Z";
+
+export function liveAt(): number {
+  return Date.parse(process.env.STEAM_MTX_LIVE_AT || STORE_LIVE_AT);
+}
+
+export function isSandbox(now: number = Date.now()): boolean {
+  if (process.env.STEAM_MTX_SANDBOX === "0") return false;
+  const at = liveAt();
+  return Number.isNaN(at) || now < at;
 }
 
 function publisherKey(): string {
@@ -77,8 +92,8 @@ async function call<T>(
   return r.params;
 }
 
-function microTxn(): string {
-  return isSandbox() ? "ISteamMicroTxnSandbox" : "ISteamMicroTxn";
+function microTxn(sandbox: boolean = isSandbox()): string {
+  return sandbox ? "ISteamMicroTxnSandbox" : "ISteamMicroTxn";
 }
 
 /** Verify a GetAuthTicketForWebApi ticket (hex) and return whose it is. */
@@ -127,9 +142,10 @@ export async function initTxn(
   orderId: string,
   steamId: string,
   item: InitTxnItem,
-  language: string
+  language: string,
+  sandbox: boolean
 ): Promise<{ orderid: string; transid: string }> {
-  return call(microTxn(), "InitTxn", "v3", {
+  return call(microTxn(sandbox), "InitTxn", "v3", {
     orderid: orderId,
     steamid: steamId,
     appid: steamAppId(),
@@ -144,16 +160,22 @@ export async function initTxn(
   }, true);
 }
 
-export async function finalizeTxn(orderId: string): Promise<{ orderid: string; transid: string }> {
-  return call(microTxn(), "FinalizeTxn", "v2", { orderid: orderId, appid: steamAppId() }, true);
+// An order is finished on the API it was started on: one started in the
+// sandbox just before going live is unknown to the live API.
+export async function finalizeTxn(
+  orderId: string,
+  sandbox: boolean
+): Promise<{ orderid: string; transid: string }> {
+  return call(microTxn(sandbox), "FinalizeTxn", "v2", { orderid: orderId, appid: steamAppId() }, true);
 }
 
 /** What Steam knows about an order: used when finalize fails because it
  *  already went through (a retry after a dropped response). */
 export async function queryTxn(
-  orderId: string
+  orderId: string,
+  sandbox: boolean
 ): Promise<{ orderid: string; transid: string; steamid: string; status: string }> {
-  return call(microTxn(), "QueryTxn", "v3", { orderid: orderId, appid: steamAppId() }, false);
+  return call(microTxn(sandbox), "QueryTxn", "v3", { orderid: orderId, appid: steamAppId() }, false);
 }
 
 /** Steam's own languages for the purchase dialog (ISO 639-1, the ones it takes). */
