@@ -109,16 +109,16 @@ python -m kazper
    `search:read`, `users:read`.
 3. **Install to Workspace**, then copy the **User OAuth Token** (`xoxp-…`) into `SLACK_USER_TOKEN`.
 
-### Discord sense (and who can touch Kazper)
-Only your account (`OWNER_DISCORD_ID`) can talk to Kazper or use his reactions; everyone else's DMs,
-commands and reactions are ignored. Replies go only to your DMs, and nothing he sends can ping anyone.
+### Who can reach Kazper on Discord: only you
+Only your account (`OWNER_DISCORD_ID`) can talk to Kazper or use his reactions. Everyone else's messages,
+commands and reactions are dropped unread, his replies go only to your DMs, and nothing he sends can ping
+anyone. To make him unreachable rather than just deaf, give him one private server that only you are in
+and set `DISCORD_ALLOWED_GUILDS` to it: Discord only lets people DM a bot they share a server with, and
+he leaves every other server, including future invites. In the Developer Portal keep **Public Bot** off,
+**User Install** unticked, and the **Server Members** / **Presence** intents off (**Message Content** on).
 
-Other people's words reach him only through this sense: in servers listed in `DISCORD_ALLOWED_GUILDS`,
-messages that @mention you or contain `DISCORD_WATCH_KEYWORDS` are recorded (humans only, at most 10 per
-person per hour) and shown to the model as untrusted data. With the allowlist set, Kazper **leaves any
-other server**, including ones he's invited to later. Unset, he stays put but records nothing.
-**Message Content Intent** must stay on. In the Developer Portal, keep **Public Bot** off, and leave
-**Server Members** and **Presence** intents off.
+`DISCORD_WATCH_OTHERS=on` is an opt-in exception: in allowed servers he'd record (never answer) messages
+that mention you or contain `DISCORD_WATCH_KEYWORDS`, humans only, capped, shown to him as untrusted.
 
 ### CryptidKeep
 Create a token for Kazper in CryptidKeep and set `CRYPTIDKEEP_TOKEN`. Kazper connects as an MCP

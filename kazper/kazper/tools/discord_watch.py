@@ -21,4 +21,4 @@ def register(box: Toolbox, memory, allowed_servers: int = 0) -> None:
         discord_recent,
     ))
     box.senses.append(f"Discord mentions/keywords in {allowed_servers} allowed server(s)" if allowed_servers
-                      else "Discord watch: off (no allowed servers)")
+                      else "Discord watch: off (only you can reach Kazper)")

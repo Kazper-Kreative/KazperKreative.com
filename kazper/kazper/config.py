@@ -54,8 +54,11 @@ class Config:
     google_refresh_token: str
     slack_user_token: str
     discord_watch_keywords: tuple[str, ...]
-    # Servers Kazper may be in. Empty = he records nothing from anyone else, anywhere.
+    # Servers Kazper may be in; he leaves any other. Empty = he stays put (and still ignores everyone else).
     discord_allowed_guilds: frozenset[int]
+    # Off by default: no one but the owner can reach Kazper in any way. On = record others' messages
+    # that mention the owner / watch keywords, in allowed servers only.
+    discord_watch_others: bool
     cryptidkeep_url: str
     cryptidkeep_token: str
     # web app door (kazper/api.py); blank = Discord only
@@ -116,6 +119,7 @@ def load_config() -> Config:
         google_refresh_token=_opt("GOOGLE_REFRESH_TOKEN"),
         slack_user_token=_opt("SLACK_USER_TOKEN"),
         discord_watch_keywords=keywords,
+        discord_watch_others=_opt("DISCORD_WATCH_OTHERS").lower() in ("on", "true", "1", "yes"),
         discord_allowed_guilds=frozenset(
             int(g) for g in _opt("DISCORD_ALLOWED_GUILDS").replace(" ", "").split(",") if g.isdigit()
         ),

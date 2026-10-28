@@ -128,7 +128,7 @@ async def build_toolbox(cfg: Config, memory) -> Toolbox:
         await cryptidkeep.register(box, cfg.cryptidkeep_url, cfg.cryptidkeep_token)
     if cfg.railway_api_token:
         railway.register(box, railway.Railway(cfg.railway_api_token))
-    discord_watch.register(box, memory, len(cfg.discord_allowed_guilds))
+    discord_watch.register(box, memory, len(cfg.discord_allowed_guilds) if cfg.discord_watch_others else 0)
     remember.register(box, memory)
     recall.register(box, memory)
     return box
@@ -189,7 +189,9 @@ class KazperBot(discord.Client):
             log.warning("Leaving server %s (%s): not in DISCORD_ALLOWED_GUILDS", guild.name, guild.id)
             await guild.leave()
         else:
-            log.warning("In server %s (%s), not watching: set DISCORD_ALLOWED_GUILDS to allow it", guild.name, guild.id)
+            log.warning("In server %s (%s) with %s members: its members can DM Kazper (he ignores them). "
+                        "Set DISCORD_ALLOWED_GUILDS to a private server to make him unreachable.",
+                        guild.name, guild.id, guild.member_count)
 
     # --- heartbeat --------------------------------------------------------
 
@@ -244,7 +246,9 @@ class KazperBot(discord.Client):
         if message.author.id == self.user.id:
             return
         if message.author.id != self.cfg.owner_id:
-            if message.guild is not None:
+            # Nobody else can talk to Kazper. Their messages are dropped unread unless you opted in
+            # to the watch (DISCORD_WATCH_OTHERS=on), which only records, never answers.
+            if message.guild is not None and self.cfg.discord_watch_others:
                 await self.notice(message)
             return
         # The owner: DMs always; in servers only when they @mention Kazper.
