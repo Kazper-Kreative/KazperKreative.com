@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "No native APIs are exposed to the page. Kazper's window shows a remote site, so it gets no IPC access at all; tray, hotkey and autostart are driven from Rust only.",
+  "windows": [],
+  "permissions": []
+}
