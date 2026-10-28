@@ -1,7 +1,9 @@
-"""Kazper's own calendar: "Kazper · Deadlines", one view of every deadline.
+"""Kazper's own calendar (first named "Kazper · Deadlines"), one view of every deadline.
 
 Kazper creates this calendar in your Google account and manages it himself:
-adding, moving and removing deadlines without asking (you chose that). Google's
+adding, moving and removing deadlines, and renaming or re-describing the
+calendar itself, without asking (you chose that). It's tracked by its Google
+id (logged as a calendar.create action), so a rename never loses it. Google's
 calendar.app.created permission means he can only ever write to calendars he
 created, so your own calendars are out of reach no matter what. Every change
 is logged in kazper_actions with what it replaced, reported to you (Discord +
@@ -19,7 +21,7 @@ import httpx
 from . import Tool, Toolbox, schema
 from .google import CALENDAR_API, Google
 
-CALENDAR_NAME = "Kazper · Deadlines"
+CALENDAR_NAME = "Kazper · Deadlines"  # the name it gets at creation; Kazper may rename it
 # Google event colour ids: one per area of your life, so the calendar reads at a glance.
 AREAS = {
     "SensorOps": "9",        # blueberry
@@ -70,22 +72,32 @@ class Deadlines:
         self.memory = memory
         self.timezone = timezone
         self._calendar_id: str | None = None
+        self.name = CALENDAR_NAME
 
     # --- plumbing -------------------------------------------------------
 
     def calendar_id(self) -> str:
+        """His calendar's Google id: remembered from when he created it, so renaming can't lose it."""
         if self._calendar_id:
             return self._calendar_id
-        for cal in self.google.calendars():
-            if cal.get("summary") == CALENDAR_NAME and cal.get("accessRole") == "owner":
-                self._calendar_id = cal["id"]
-                return self._calendar_id
-        created = self.google._request("POST", f"{CALENDAR_API}/calendars", json={
-            "summary": CALENDAR_NAME,
-            "description": "Every deadline across SensorOps, Nexxverse, SoB, Kazper Kreative and life, kept by Kazper.",
-            "timeZone": self.timezone,
-        })
-        self._calendar_id = created["id"]
+        known = self.memory.latest_action("calendar.create")
+        cals = {c["id"]: c for c in self.google.calendars()}
+        if known and known["payload"].get("calendar_id") in cals:
+            cal = cals[known["payload"]["calendar_id"]]
+        else:
+            # Not on record (first run, or it was deleted): adopt one by its original name, else create it.
+            cal = next((c for c in cals.values()
+                        if c.get("summary") == CALENDAR_NAME and c.get("accessRole") == "owner"), None)
+            if cal is None:
+                cal = self.google._request("POST", f"{CALENDAR_API}/calendars", json={
+                    "summary": CALENDAR_NAME,
+                    "description": "Every deadline across SensorOps, Nexxverse, SoB, Kazper Kreative and life, "
+                                   "kept by Kazper.",
+                    "timeZone": self.timezone,
+                })
+            self.memory.add_action("calendar.create", f"Set up his calendar '{cal['summary']}'",
+                                   cal["summary"], {"calendar_id": cal["id"]})
+        self._calendar_id, self.name = cal["id"], cal.get("summary") or CALENDAR_NAME
         return self._calendar_id
 
     def _events_url(self, event_id: str | None = None) -> str:
@@ -107,7 +119,7 @@ class Deadlines:
 
     def _record(self, kind: str, summary: str, payload: dict) -> str:
         turn = done.get()
-        action_id = self.memory.add_action(kind, summary, CALENDAR_NAME, payload)
+        action_id = self.memory.add_action(kind, summary, self.name, payload)
         if turn is not None:
             turn.append({"id": action_id, "kind": kind, "summary": summary})
         return f"done; logged as action #{action_id} (I'll be told and can undo it)"
@@ -163,6 +175,31 @@ class Deadlines:
             return self._record("deadline.remove", f"Removed {before.get('summary')}",
                                 {"event_id": event_id, "before": {k: before.get(k) for k in SNAPSHOT_FIELDS}})
 
+    def settings(self, name: str | None = None, description: str | None = None) -> str:
+        """Rename or re-describe his calendar."""
+        changes = {}
+        if name is not None:
+            name = " ".join(name.split())[:100]
+            if not name:
+                raise ValueError("name can't be empty")
+            changes["summary"] = name
+        if description is not None:
+            changes["description"] = description[:1000]
+        if not changes:
+            raise ValueError("give a new name and/or description")
+        with _lock:
+            self._check_turn()
+            url = f"{CALENDAR_API}/calendars/{quote(self.calendar_id(), safe='')}"
+            before = self.google._request("GET", url)
+            after = self.google._request("PATCH", url, json=changes)
+            self.name = after.get("summary") or self.name
+            what = f"Renamed his calendar to '{self.name}'" if name else f"Updated the description of '{self.name}'"
+            return self._record("calendar.update", what, {
+                "calendar_id": self._calendar_id,
+                "before": {k: before.get(k) for k in changes},
+                "after": {k: after.get(k) for k in changes},
+            })
+
     def list(self, days_ahead: int = 60, days_back: int = 7) -> list[dict]:
         today = datetime.now(ZoneInfo(self.timezone)).replace(hour=0, minute=0, second=0, microsecond=0)
         data = self.google._get(
@@ -185,6 +222,11 @@ class Deadlines:
             if kind == "deadline.update":
                 self.google._request("PATCH", self._events_url(event_id), json=payload["before"])
                 return "restored the previous version"
+            if kind == "calendar.update":
+                url = f"{CALENDAR_API}/calendars/{quote(payload['calendar_id'], safe='')}"
+                restored = self.google._request("PATCH", url, json=payload["before"])
+                self.name = restored.get("summary") or self.name
+                return "changed it back"
             if kind == "deadline.remove":
                 restored = self.google._request("POST", self._events_url(), json=payload["before"])
                 self.memory.update_action(action["id"], payload={**payload, "event_id": restored["id"]})
@@ -200,7 +242,7 @@ def register(box: Toolbox, deadlines: Deadlines) -> None:
     areas = ", ".join(AREAS)
     box.add(Tool(
         "deadline_add",
-        f"Put a deadline on your own calendar '{CALENDAR_NAME}' (the single view of my deadlines). Do this "
+        "Put a deadline on your own deadlines calendar (the single view of my deadlines). Do this "
         "yourself, without asking, whenever I mention a deadline or you spot a real one in my mail, tasks or "
         "messages, but check deadline_list first so you don't add duplicates. I'm told about every change "
         f"and can undo it. area is one of: {areas}.",
@@ -215,7 +257,7 @@ def register(box: Toolbox, deadlines: Deadlines) -> None:
     ))
     box.add(Tool(
         "deadline_update",
-        f"Change a deadline on '{CALENDAR_NAME}' (moved date, renamed, different area, more notes). "
+        "Change a deadline on your deadlines calendar (moved date, renamed, different area, more notes). "
         "event_id comes from deadline_list.",
         schema({
             "event_id": {"type": "string"},
@@ -228,19 +270,30 @@ def register(box: Toolbox, deadlines: Deadlines) -> None:
     ))
     box.add(Tool(
         "deadline_remove",
-        f"Remove a deadline from '{CALENDAR_NAME}' when it's cancelled or was added by mistake. Leave done "
+        "Remove a deadline from your deadlines calendar when it's cancelled or was added by mistake. Leave done "
         "deadlines in place: they're the record.",
         schema({"event_id": {"type": "string"}}, ["event_id"]),
         deadlines.remove,
     ))
     box.add(Tool(
         "deadline_list",
-        f"List deadlines on '{CALENDAR_NAME}' with their event ids.",
+        "List deadlines on your deadlines calendar with their event ids.",
         schema({
             "days_ahead": {"type": "integer", "description": "Default 60."},
             "days_back": {"type": "integer", "description": "Default 7."},
         }),
         deadlines.list,
     ))
+    box.add(Tool(
+        "deadline_calendar_settings",
+        "Rename your deadlines calendar or change its description. It's yours; do this whenever it helps "
+        "(I'm told and can undo it). It's tracked by id, so renaming never loses it.",
+        schema({
+            "name": {"type": "string", "description": "New calendar name."},
+            "description": {"type": "string", "description": "New calendar description (plain text)."},
+        }),
+        deadlines.settings,
+    ))
     box.undo["deadline"] = deadlines.undo
-    box.senses.append(f"Writes: his own '{CALENDAR_NAME}' calendar (acts freely, you're told, undoable)")
+    box.undo["calendar"] = deadlines.undo
+    box.senses.append("Writes: his own deadlines calendar, events and settings (acts freely, you're told, undoable)")

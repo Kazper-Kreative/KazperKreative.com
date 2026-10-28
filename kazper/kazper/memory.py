@@ -174,6 +174,10 @@ class SupabaseMemory:
         rows = self._get("kazper_actions", select=ACTION_FIELDS, id=f"eq.{action_id}")
         return rows[0] if rows else None
 
+    def latest_action(self, kind: str) -> dict | None:
+        rows = self._get("kazper_actions", select=ACTION_FIELDS, kind=f"eq.{kind}", order="id.desc", limit=1)
+        return rows[0] if rows else None
+
     def update_action(self, action_id: int, **fields) -> None:
         self.http.patch("/kazper_actions", params={"id": f"eq.{action_id}"}, json=fields).raise_for_status()
 
@@ -374,6 +378,10 @@ class SqliteMemory:
         rows = self._rows("SELECT id, ts AS created_at, kind, status, summary, destination, payload, exchange_id, "
                           "decided_at FROM actions WHERE id = ?", (action_id,))
         return {**rows[0], "payload": json.loads(rows[0]["payload"])} if rows else None
+
+    def latest_action(self, kind: str) -> dict | None:
+        rows = self._rows("SELECT id FROM actions WHERE kind = ? ORDER BY id DESC LIMIT 1", (kind,))
+        return self.get_action(rows[0]["id"]) if rows else None
 
     def update_action(self, action_id: int, **fields) -> None:
         if "payload" in fields:
