@@ -57,4 +57,5 @@ mason.jpg
 /kazper/data/
 __pycache__/
 # Kazper's real identity is personal; only the .example template is public
+# (Kazper moved to the private Dyvynyty repo; these keep any local leftovers out of git.)
 /kazper/identity/kazper_identity.md
