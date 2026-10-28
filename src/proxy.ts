@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isEntitled } from "@/lib/lab/access";
+import { KAZPER_SUPABASE_ANON_KEY, KAZPER_SUPABASE_URL } from "@/lib/kazper/supabase";
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -12,23 +13,30 @@ const SUPABASE_ANON_KEY =
 // Refreshes the Supabase session cookie on every matched request and HARD-GATES
 // the Lab game bundle: requests to /lab-assets/* are 401'd unless the user has a
 // valid Lab entitlement. The static files are never served to the unentitled.
+// /kazper signs in against Kazper's own project (Kazper Mind), not the site's.
 export async function proxy(req: NextRequest) {
   let res = NextResponse.next({ request: req });
+  const path = req.nextUrl.pathname;
+  const kazper = path.startsWith("/kazper") || path.startsWith("/api/kazper");
 
-  const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    cookies: {
-      getAll() {
-        return req.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
-        res = NextResponse.next({ request: req });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          res.cookies.set(name, value, options)
-        );
+  const supabase = createServerClient(
+    kazper ? KAZPER_SUPABASE_URL : SUPABASE_URL,
+    kazper ? KAZPER_SUPABASE_ANON_KEY : SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
+          res = NextResponse.next({ request: req });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options)
+          );
+        },
       },
     },
-  });
+  );
 
   // IMPORTANT: getUser() refreshes the session and must run for cookie rotation.
   const {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { getSupabase } from "@/lib/supabase/client";
+import { getKazperSupabase } from "@/lib/kazper/supabase";
 
 const TABS = [
   { href: "/kazper", label: "Chat", icon: "💬" },
@@ -21,7 +21,7 @@ export default function KazperShell({ children }: { children: React.ReactNode })
 
   // After sign-out the server layout re-renders as the login screen.
   const signOut = async () => {
-    const sb = getSupabase();
+    const sb = getKazperSupabase();
     if (sb) await sb.auth.signOut();
     router.replace("/kazper");
     router.refresh();

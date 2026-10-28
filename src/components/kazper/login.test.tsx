@@ -6,7 +6,7 @@ const refresh = jest.fn();
 jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 const signInWithOtp = jest.fn();
 const verifyOtp = jest.fn();
-jest.mock("@/lib/supabase/client", () => ({ getSupabase: () => ({ auth: { signInWithOtp, verifyOtp } }) }));
+jest.mock("@/lib/kazper/supabase", () => ({ getKazperSupabase: () => ({ auth: { signInWithOtp, verifyOtp } }) }));
 
 beforeEach(() => jest.clearAllMocks());
 

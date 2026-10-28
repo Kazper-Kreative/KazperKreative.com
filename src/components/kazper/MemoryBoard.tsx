@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getSupabase } from "@/lib/supabase/client";
+import { getKazperSupabase } from "@/lib/kazper/supabase";
 import type { Fact, Pointer } from "@/lib/kazper/data";
 
 type Table = "kazper_facts" | "kazper_pointers";
@@ -31,7 +31,7 @@ function Row({
     const next = value.trim();
     if (!next || next === text) return setEditing(false);
     setBusy(true);
-    const { error } = await getSupabase()!.from(table).update({ text: next }).eq("id", id);
+    const { error } = await getKazperSupabase()!.from(table).update({ text: next }).eq("id", id);
     setBusy(false);
     setEditing(false);
     onDone(error ? `Couldn't save: ${error.message}` : undefined);
@@ -40,7 +40,7 @@ function Row({
   const remove = async () => {
     if (!window.confirm(`Delete ${prefix}${id}? Kazper will stop knowing this.`)) return;
     setBusy(true);
-    const { error } = await getSupabase()!.from(table).delete().eq("id", id);
+    const { error } = await getKazperSupabase()!.from(table).delete().eq("id", id);
     setBusy(false);
     onDone(error ? `Couldn't delete: ${error.message}` : undefined);
   };
@@ -87,7 +87,7 @@ export default function MemoryBoard({ facts, pointers }: { facts: Fact[]; pointe
   const add = async () => {
     const text = newFact.trim();
     if (!text) return;
-    const { error } = await getSupabase()!.from("kazper_facts").insert({ text, source: "owner" });
+    const { error } = await getKazperSupabase()!.from("kazper_facts").insert({ text, source: "owner" });
     if (!error) setNewFact("");
     done(error ? `Couldn't add: ${error.message}` : undefined);
   };

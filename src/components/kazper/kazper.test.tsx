@@ -6,8 +6,8 @@ import type { Exchange } from "@/lib/kazper/data";
 
 jest.mock("next/navigation", () => ({ useRouter: () => ({ refresh: jest.fn() }) }));
 const deleteEq = jest.fn().mockResolvedValue({ error: null });
-jest.mock("@/lib/supabase/client", () => ({
-  getSupabase: () => ({ from: () => ({ delete: () => ({ eq: deleteEq }) }) }),
+jest.mock("@/lib/kazper/supabase", () => ({
+  getKazperSupabase: () => ({ from: () => ({ delete: () => ({ eq: deleteEq }) }) }),
 }));
 
 beforeAll(() => {
