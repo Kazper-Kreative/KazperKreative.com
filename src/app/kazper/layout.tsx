@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import PortalLogin from "@/components/billing/PortalLogin";
+import KazperLogin from "@/components/kazper/KazperLogin";
 import KazperShell from "@/components/kazper/KazperShell";
 import { getKazperOwner } from "@/lib/kazper/access";
 
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export default async function KazperLayout({ children }: { children: React.ReactNode }) {
   const { userId, isOwner } = await getKazperOwner();
   if (!userId) {
-    return <PortalLogin next="/kazper" title="Kazper" blurb="Owner sign-in. We'll email you a link." />;
+    return <KazperLogin />;
   }
   if (!isOwner) {
     return (
