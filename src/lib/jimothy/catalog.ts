@@ -51,7 +51,11 @@ export const RACOIN_PACKS: readonly RacoinPack[] = [
  * increment rules by localPrice(); one that breaks them is ignored and that
  * pack falls back to the computed price.
  */
-export const LOCAL_PRICES: Readonly<Record<string, readonly [number, number, number]>> = {};
+export const LOCAL_PRICES: Readonly<Record<string, readonly [number, number, number]>> = {
+  // Kazper, 28 Oct 2026: computed KWD rounded the pouch down to 0.99, and the
+  // per-Racoin rule then pulled the bag and bin down with it (64% of straight).
+  KWD: [149, 249, 499],
+};
 
 /** Steam's minimum steps, in hundredths, for currencies without fractions
  *  (partner.steamgames.com/doc/store/pricing/currencies). Others take any. */

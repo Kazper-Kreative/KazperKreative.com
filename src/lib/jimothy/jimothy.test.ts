@@ -299,6 +299,15 @@ describe("jimothy regional prices", () => {
     expect(localPrice(RACOIN_PACKS[1], "CAD", market)).toEqual({ currency: "CAD", amount: 1299 });
   });
 
+  it("pins Kuwait at KWD 1.49 / 2.49 / 4.99, valid for Steam and the per-Racoin rule", async () => {
+    const { LOCAL_PRICES, localPrice } = await import("./catalog");
+    expect(LOCAL_PRICES.KWD).toEqual([149, 249, 499]);
+    const market = { fxRate: 0.31, priceLevel: 0.57 };
+    const amounts = RACOIN_PACKS.map((p) => localPrice(p, "KWD", market));
+    expect(amounts).toEqual([149, 249, 499].map((amount) => ({ currency: "KWD", amount })));
+    expectSane("KWD", 0.31, amounts.map((p) => p.amount));
+  });
+
   it("lets a hand-set LOCAL_PRICES row win over the computed price", async () => {
     const catalog = await import("./catalog");
     const table = catalog.LOCAL_PRICES as Record<string, readonly [number, number, number]>;
