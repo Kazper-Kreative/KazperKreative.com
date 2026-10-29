@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import PowerSwitch from "@/components/kazper/PowerSwitch";
 import { getKazperSupabase } from "@/lib/kazper/supabase";
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
   { href: "/kazper/memory", label: "Memory", icon: "🧠" },
   { href: "/kazper/history", label: "History", icon: "🗂️" },
   { href: "/kazper/stats", label: "Stats", icon: "📈" },
+  { href: "/kazper/forge", label: "Forge", icon: "🔨" },
 ];
 
 // Kazper's app chrome: top bar on desktop, bottom tab bar on phones (and in the
@@ -54,6 +56,7 @@ export default function KazperShell({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </nav>
+        <PowerSwitch />
         <button className="btn btn-ghost kz-signout" onClick={() => void signOut()}>
           Sign out
         </button>
