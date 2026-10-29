@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import PowerSwitch from "@/components/kazper/PowerSwitch";
 import { getKazperSupabase } from "@/lib/kazper/supabase";
 
 const TABS = [
@@ -55,6 +56,7 @@ export default function KazperShell({ children }: { children: React.ReactNode })
             </Link>
           ))}
         </nav>
+        <PowerSwitch />
         <button className="btn btn-ghost kz-signout" onClick={() => void signOut()}>
           Sign out
         </button>

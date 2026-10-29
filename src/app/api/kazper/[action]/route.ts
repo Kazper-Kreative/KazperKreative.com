@@ -14,6 +14,7 @@ const ACTIONS: Record<string, string> = {
   review: "/v1/review",
   feedback: "/v1/feedback",
   undo: "/v1/undo",
+  power: "/v1/power",
 };
 
 export async function POST(request: Request, { params }: { params: Promise<{ action: string }> }) {
