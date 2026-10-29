@@ -11,6 +11,7 @@ const TABS = [
   { href: "/kazper/memory", label: "Memory", icon: "🧠" },
   { href: "/kazper/history", label: "History", icon: "🗂️" },
   { href: "/kazper/stats", label: "Stats", icon: "📈" },
+  { href: "/kazper/forge", label: "Forge", icon: "🔨" },
 ];
 
 // Kazper's app chrome: top bar on desktop, bottom tab bar on phones (and in the
