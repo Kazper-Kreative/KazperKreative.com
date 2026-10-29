@@ -34,6 +34,7 @@ describe("forgeRouteAllowed", () => {
     expect(forgeRouteAllowed("GET", "jobs/../../etc")).toBe(false);
     expect(forgeRouteAllowed("POST", "jobs/x/delete")).toBe(false);
     expect(forgeRouteAllowed("GET", "health")).toBe(false);
+    expect(forgeRouteAllowed("POST", "exam")).toBe(true);
   });
 });
 
@@ -78,10 +79,24 @@ describe("ForgeBoard", () => {
     const calls = mockFetch({ status: { ...status, halted: "the kill switch is on" } });
     render(<ForgeBoard initialStatus={status} initialJobs={[]} />);
     fireEvent.click(screen.getByText("🛑 Stop everything"));
-    expect(calls).toHaveLength(0);
+    expect(calls.filter((c) => c.method === "POST")).toHaveLength(0);
     fireEvent.click(screen.getByText("Yes, halt it"));
     await waitFor(() => expect(calls.find((c) => c.url.endsWith("/halt"))?.body).toEqual({ on: true }));
     expect(await screen.findByText("Resume")).toBeInTheDocument();
+  });
+
+  it("shows the latest exam and starts a new one", async () => {
+    const calls = mockFetch({
+      exam: { running: null, pass_mark: 0.9, tasks: 12, latest: { at: "2026-10-29T23:30:00Z", score: 0.9167,
+        passed: true, cost_usd: 0.041, model: "z-ai/glm-5.3",
+        tasks: [{ name: "01-slugify", passed: true }, { name: "05-roman", passed: false }] } },
+    });
+    render(<ForgeBoard initialStatus={status} initialJobs={[]} />);
+    expect(await screen.findByText("92%")).toBeInTheDocument();
+    expect(screen.getByText("✓ slugify")).toBeInTheDocument();
+    expect(screen.getByText("✗ roman")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Run the exam again"));
+    await waitFor(() => expect(calls.some((c) => c.method === "POST" && c.url.endsWith("/exam"))).toBe(true));
   });
 
   it("starts a job on a dingdong repo", async () => {

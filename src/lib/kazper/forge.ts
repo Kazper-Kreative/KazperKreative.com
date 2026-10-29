@@ -19,6 +19,8 @@ const ALLOWED: [string, RegExp][] = [
   ["POST", /^jobs\/[\w-]+\/(stop|approve|deny)$/],
   ["POST", /^halt$/],
   ["GET", /^audit$/],
+  ["GET", /^exam$/],
+  ["POST", /^exam$/],
 ];
 const QUERY_KEYS = ["limit", "job_id"];
 
@@ -80,7 +82,15 @@ export interface ForgeStatus {
   queued: number;
   running: ForgeJob | null;
   instructor?: { mode: "every" | "sample" | "off"; clean_streak: number; goal: number; exam_passed: boolean;
-    reviewed: number; setting: string };
+    exam_score?: number | null; reviewed: number; setting: string };
+}
+
+export interface ExamStatus {
+  running: { started_at: string; done: number; total: number; passed: number; cost_usd: number } | null;
+  latest: { at: string; score: number; passed: boolean; cost_usd: number; model: string;
+    tasks: { name: string; passed: boolean }[] } | null;
+  pass_mark: number;
+  tasks: number;
 }
 
 export interface AuditEntry {
