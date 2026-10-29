@@ -50,7 +50,8 @@ export async function callForge(
 
 // Shapes the forge returns (forge/forge/jobs.py and api.py).
 export type JobStatus =
-  | "queued" | "running" | "pr_open" | "awaiting_approval" | "done" | "failed" | "stopped" | "denied";
+  | "queued" | "running" | "pr_open" | "reviewing" | "merged" | "changes_requested" | "closed"
+  | "awaiting_approval" | "done" | "failed" | "stopped" | "denied";
 
 export interface ForgeJob {
   id: string;
@@ -67,6 +68,10 @@ export interface ForgeJob {
   steps: number;
   gates: string[];
   approved_at: string;
+  parent_id?: string;
+  round?: number;
+  review?: { verdict: "ship" | "fix"; reasons: string; lesson: string; at: string; model: string };
+  merged_at?: string;
 }
 
 export interface ForgeStatus {
@@ -74,6 +79,8 @@ export interface ForgeStatus {
   budget: { spent_usd: number; cap_usd: number; left_usd: number };
   queued: number;
   running: ForgeJob | null;
+  instructor?: { mode: "every" | "sample" | "off"; clean_streak: number; goal: number; exam_passed: boolean;
+    reviewed: number; setting: string };
 }
 
 export interface AuditEntry {

@@ -11,13 +11,19 @@ const ORG = "Kazper-Kreative";
 const STATUS: Record<JobStatus, { label: string; tone: "live" | "ok" | "wait" | "bad" | "dim" }> = {
   queued: { label: "Queued", tone: "dim" },
   running: { label: "Running", tone: "live" },
-  pr_open: { label: "PR open", tone: "ok" },
+  pr_open: { label: "Waiting for CI", tone: "live" },
+  reviewing: { label: "In review", tone: "live" },
+  merged: { label: "Merged", tone: "ok" },
+  changes_requested: { label: "Sent back", tone: "wait" },
+  closed: { label: "Closed", tone: "dim" },
   awaiting_approval: { label: "Needs your OK", tone: "wait" },
   done: { label: "Done", tone: "ok" },
   failed: { label: "Failed", tone: "bad" },
   stopped: { label: "Stopped", tone: "dim" },
   denied: { label: "Denied", tone: "dim" },
 };
+
+const INSTRUCTOR = { every: "Every PR", sample: "1 in 5", off: "Graduated" } as const;
 
 function money(x: number): string {
   return x >= 1 ? `$${x.toFixed(2)}` : `$${x.toFixed(4)}`;
@@ -149,8 +155,13 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
           <span className="kz-tile-sub dim kz-forge-clip">{status.running?.task ?? "nothing right now"}</span>
         </div>
         <div className="kz-tile">
-          <span className="kz-tile-label">Queued</span>
-          <span className="kz-tile-value">{status.queued}</span>
+          <span className="kz-tile-label">Instructor</span>
+          <span className="kz-tile-value">{INSTRUCTOR[status.instructor?.mode ?? "every"]}</span>
+          <span className="kz-tile-sub dim">
+            {status.instructor
+              ? `${status.instructor.clean_streak}/${status.instructor.goal} clean ships · exam ${status.instructor.exam_passed ? "passed" : "not yet"}`
+              : `${status.queued} queued`}
+          </span>
         </div>
         <div className="kz-tile">
           <span className="kz-tile-label">Needs your OK</span>
@@ -208,6 +219,7 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
                   <span className="kz-meta">
                     <LocalTime iso={j.created_at} />
                     <span>{j.repo.split("/")[1]}</span>
+                    {j.round ? <span>round {j.round}</span> : null}
                     {j.steps > 0 && <span>{j.steps} steps</span>}
                     {j.cost_usd > 0 && <span>{money(j.cost_usd)}</span>}
                     {j.pr_url && <a href={j.pr_url} target="_blank" rel="noreferrer" className="kz-link"
@@ -217,6 +229,13 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
                 {open === j.id && (
                   <div className="kz-history-body">
                     {j.summary && <p>{j.summary}</p>}
+                    {j.review && (
+                      <p className={`kz-forge-review ${j.review.verdict}`}>
+                        <strong>Instructor: {j.review.verdict}.</strong> {j.review.reasons}
+                        {j.review.lesson && <span className="kz-row-sub">Lesson: {j.review.lesson}</span>}
+                      </p>
+                    )}
+                    {j.round ? <span className="dim kz-row-sub">Follow-up round {j.round} of job {j.parent_id}</span> : null}
                     {j.error && <p className="kz-forge-error">{j.error}</p>}
                     {(j.status === "queued" || j.status === "running") && (
                       <div className="kz-row-actions">

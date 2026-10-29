@@ -10,7 +10,8 @@ const job = (over: Partial<ForgeJob>): ForgeJob => ({
   cost_usd: 0.0029, steps: 7, gates: [], approved_at: "", ...over,
 });
 
-const status: ForgeStatus = { halted: null, budget: { spent_usd: 0.004, cap_usd: 50, left_usd: 49.996 }, queued: 0, running: null };
+const status: ForgeStatus = { halted: null, budget: { spent_usd: 0.004, cap_usd: 50, left_usd: 49.996 }, queued: 0, running: null,
+  instructor: { mode: "every", clean_streak: 3, goal: 20, exam_passed: false, reviewed: 3, setting: "auto" } };
 
 function mockFetch(responses: Record<string, unknown> = {}) {
   const calls: { url: string; method: string; body: unknown }[] = [];
@@ -43,7 +44,9 @@ describe("ForgeBoard", () => {
     expect(screen.getByText("$0.0040")).toBeInTheDocument();
     expect(screen.getByText("of $50.00 cap")).toBeInTheDocument();
     expect(screen.getByText("Add multiply()")).toBeInTheDocument();
-    expect(screen.getByText("PR open")).toBeInTheDocument();
+    expect(screen.getByText("Waiting for CI")).toBeInTheDocument();
+    expect(screen.getByText("Every PR")).toBeInTheDocument();
+    expect(screen.getByText("3/20 clean ships · exam not yet")).toBeInTheDocument();
     expect(screen.getByText("PR ↗")).toHaveAttribute("href", job({}).pr_url);
   });
 
