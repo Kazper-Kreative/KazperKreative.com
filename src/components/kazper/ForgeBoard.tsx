@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import LocalTime from "@/components/kazper/LocalTime";
-import type { AuditEntry, ForgeJob, ForgeStatus, JobStatus } from "@/lib/kazper/forge";
+import type { AuditEntry, ExamStatus, ForgeJob, ForgeStatus, JobStatus } from "@/lib/kazper/forge";
 
 const API = "/api/kazper/forge";
 const POLL_MS = 5000;
@@ -51,6 +51,7 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
   const [open, setOpen] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, string[]>>({});
   const [audit, setAudit] = useState<AuditEntry[] | null>(null);
+  const [exam, setExam] = useState<ExamStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -64,9 +65,12 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
 
   const refresh = useCallback(async () => {
     try {
-      const [s, j] = await Promise.all([forge<ForgeStatus>("status"), forge<{ jobs: ForgeJob[] }>("jobs?limit=30")]);
+      const [s, j, e] = await Promise.all([
+        forge<ForgeStatus>("status"), forge<{ jobs: ForgeJob[] }>("jobs?limit=30"), forge<ExamStatus>("exam"),
+      ]);
       setStatus(s);
       setJobs(j.jobs);
+      setExam(e);
       const id = openRef.current;
       if (id) {
         const l = await forge<{ lines: string[] }>(`jobs/${id}/logs`);
@@ -76,6 +80,10 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
+  }, []);
+
+  useEffect(() => {
+    forge<ExamStatus>("exam").then(setExam, () => {});
   }, []);
 
   useEffect(() => {
@@ -249,6 +257,50 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
                 )}
               </details>
             ))}
+          </div>
+        )}
+      </section>
+
+      <section className="kz-panel">
+        <h2>Coding exam {exam && <span className="kz-count">{exam.tasks} tasks · pass {Math.round(exam.pass_mark * 100)}%</span>}</h2>
+        <p className="dim kz-help">
+          Short tasks with hidden tests, done by the same forge on Kazper&apos;s own model. Passing it (plus{" "}
+          {status.instructor?.goal ?? 20} clean ships in a row) lets the instructor review less. A run costs a few cents.
+        </p>
+        {exam?.running ? (
+          <>
+            <div className="kz-progress" aria-label="Exam progress">
+              <span style={{ width: `${Math.max(2, Math.round((100 * exam.running.done) / exam.running.total))}%` }} />
+            </div>
+            <p className="kz-help">
+              Running: {exam.running.done}/{exam.running.total} done, {exam.running.passed} passed so far ·{" "}
+              {money(exam.running.cost_usd)}
+            </p>
+          </>
+        ) : exam?.latest ? (
+          <>
+            <p className="kz-help">
+              <strong>{Math.round(exam.latest.score * 100)}%</strong>{" "}
+              {exam.latest.passed ? "· passed ✅" : "· not yet"} · <LocalTime iso={exam.latest.at} /> ·{" "}
+              {money(exam.latest.cost_usd)} · {exam.latest.model}
+            </p>
+            <div className="kz-meta">
+              {exam.latest.tasks.map((t) => (
+                <span key={t.name} className={`kz-chip ${t.passed ? "kz-forge-ok" : "kz-forge-bad"}`}>
+                  {t.passed ? "✓" : "✗"} {t.name.replace(/^\d+-/, "")}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="dim kz-row-empty">No exam taken yet.</p>
+        )}
+        {!exam?.running && (
+          <div>
+            <button className="btn btn-ghost kz-chip-btn" disabled={busy !== null || !!status.halted}
+              onClick={() => void act("exam", () => post("exam"))}>
+              {exam?.latest ? "Run the exam again" : "Run the exam"}
+            </button>
           </div>
         )}
       </section>
