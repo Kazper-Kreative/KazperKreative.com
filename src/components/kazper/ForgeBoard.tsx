@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import ExternalLink from "@/components/kazper/ExternalLink";
 import LocalTime from "@/components/kazper/LocalTime";
 import type { AuditEntry, ExamStatus, ForgeJob, ForgeStatus, JobStatus } from "@/lib/kazper/forge";
 
@@ -185,7 +186,7 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
               <p className="kz-row-text">{j.task}</p>
               <div className="kz-meta">
                 {j.gates.map((g) => <span key={g} className="kz-chip kz-forge-wait">{g}</span>)}
-                {j.pr_url && <a href={j.pr_url} target="_blank" rel="noreferrer" className="kz-link">Review the PR ↗</a>}
+                {j.pr_url && <ExternalLink href={j.pr_url} className="kz-link">Review the PR ↗</ExternalLink>}
               </div>
               {confirm === `approve:${j.id}` ? (
                 <div className="kz-forge-confirm">
@@ -230,8 +231,7 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
                     {j.round ? <span>round {j.round}</span> : null}
                     {j.steps > 0 && <span>{j.steps} steps</span>}
                     {j.cost_usd > 0 && <span>{money(j.cost_usd)}</span>}
-                    {j.pr_url && <a href={j.pr_url} target="_blank" rel="noreferrer" className="kz-link"
-                      onClick={(e) => e.stopPropagation()}>PR ↗</a>}
+                    {j.pr_url && <ExternalLink href={j.pr_url} className="kz-link">PR ↗</ExternalLink>}
                   </span>
                 </summary>
                 {open === j.id && (
