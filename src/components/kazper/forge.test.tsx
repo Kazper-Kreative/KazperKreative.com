@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { browser } from "@/components/kazper/ExternalLink";
 import ForgeBoard from "@/components/kazper/ForgeBoard";
 import { forgeRouteAllowed, type ForgeJob, type ForgeStatus } from "@/lib/kazper/forge";
 
@@ -107,5 +108,36 @@ describe("ForgeBoard", () => {
     fireEvent.click(screen.getByText("Start job"));
     await waitFor(() => expect(calls.find((c) => c.method === "POST" && c.url.endsWith("/jobs"))?.body)
       .toEqual({ repo: "Kazper-Kreative/dingdong-sandbox", task: "Add divide()" }));
+  });
+});
+
+
+describe("ExternalLink", () => {
+  afterEach(() => {
+    delete (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__;
+  });
+
+  it("opens a new tab in a browser", () => {
+    const tab = { opener: window } as unknown as Window;
+    const open = jest.spyOn(window, "open").mockReturnValue(tab);
+    mockFetch();
+    render(<ForgeBoard initialStatus={status} initialJobs={[job({})]} />);
+    fireEvent.click(screen.getByText("PR ↗"));
+    expect(open).toHaveBeenCalledWith(job({}).pr_url, "_blank");
+    expect(tab.opener).toBeNull();
+    open.mockRestore();
+  });
+
+  it("inside the desktop app, navigates instead (the app hands it to the browser)", () => {
+    (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {};
+    const open = jest.spyOn(window, "open");
+    const navigate = jest.spyOn(browser, "navigate").mockImplementation(() => {});
+    mockFetch();
+    render(<ForgeBoard initialStatus={status} initialJobs={[job({})]} />);
+    fireEvent.click(screen.getByText("PR ↗"));
+    expect(navigate).toHaveBeenCalledWith(job({}).pr_url);
+    expect(open).not.toHaveBeenCalled();
+    navigate.mockRestore();
+    open.mockRestore();
   });
 });
