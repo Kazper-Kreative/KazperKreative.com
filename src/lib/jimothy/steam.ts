@@ -19,11 +19,13 @@ export function steamAppId(): string {
   return process.env.STEAM_APP_ID || "5082200";
 }
 
-/** Release morning: Friday 30 Oct 2026, 8:00 ET (Kazper, 28 Oct). Real money
- *  from here on, with nobody having to flip anything. Pre-launch rows in the
- *  database are marked creator gifts against the same moment
- *  (supabase/jimothy_creator_gifts_2026-10-28.sql); move both together. */
-export const STORE_LIVE_AT = "2026-10-30T12:00:00Z";
+/** Real money from here on, with nobody having to flip anything. Release
+ *  morning was Friday 30 Oct 2026, 8:00 ET; Kazper brought it forward to
+ *  05:00 UTC that night, to test a real purchase before players arrive.
+ *  Pre-launch rows in the database are marked creator gifts against the same
+ *  moment (supabase/jimothy_creator_gifts_2026-10-28.sql and
+ *  jimothy_store_live_2026-10-30.sql); move both together. */
+export const STORE_LIVE_AT = "2026-10-30T05:00:00Z";
 
 export function liveAt(): number {
   return Date.parse(process.env.STEAM_MTX_LIVE_AT || STORE_LIVE_AT);

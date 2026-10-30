@@ -114,8 +114,8 @@ describe("jimothy steam settings", () => {
     delete process.env.STEAM_MTX_SANDBOX;
   });
 
-  it("goes live by itself at release, Friday 30 Oct 8:00 ET", () => {
-    const live = Date.parse("2026-10-30T12:00:00Z");
+  it("goes live by itself at 05:00 UTC, Friday 30 Oct", () => {
+    const live = Date.parse("2026-10-30T05:00:00Z");
     expect(liveAt()).toBe(live);
     expect(isSandbox(live - 1)).toBe(true);
     expect(isSandbox(live)).toBe(false);
