@@ -105,12 +105,15 @@ describe("jimothy catalog", () => {
 
 describe("jimothy steam settings", () => {
   it("stays in the sandbox unless told exactly otherwise", () => {
+    // Before go-live, on a fixed clock: on the real one this test began
+    // failing the moment the store went live (30 Oct 2026).
+    const before = liveAt() - 1;
     delete process.env.STEAM_MTX_SANDBOX;
-    expect(isSandbox()).toBe(true);
+    expect(isSandbox(before)).toBe(true);
     process.env.STEAM_MTX_SANDBOX = "false";
-    expect(isSandbox()).toBe(true);
+    expect(isSandbox(before)).toBe(true);
     process.env.STEAM_MTX_SANDBOX = "0";
-    expect(isSandbox()).toBe(false);
+    expect(isSandbox(before)).toBe(false);
     delete process.env.STEAM_MTX_SANDBOX;
   });
 
