@@ -36,6 +36,10 @@ describe("forgeRouteAllowed", () => {
     expect(forgeRouteAllowed("POST", "jobs/x/delete")).toBe(false);
     expect(forgeRouteAllowed("GET", "health")).toBe(false);
     expect(forgeRouteAllowed("POST", "exam")).toBe(true);
+    expect(forgeRouteAllowed("GET", "lessons")).toBe(true);
+    expect(forgeRouteAllowed("POST", "lessons/l3fa9c1/add")).toBe(true);
+    expect(forgeRouteAllowed("POST", "lessons/../halt/add")).toBe(false);
+    expect(forgeRouteAllowed("GET", "growth")).toBe(true);
   });
 });
 
@@ -139,5 +143,39 @@ describe("ExternalLink", () => {
     expect(open).not.toHaveBeenCalled();
     navigate.mockRestore();
     open.mockRestore();
+  });
+});
+
+
+describe("LearningPanel", () => {
+  const lessonsView = {
+    queue: [{ id: "l1a2b3c", text: "Quote every review note you settle.", status: "proposed", source: "review",
+      first_seen: "2026-10-30T03:40:00Z", added_at: "", seen: 2, recurrences: 0, recommended: true }],
+    playbook: [
+      { id: "l000001", text: "Run the tests before you finish.", status: "added", source: "seed",
+        first_seen: "2026-10-30T04:40:00Z", added_at: "2026-10-30T04:40:00Z", seen: 1, recurrences: 0, recommended: false },
+      { id: "l000002", text: "Never present memory as checked.", status: "added", source: "seed",
+        first_seen: "2026-10-30T04:40:00Z", added_at: "2026-10-30T04:40:00Z", seen: 2, recurrences: 1, recommended: false },
+    ],
+    dismissed: 0, text: "",
+  };
+  const growth = { weekly: [{ week: "2026-10-26", prs: 5, first_try: 2, rounds: 6, first_try_rate: 0.4, avg_rounds: 1.2 }],
+    exams: [{ at: "2026-10-30T01:04:35Z", version: "v2", score: 1, passed: true }] };
+
+  it("shows growth, the queue and whether playbook lessons stuck; adds an edited lesson", async () => {
+    const calls = mockFetch({ lessons: lessonsView, growth });
+    render(<ForgeBoard initialStatus={status} initialJobs={[]} />);
+    expect(await screen.findByText("Quote every review note you settle.")).toBeInTheDocument();
+    expect(screen.getByText("recommended")).toBeInTheDocument();
+    expect(screen.getByText("seen 2×")).toBeInTheDocument();
+    expect(screen.getByText("40%")).toBeInTheDocument();
+    expect(screen.getByText("exam v2: 100%")).toBeInTheDocument();
+    expect(screen.getByText("no repeats")).toBeInTheDocument();
+    expect(screen.getByText("came back 1×")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Edit & add"));
+    fireEvent.change(screen.getByLabelText("Lesson text"), { target: { value: "List each note and its fix." } });
+    fireEvent.click(screen.getByText("Add to playbook"));
+    await waitFor(() => expect(calls.find((c) => c.url.endsWith("lessons/l1a2b3c/add"))?.body)
+      .toEqual({ text: "List each note and its fix." }));
   });
 });

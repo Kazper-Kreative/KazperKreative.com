@@ -21,6 +21,9 @@ const ALLOWED: [string, RegExp][] = [
   ["GET", /^audit$/],
   ["GET", /^exam$/],
   ["POST", /^exam$/],
+  ["GET", /^lessons$/],
+  ["POST", /^lessons\/l[0-9a-f]+\/(add|dismiss)$/],
+  ["GET", /^growth$/],
 ];
 const QUERY_KEYS = ["limit", "job_id"];
 
