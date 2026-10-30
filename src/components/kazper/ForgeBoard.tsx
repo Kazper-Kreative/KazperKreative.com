@@ -262,7 +262,12 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
       </section>
 
       <section className="kz-panel">
-        <h2>Coding exam {exam && <span className="kz-count">{exam.tasks} tasks · pass {Math.round(exam.pass_mark * 100)}%</span>}</h2>
+        <h2>Coding exam {exam && (
+          <span className="kz-count">
+            {exam.version ?? ""} · {exam.tasks} tasks · pass {Math.round(exam.pass_mark * 100)}%
+            {Object.entries(exam.earlier ?? {}).map(([v, s]) => ` · ${v}: ${Math.round(s * 100)}%`).join("")}
+          </span>
+        )}</h2>
         <p className="dim kz-help">
           Short tasks with hidden tests, done by the same forge on Kazper&apos;s own model. Passing it (plus{" "}
           {status.instructor?.goal ?? 20} clean ships in a row) lets the instructor review less. A run costs a few cents.
