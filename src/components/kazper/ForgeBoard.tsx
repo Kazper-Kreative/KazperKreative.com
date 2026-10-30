@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import ExternalLink from "@/components/kazper/ExternalLink";
+import LearningPanel from "@/components/kazper/LearningPanel";
 import LocalTime from "@/components/kazper/LocalTime";
 import type { AuditEntry, ExamStatus, ForgeJob, ForgeStatus, JobStatus } from "@/lib/kazper/forge";
 
@@ -314,6 +315,8 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
           </div>
         )}
       </section>
+
+      <LearningPanel />
 
       <section className="kz-panel">
         <h2>Give the forge a job</h2>
