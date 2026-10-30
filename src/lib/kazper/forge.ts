@@ -91,6 +91,8 @@ export interface ExamStatus {
     tasks: { name: string; passed: boolean }[] } | null;
   pass_mark: number;
   tasks: number;
+  version?: string;
+  earlier?: Record<string, number>;
 }
 
 export interface AuditEntry {
