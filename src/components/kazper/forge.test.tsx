@@ -89,12 +89,13 @@ describe("ForgeBoard", () => {
     const calls = mockFetch({
       exam: { running: null, pass_mark: 0.9, tasks: 12, latest: { at: "2026-10-29T23:30:00Z", score: 0.9167,
         passed: true, cost_usd: 0.041, model: "z-ai/glm-5.3",
-        tasks: [{ name: "01-slugify", passed: true }, { name: "05-roman", passed: false }] } },
+        tasks: [{ name: "01-slugify", passed: true }, { name: "05-roman", passed: false, why: "E assert 4 == 5" }] } },
     });
     render(<ForgeBoard initialStatus={status} initialJobs={[]} />);
     expect(await screen.findByText("92%")).toBeInTheDocument();
     expect(screen.getByText("✓ slugify")).toBeInTheDocument();
     expect(screen.getByText("✗ roman")).toBeInTheDocument();
+    expect(screen.getByText("E assert 4 == 5")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Run the exam again"));
     await waitFor(() => expect(calls.some((c) => c.method === "POST" && c.url.endsWith("/exam"))).toBe(true));
   });
