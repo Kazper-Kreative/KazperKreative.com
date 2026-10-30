@@ -296,6 +296,11 @@ export default function ForgeBoard({ initialStatus, initialJobs }: { initialStat
                 </span>
               ))}
             </div>
+            {exam.latest.tasks.filter((t) => !t.passed && t.why).map((t) => (
+              <p key={t.name} className="kz-forge-error kz-forge-why">
+                <strong>{t.name.replace(/^\d+-/, "")}:</strong> {t.why}
+              </p>
+            ))}
           </>
         ) : (
           <p className="dim kz-row-empty">No exam taken yet.</p>

@@ -88,7 +88,7 @@ export interface ForgeStatus {
 export interface ExamStatus {
   running: { started_at: string; done: number; total: number; passed: number; cost_usd: number } | null;
   latest: { at: string; score: number; passed: boolean; cost_usd: number; model: string;
-    tasks: { name: string; passed: boolean }[] } | null;
+    tasks: { name: string; passed: boolean; why?: string }[] } | null;
   pass_mark: number;
   tasks: number;
   version?: string;
