@@ -218,11 +218,14 @@ export function localPrice(pack: RacoinPack, currency: string | undefined, marke
  * A skin not listed here is not for sale: the free ones are found in the
  * world. Kazper, 27 Oct 2026: the $4.99 pouch buys Night Shift, the $9.99
  * bag buys Neon Alley or Undercover, and the $19.99 bin buys all three.
+ * Bin Lid Knight, 5 Nov 2026: 1,500, the top price for the top rarity
+ * (Royal Trash) -- in the game from 0.2.28; older builds have no tile for it.
  */
 export const SKIN_PRICES: Readonly<Record<string, number>> = {
   NightShift: 500,
   Undercover: 800,
   NeonAlley: 1200,
+  BinLidKnight: 1500,
 };
 
 /** The pack the game asked for, by id in any case (see RacoinPack.id). */

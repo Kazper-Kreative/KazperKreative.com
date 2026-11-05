@@ -91,7 +91,7 @@ describe("jimothy catalog", () => {
   });
 
   it("prices the skins at Kazper's 27 Oct prices", () => {
-    expect(SKIN_PRICES).toEqual({ NightShift: 500, Undercover: 800, NeonAlley: 1200 });
+    expect(SKIN_PRICES).toEqual({ NightShift: 500, Undercover: 800, NeonAlley: 1200, BinLidKnight: 1500 });
   });
 
   it("finds a skin in any case and returns the catalog's spelling", () => {
